@@ -18,7 +18,7 @@ interface SidebarProps {
   onFilterChange: (filters: CourseFilters) => void;
   onCourseSelect: (course: GolfCourse) => void;
   selectedCourseId: string | null;
-  totalCourses: number;
+  totalInBounds?: number;
   filtersOnly?: boolean;
   onClose?: () => void;
   selectedCourseIndex?: number | null;
@@ -30,7 +30,7 @@ export default function Sidebar({
   onFilterChange,
   onCourseSelect,
   selectedCourseId,
-  totalCourses,
+  totalInBounds,
   filtersOnly = false,
   onClose,
   selectedCourseIndex
@@ -251,8 +251,8 @@ export default function Sidebar({
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b sticky top-0 bg-white z-10">
-        <h2 className="text-lg font-semibold mb-2">
-          {courses.length} of {totalCourses} Courses Found
+        <h2 className="text-sm font-semibold mb-2">
+          Showing {courses.length} of {totalInBounds ?? courses.length} courses found
         </h2>
         <Input 
           type="text"
