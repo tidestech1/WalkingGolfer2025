@@ -453,10 +453,10 @@ return;
             }}
             options={{
               pixelOffset: new google.maps.Size(0, -35), 
-              disableAutoPan: true, 
+              disableAutoPan: true,
+              zIndex: 100 // Add a zIndex to ensure it's above markers
             }}
           >
-            {/* No inner null check needed now */}
             <div className="p-1 font-sans text-sm">
               <h3 className="text-base font-semibold mb-1 text-gray-800">
                 {selectedInfoWindowCourse.courseName}
