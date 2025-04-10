@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+    
+    function isValidPath(path) {
+      return path.matches('^[a-zA-Z0-9-_.]+$');
+    }
+
+    // News article images
+    match /news/{imageId} {
+      allow read: if true; // Anyone can view news images
+      allow write: if isAdmin() && isValidImage() && isValidPath(imageId);
+      allow delete: if isAdmin();
+    }
+
+    // Course images
+    match /courses/{courseId}/{imageId} {
+      allow read: if true; // Anyone can view course images
+      allow write: if isAdmin() && isValidImage() && isValidPath(courseId) && isValidPath(imageId);
+      allow delete: if isAdmin();
+    }
+
+    // User profile images
+    match /profiles/{userId}/{imageId} {
+      allow read: if true; // Anyone can view profile images
+      allow write: if isAuthenticated() && 
+                   request.auth.uid == userId && 
+                   isValidImage() && 
+                   isValidPath(imageId);
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 

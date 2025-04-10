@@ -1,0 +1,35 @@
+# .cursorrules
+
+## type_safety
+- Use TypeScript's type system fully — no `any` types
+- All data must match types from `src/types/*.ts`
+- Field names must be verified against schema before use
+- Use `null` for optional fields, never empty strings
+- Run type checks and fix all errors before committing
+
+## firebase_usage
+- Always access Firebase through `useFirebase` or `firebaseUtils.ts`
+- Never access Firebase objects (`db`, `auth`, etc.) directly in components
+- Wrap all Firebase operations in try/catch
+- Provide fallback data when Firebase is unavailable
+- Use Replit Secrets — never commit `.env` files
+
+## collections
+- Only use the following Firestore collections:
+  - `courses`
+  - `reviews`
+  - `users`
+
+## geographic_scope
+- App scope is USA-only
+- All golf courses must be within US coordinates
+- `state` field must use valid US state codes (e.g. CA, TX, FL) DC is an acceptable exception
+
+## ui_guidelines
+- Use color, spacing, and typography tokens from `src/docs/brandguide.md`
+- Use Tailwind and ShadCN/UI for all UI components
+
+## deployment_env
+- Secrets are stored in Replit Secrets Manager
+- Deployment is through Replit (do not use `.env` files)
+- Cursor connects via SSH to Replit
