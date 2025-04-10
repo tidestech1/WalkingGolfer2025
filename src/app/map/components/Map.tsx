@@ -27,6 +27,8 @@ interface MapProps {
   onCourseSelect: (course: GolfCourse) => void;
   onBoundsChanged: (bounds: MapBounds) => void;
   loading?: boolean;
+  onMapLoad: (map: google.maps.Map) => void;
+  onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
 }
 
 const defaultCenter = {
@@ -71,11 +73,10 @@ export default function Map({
   onCourseSelect,
   onBoundsChanged,
   loading,
+  onMapLoad,
+  onPlaceSelect,
 }: MapProps): JSX.Element | React.ReactNode {
-  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [showZoomMessage, setShowZoomMessage] = useState(false);
-  const [showLocationPrompt, setShowLocationPrompt] = useState(true);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
@@ -169,39 +170,45 @@ export default function Map({
   }, [getMarkerScale]);
 
   const updateVisibleMarkers = useCallback((): void => {
-    if (!mapRef.current || !isLoaded) {
-return;
-}
+    const map = mapRef.current;
 
-    const bounds = mapRef.current.getBounds();
-    const zoom = mapRef.current.getZoom();
-    
-    if (!bounds || typeof zoom !== 'number') {
-return;
-}
+    if (!map || !isLoaded) {
+      return;
+    }
 
-    setShowZoomMessage(zoom < MIN_ZOOM_FOR_MARKERS);
+    if (!courses || courses.length === 0) {
+        if (clustererRef.current && markersRef.current.length > 0) {
+            clustererRef.current.clearMarkers();
+            markersRef.current = [];
+        }
+        setSelectedInfoWindowCourse(null);
+        return;
+    }
 
-    if (zoom < MIN_ZOOM_FOR_MARKERS) {
+    const bounds = map.getBounds();
+    const currentZoom = map.getZoom();
+
+    if (!bounds || typeof currentZoom !== 'number') {
+      return;
+    }
+
+    const isZoomedOut = currentZoom < MIN_ZOOM_FOR_MARKERS;
+    setShowZoomMessage(isZoomedOut);
+
+    if (isZoomedOut) {
       if (clustererRef.current) {
         clustererRef.current.clearMarkers();
       }
-      // Close InfoWindow if markers are hidden
       setSelectedInfoWindowCourse(null);
       return;
     }
 
-    // Only create new markers if we don't have any or if courses have changed
-    // Added selectedInfoWindowCourse check to avoid recreating markers just for InfoWindow changes
     if (markersRef.current.length === 0 || markersRef.current.length !== courses.length) {
-      // Clear existing markers
       if (clustererRef.current) {
         clustererRef.current.clearMarkers();
       }
-      // Close any existing InfoWindow when rebuilding markers
       setSelectedInfoWindowCourse(null);
 
-      // Create new markers only for courses that are passed in (already filtered)
       const newMarkers = courses
         .filter(course => {
           const valid = isValidCoordinate(course.location_coordinates_latitude, course.location_coordinates_longitude);
@@ -217,77 +224,50 @@ return;
               lng: course.location_coordinates_longitude
             },
             title: course.courseName,
-            // Pass selectedCourseId for icon styling, not selectedInfoWindowCourse
             content: createMarkerIcon(course, course.id === selectedCourseId).element
           });
 
-          // MODIFIED click listener
           marker.addEventListener('click', (event: MouseEvent) => {
-            // Stop the click from bubbling up to the map
             event.stopPropagation();
-            
-            console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`);
-            onCourseSelect(course); // Still notify parent for list selection
-            console.log('[MapComponent] Setting selectedInfoWindowCourse:', course);
-            setSelectedInfoWindowCourse(course); // Set this marker for persistent InfoWindow
+            console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`); 
+            onCourseSelect(course);
+            setSelectedInfoWindowCourse(course);
           });
 
           return marker;
         });
 
-      // Add new markers to clusterer
       if (clustererRef.current && newMarkers.length > 0) {
         console.debug(`updateVisibleMarkers: Adding ${newMarkers.length} markers to clusterer.`);
         clustererRef.current.addMarkers(newMarkers);
       } else {
         console.debug("updateVisibleMarkers: No valid markers to add.");
       }
-
-      // Update markers reference
       markersRef.current = newMarkers;
     } else {
-      // Just update marker icons for selected state changes
       markersRef.current.forEach((marker, index) => {
         if (courses[index]) {
-          // Update icon based on list selection (selectedCourseId)
           marker.content = createMarkerIcon(courses[index], courses[index].id === selectedCourseId).element;
         }
       });
     }
-  }, [courses, selectedCourseId, onCourseSelect, isLoaded, createMarkerIcon, selectedInfoWindowCourse]);
+  }, [courses, selectedCourseId, isLoaded, createMarkerIcon, mapRef, onCourseSelect, setSelectedInfoWindowCourse]);
 
-  const onMapLoad = useCallback((map: google.maps.Map): void => {
-    console.debug("onMapLoad: Map instance loaded.");
+  const internalOnMapLoad = useCallback((map: google.maps.Map): void => {
     mapRef.current = map;
+    onMapLoad(map);
     
-    // Initialize marker clusterer
     if (!clustererRef.current) {
-      console.debug("onMapLoad: Creating clusterer.");
       clustererRef.current = createClusterer(map);
     }
 
-    // Set initial bounds if user location is available
-    if (userLocation) {
-      map.setCenter(userLocation);
-      map.setZoom(12);
-    } else {
-      map.setCenter(defaultCenter);
-      map.setZoom(DEFAULT_ZOOM);
-    }
-
-    // Add bounds_changed listener
     map.addListener('bounds_changed', () => {
       const bounds = map.getBounds();
       if (bounds) {
-        console.debug("Map Idle: Bounds changed.");
         onBoundsChanged(convertToMapBounds(bounds));
-        updateVisibleMarkers();
       }
     });
-
-    // Initial update of visible markers
-    updateVisibleMarkers();
-  }, [userLocation, onBoundsChanged, updateVisibleMarkers]);
+  }, [onMapLoad, onBoundsChanged]);
 
   const debouncedBoundsChanged = useMemo(
     () => debounce((bounds: google.maps.LatLngBounds) => {
@@ -325,67 +305,14 @@ return;
   }, [debouncedBoundsChanged, isLoaded]);
 
   useEffect(() => {
-    if (!mapRef.current || !isLoaded || loading) {
-return;
-}
-    updateVisibleMarkers();
-  }, [courses, selectedCourseId, updateVisibleMarkers, isLoaded, loading]);
-
-  const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
-    if (!place.geometry || !mapRef.current) {
-      console.warn("handlePlaceSelect: Invalid place data or map not ready.");
-      return;
+    if (mapRef.current && isLoaded && !loading) {
+       updateVisibleMarkers();
     }
+  }, [courses, isLoaded, loading, mapRef.current, updateVisibleMarkers]);
 
-    if (place.geometry.viewport) {
-      mapRef.current.fitBounds(place.geometry.viewport);
-    } else if (place.geometry.location) {
-      mapRef.current.setCenter(place.geometry.location);
-      mapRef.current.setZoom(DEFAULT_ZOOM);
-    }
-
-    // Hide location prompt if it's still showing
-    setShowLocationPrompt(false);
-  }, []);
-
-  const handleBoundsChanged = useCallback(() => {
-    if (!mapRef.current) {
-return;
-}
-    
-    const bounds = mapRef.current.getBounds();
-    if (bounds) {
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
-      const newBounds = {
-        north: ne.lat(),
-        south: sw.lat(),
-        east: ne.lng(),
-        west: sw.lng()
-      };
-      setCurrentBounds(newBounds);
-      onBoundsChanged(newBounds);
-      setZoom(mapRef.current.getZoom() || DEFAULT_ZOOM);
-      updateVisibleMarkers();
-    }
-  }, [onBoundsChanged, updateVisibleMarkers]);
-
-  const handleLocationSelect = useCallback((location: google.maps.LatLngLiteral): void => {
-    console.debug("handleLocationSelect: User location selected.", location);
-    setUserLocation(location);
-    setShowLocationPrompt(false);
-    
-    if (mapRef.current) {
-      mapRef.current.panTo(location);
-      mapRef.current.setZoom(12);
-    }
-  }, []);
-
-  const handleSkipLocation = useCallback(() => {
-    console.debug("handleSkipLocation: User skipped location prompt.");
-    setShowLocationPrompt(false);
-    setUserLocation(null);
-  }, []);
+  const internalHandlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
+    onPlaceSelect(place);
+  }, [onPlaceSelect]);
 
   if (loadError) {
     console.error("Google Maps Load Error:", loadError);
@@ -404,7 +331,7 @@ return;
       </div>
 
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-[600px] z-10">
-        <SearchBox onPlaceSelect={handlePlaceSelect} />
+        <SearchBox onPlaceSelect={internalHandlePlaceSelect} />
       </div>
 
       {showZoomMessage && (
@@ -417,44 +344,29 @@ return;
 
       <GoogleMap
         mapContainerClassName="w-full h-full"
-        center={userLocation || defaultCenter}
+        center={defaultCenter}
         zoom={DEFAULT_ZOOM}
-        onLoad={(map) => {
-          onMapLoad(map);
-          setMapLoaded(true);
-        }}
-        onBoundsChanged={handleBoundsChanged}
+        onLoad={internalOnMapLoad}
         options={mapOptions}
         onClick={() => {
-           console.log('[MapComponent] Map clicked, closing InfoWindow.');
            setSelectedInfoWindowCourse(null);
         }}
       >
-        {mapLoaded && !userLocation && showLocationPrompt && (
-          <LocationPrompt
-            onLocationSelect={handleLocationSelect}
-            onSkip={handleSkipLocation}
-          />
-        )}
-
         {isLoading && <LoadingIndicator progress={progress} />}
 
-        {/* Persistent InfoWindow - Simplified conditional rendering */}
         {selectedInfoWindowCourse && isValidCoordinate(selectedInfoWindowCourse.location_coordinates_latitude, selectedInfoWindowCourse.location_coordinates_longitude) && (
           <InfoWindow
             position={{
-              // No ! needed, type guaranteed by outer check
               lat: selectedInfoWindowCourse.location_coordinates_latitude,
               lng: selectedInfoWindowCourse.location_coordinates_longitude,
             }}
             onCloseClick={() => {
-              console.log('[MapComponent] InfoWindow close clicked.');
               setSelectedInfoWindowCourse(null);
             }}
             options={{
               pixelOffset: new google.maps.Size(0, -35), 
               disableAutoPan: true,
-              zIndex: 100 // Add a zIndex to ensure it's above markers
+              zIndex: 100
             }}
           >
             <div className="p-1 font-sans text-sm">
@@ -496,17 +408,15 @@ const isWalkable = (course: GolfCourse): boolean => {
 };
 
 const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {
-  console.debug("Creating MarkerClusterer instance");
   return new GoogleMarkerClusterer({
     map,
     algorithm: new SuperClusterAlgorithm({
-      radius: 100, // Increased for more aggressive clustering
-      maxZoom: 12, // Clusters remain longer while zooming
-      minPoints: 3 // Only create clusters for 3 or more points
+      radius: 100,
+      maxZoom: 12,
+      minPoints: 3
     }),
     renderer: {
       render: ({ count, position }) => {
-        // More dramatic size scaling for better visual hierarchy
         const size = Math.min(Math.max(40, Math.log2(count) * 12), 70);
         
         const outerDiv = document.createElement('div');
@@ -532,7 +442,6 @@ const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {
         div.style.transition = 'all 0.2s ease';
         div.textContent = String(count);
 
-        // Add subtle pulse animation for larger clusters
         if (count > 10) {
           div.style.animation = 'pulse 2s infinite';
           const style = document.createElement('style');
