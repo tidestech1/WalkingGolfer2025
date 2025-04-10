@@ -184,7 +184,7 @@ export default function MapPage(): JSX.Element {
       <div className="lg:hidden h-full">
         {/* Map View */}
         <div className={cn(
-          'fixed inset-x-0 top-10 bottom-16 transition-transform duration-300 transform',
+          'fixed inset-x-0 top-10 bottom-24 transition-transform duration-300 transform',
           sidebarOpen ? 'translate-x-0' : 'translate-x-full'
         )}>
           <MapComponent
@@ -198,7 +198,7 @@ export default function MapPage(): JSX.Element {
 
         {/* List View */}
         <div className={cn(
-          'fixed inset-x-0 top-10 bottom-16 bg-white transition-transform duration-300 transform',
+          'fixed inset-x-0 top-10 bottom-24 bg-white transition-transform duration-300 transform',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}>
           <div className="h-full">
@@ -224,7 +224,7 @@ export default function MapPage(): JSX.Element {
           allCourses={filteredCourses}
         />
 
-        {/* Bottom Navigation */}
+        {/* Bottom Navigation - Positioning handled internally */}
         <BottomNav
           activeView={sidebarOpen ? 'list' : 'map'}
           onViewChange={(view) => {

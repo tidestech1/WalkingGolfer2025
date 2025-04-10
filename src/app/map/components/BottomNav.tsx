@@ -16,7 +16,7 @@ export function BottomNav({
   totalCourses = 0
 }: BottomNavProps): JSX.Element {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg lg:hidden">
+    <div className="fixed bottom-8 left-0 right-0 bg-white border-t shadow-lg lg:hidden z-30">
       <nav className="flex justify-around items-center h-16">
         <button
           onClick={() => onViewChange('map')}

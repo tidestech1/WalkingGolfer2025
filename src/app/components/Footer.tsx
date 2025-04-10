@@ -1,7 +1,16 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function Footer(): JSX.Element {
+  const pathname = usePathname();
+  const isMapPage = pathname.startsWith('/map');
+  const [isExpanded, setIsExpanded] = useState(!isMapPage); // Default to expanded, unless on map page
+
   return (
     <footer className="bg-[#0A3357] text-white font-outfit">
       <div className="max-w-7xl mx-auto py-8 sm:py-10 md:py-12 px-4 sm:px-6 lg:px-8">
@@ -133,7 +142,7 @@ export default function Footer(): JSX.Element {
         </div>
 
         {/* Stewart Golf Partnership */}
-        <div className="mt-8 pt-8 border-t border-gray-700">
+        <div className="mt-8 pt-8 border-t border-gray-700 relative">
           {/* Stewart Golf partnership section */}
           <div className="flex flex-col sm:flex-row items-center justify-center md:justify-end gap-4 sm:gap-6 mb-6 md:mb-0">
             <div className="text-center sm:text-right order-2 sm:order-1">
@@ -156,16 +165,15 @@ export default function Footer(): JSX.Element {
             </a>
           </div>
           
-          {/* Copyright notice - now at the very bottom */}
-          <div className="md:hidden pt-6 border-t border-gray-700/30">
-            <p className="text-gray-300 text-center text-xs">
+          {/* Desktop copyright (side by side with partnership) */}
+          <div className="hidden md:block absolute bottom-0 left-4">
+            <p className="text-gray-300 text-left text-xs">
               © {new Date().getFullYear()} The Walking Golfer. All rights reserved.
             </p>
           </div>
-          
-          {/* Desktop copyright (side by side with partnership) */}
-          <div className="hidden md:block absolute left-8">
-            <p className="text-gray-300 text-left text-sm">
+           {/* Copyright for mobile/small screens */}
+          <div className="md:hidden mt-6 pt-6 border-t border-gray-700/30">
+            <p className="text-gray-300 text-center text-xs">
               © {new Date().getFullYear()} The Walking Golfer. All rights reserved.
             </p>
           </div>
