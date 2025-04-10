@@ -1,0 +1,61 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "location_coordinates_latitude", "order": "ASCENDING" },
+        { "fieldPath": "location_coordinates_longitude", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "location_state", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "walkingAllowed", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "courseType", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "priceRange.min", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
