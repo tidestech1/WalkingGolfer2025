@@ -223,7 +223,6 @@ export default function MapPage(): JSX.Element {
               onCourseSelect={handleCourseSelect}
               selectedCourseId={selectedCourseId || null}
               totalCourses={courses.length}
-              listOnly={true}
                // The sidebar doesn't strictly need an onClose for this mobile pattern
                // We control visibility via the parent's activeMobileView state
               onClose={() => {}} // Provide a no-op or remove if not required by Sidebar props
@@ -276,7 +275,6 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             selectedCourseId={selectedCourseId || null}
             totalCourses={courses.length}
-            listOnly={true}
           />
         </div>
 
