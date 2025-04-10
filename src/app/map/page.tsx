@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
 import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { debounce } from 'lodash';
@@ -14,9 +14,12 @@ import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 import { BottomNav } from './components/BottomNav';
 import { FilterBottomSheet } from './components/FilterBottomSheet';
 import Sidebar from './components/Sidebar';
+import { LocationPrompt } from './components/LocationPrompt';
 
 // Constants
 const COURSES_PER_PAGE = 20;
+const LOCATION_PROMPT_SEEN_KEY = 'walkingGolfer_hasSeenLocationPrompt';
+const DEFAULT_ZOOM = 8;
 
 // Dynamically import the Map component with no SSR
 const MapComponent = dynamic(
@@ -49,6 +52,21 @@ export default function MapPage(): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [activeMobileView, setActiveMobileView] = useState<'map' | 'list'>('map');
+  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Initialize showLocationPrompt state based on sessionStorage
+  const [showLocationPrompt, setShowLocationPrompt] = useState<boolean>(() => {
+    // sessionStorage is only available in the browser
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(LOCATION_PROMPT_SEEN_KEY) !== 'true'; // Use sessionStorage
+    }
+    // Default to true if not in browser (e.g., SSR, though this page is client-side)
+    return true; 
+  });
+
+  // Define mapRef here in MapPage
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   const loadCourses = useCallback(async (bounds?: MapBounds) => {
     if (!isFirebaseAvailable() || !db) {
@@ -162,10 +180,12 @@ export default function MapPage(): JSX.Element {
     }
   }, [courses, filters, mapBounds, selectedCourseId]);
 
+  // handleCourseSelect now uses component state mapRef
   const handleCourseSelect = useCallback((course: GolfCourse) => {
     setSelectedCourseId(course.id);
     const index = filteredCourses.findIndex(c => c.id === course.id);
     setSelectedCourseIndex(index !== -1 ? index : null);
+    setShowLocationPrompt(false); 
   }, [filteredCourses]);
 
   const handleFilterChange = useCallback((newFilters: Partial<CourseFilters>) => {
@@ -193,6 +213,44 @@ export default function MapPage(): JSX.Element {
     }
   }, []);
 
+  // handlePlaceSelect now uses component state mapRef
+  const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
+    if (!place.geometry || !mapRef.current) {
+      console.warn("handlePlaceSelect: Invalid place data or map not ready.");
+      return;
+    }
+    if (place.geometry.viewport) {
+      mapRef.current.fitBounds(place.geometry.viewport);
+    } else if (place.geometry.location) {
+      mapRef.current.setCenter(place.geometry.location);
+      mapRef.current.setZoom(DEFAULT_ZOOM);
+    }
+    setShowLocationPrompt(false);
+  }, []); // No dependency on mapRef needed
+
+  // handleLocationSelect now uses component state mapRef
+  const handleLocationSelect = useCallback((location: google.maps.LatLngLiteral): void => {
+    console.debug("handleLocationSelect: User location selected.", location);
+    setUserLocation(location);
+    setShowLocationPrompt(false);
+    // Persist the choice in sessionStorage
+    sessionStorage.setItem(LOCATION_PROMPT_SEEN_KEY, 'true'); // Use sessionStorage
+    
+    if (mapRef.current) {
+      mapRef.current.panTo(location);
+      mapRef.current.setZoom(12);
+    }
+  }, []); // No dependency on mapRef needed
+
+  // handleSkipLocation now uses component state mapRef
+  const handleSkipLocation = useCallback(() => {
+    console.debug("handleSkipLocation: User skipped location prompt.");
+    setShowLocationPrompt(false);
+    setUserLocation(null);
+    // Persist the choice in sessionStorage
+    sessionStorage.setItem(LOCATION_PROMPT_SEEN_KEY, 'true'); // Use sessionStorage
+  }, []);
+
   if (error) {
     return <ErrorMessage message={error} />;
   }
@@ -213,7 +271,21 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             onBoundsChanged={handleBoundsChanged}
             loading={loading}
+            onMapLoad={(map: google.maps.Map) => {
+              mapRef.current = map; 
+              setMapLoaded(true);
+            }}
+            onPlaceSelect={handlePlaceSelect}
           />
+          {/* Render LocationPrompt overlay here for mobile */}
+          {mapLoaded && !userLocation && showLocationPrompt && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
+              <LocationPrompt 
+                onLocationSelect={handleLocationSelect} 
+                onSkip={handleSkipLocation} 
+              />
+            </div>
+          )}
         </div>
 
         {/* List View */}
@@ -287,14 +359,28 @@ export default function MapPage(): JSX.Element {
         </div>
 
         {/* Right Column - Map */}
-        <div className="flex-1 lg:pb-10">
+        <div className="flex-1 lg:pb-10 relative">
           <MapComponent
             courses={filteredCourses}
             selectedCourseId={selectedCourseId || null}
             onCourseSelect={handleCourseSelect}
             onBoundsChanged={handleBoundsChanged}
             loading={loading}
+            onMapLoad={(map: google.maps.Map) => {
+              mapRef.current = map; 
+              setMapLoaded(true);
+            }}
+            onPlaceSelect={handlePlaceSelect}
           />
+          {/* Render LocationPrompt overlay here for desktop */}
+          {mapLoaded && !userLocation && showLocationPrompt && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm"> 
+              <LocationPrompt 
+                onLocationSelect={handleLocationSelect} 
+                onSkip={handleSkipLocation} 
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
