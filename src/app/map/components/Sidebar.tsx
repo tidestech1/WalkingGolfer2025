@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { StarRating } from '@/components/ui/star-rating';
 import { cn } from '@/lib/utils';
 import { GolfCourse, CourseFilters, CourseType, CourseCategory } from '@/types/course';
@@ -242,56 +243,92 @@ export default function Sidebar({
     );
   }
 
-  // If listOnly is true, only render the course listings
+  // If listOnly is true, only render the course listings (Mobile List View)
   if (listOnly) {
     return (
       <div className="h-full flex flex-col">
-        <div className="sticky top-0 bg-white border-b z-10">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center">
-              {onClose && (
-                <button onClick={onClose} className="mr-3 lg:hidden">
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              )}
-              <h2 className="font-semibold">Course List</h2>
-            </div>
-            <div className="text-sm text-gray-500">
-              {courses.length} of {totalCourses} courses
-            </div>
+        {/* Mobile List Header */}
+        <div className="sticky top-0 bg-white border-b z-10 p-4">
+          <div className="flex items-center mb-3">
+            {onClose && (
+              <button onClick={onClose} className="mr-3 p-1 -ml-1">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <h2 className="flex-1 font-semibold text-center">{totalCourses} Courses Found</h2>
+            {/* Add some spacing or element to balance the header if needed */}
+            <div className="w-5"></div> 
           </div>
-          <div className="px-4 pb-4">
-            <p className="text-sm text-gray-500 p-2 border rounded-md">Search input disabled (missing component)</p>
-          </div>
+          {/* Search Input for Mobile List */}
+          <Input 
+            type="text"
+            placeholder="Search courses by name or city"
+            value={filters.searchQuery || ''}
+            onChange={(e) => updateFilters({ searchQuery: e.target.value })}
+            className="w-full"
+          />
         </div>
-        
-        <div className="flex-1">
-          <Virtuoso
-            style={{ height: '100%' }}
-            totalCount={courses.length}
-            itemContent={(index) => {
-              const course = courses[index];
-              if (!course) {
-                return null;
-              }
-              
-              return (
+
+        {/* Course List for Mobile */}
+        <div className="flex-1 overflow-y-auto">
+          {courses.length === 0 ? (
+            <p className="text-center text-gray-500 p-4">No courses found matching your criteria.</p>
+          ) : (
+            <Virtuoso
+              style={{ height: '100%' }}
+              data={courses}
+              itemContent={(index, course) => (
                 <CourseCard
                   key={course.id}
                   course={course}
-                  isSelected={course.id === selectedCourseId}
+                  isSelected={selectedCourseId === course.id}
                   onSelect={onCourseSelect}
                 />
-              );
-            }}
-          />
+              )}
+            />
+          )}
         </div>
       </div>
     );
   }
 
-  // Default view (not used in new layout)
-  return null;
+  // Default view (Desktop with list and potentially filters if not separated)
+  return (
+    <div className="h-full flex flex-col">
+      {/* Desktop List Header and Search */}
+      <div className="p-4 border-b">
+         <h2 className="text-lg font-semibold mb-2">Course List <span className='text-sm text-gray-500'>({totalCourses} found)</span></h2>
+         {/* Search Input for Desktop */}
+         <Input 
+           type="text"
+           placeholder="Search courses by name or city"
+           value={filters.searchQuery || ''}
+           onChange={(e) => updateFilters({ searchQuery: e.target.value })}
+           className="w-full"
+         />
+      </div>
+
+      {/* Course List for Desktop */}
+      <div className="flex-1 overflow-y-auto">
+        {courses.length === 0 ? (
+          <p className="text-center text-gray-500 p-4">No courses found matching your criteria.</p>
+        ) : (
+          <Virtuoso
+            style={{ height: '100%' }}
+            data={courses}
+            itemContent={(index, course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                isSelected={selectedCourseId === course.id}
+                onSelect={onCourseSelect}
+              />
+            )}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 // Separate the course card into its own component for better performance
