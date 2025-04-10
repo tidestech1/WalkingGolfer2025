@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 
 import { MapPin, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,8 @@ interface SidebarProps {
   selectedCourseId: string | null;
   totalCourses: number;
   filtersOnly?: boolean;
-  listOnly?: boolean;
   onClose?: () => void;
+  selectedCourseIndex?: number | null;
 }
 
 export default function Sidebar({
@@ -32,16 +32,27 @@ export default function Sidebar({
   selectedCourseId,
   totalCourses,
   filtersOnly = false,
-  listOnly = false,
-  onClose
+  onClose,
+  selectedCourseIndex
 }: SidebarProps) {
   const updateFilters = (updates: Partial<CourseFilters>) => {
     onFilterChange({ ...filters, ...updates });
   };
 
-  // If filtersOnly is true, only render the filters
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+  useEffect(() => {
+    if (typeof selectedCourseIndex === 'number' && selectedCourseIndex >= 0 && virtuosoRef.current) {
+      console.debug(`Scrolling list to index: ${selectedCourseIndex}`);
+      virtuosoRef.current.scrollToIndex({
+        index: selectedCourseIndex,
+        align: 'center',
+        behavior: 'smooth'
+      });
+    }
+  }, [selectedCourseIndex]);
+
   if (filtersOnly) {
-    // Check if any filters are active
     const hasActiveFilters = 
       filters.walkabilityRating_overall_min > 0 ||
       filters.course_types.length > 0 ||
@@ -52,7 +63,6 @@ export default function Sidebar({
 
     return (
       <div className="h-full flex flex-col">
-        {/* Mobile Header */}
         <div className="lg:hidden sticky top-0 bg-white border-b z-10">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center">
@@ -81,7 +91,6 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Desktop Header */}
         <div className="hidden lg:block p-3">
           {hasActiveFilters && (
             <div className="mb-4 flex items-center justify-between">
@@ -92,10 +101,9 @@ export default function Sidebar({
         
         <div className={cn(
           "flex-1 overflow-y-auto",
-          "lg:px-3 lg:space-y-3", // Desktop styling
-          "px-4 space-y-6 lg:space-y-3" // Mobile styling
+          "lg:px-3 lg:space-y-3",
+          "px-4 space-y-6 lg:space-y-3"
         )}>
-          {/* Walkability Rating */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-medium">
@@ -123,7 +131,6 @@ export default function Sidebar({
             />
           </div>
 
-          {/* Course Types */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-medium">Course Types</label>
@@ -166,7 +173,6 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Course Categories */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-medium">Course Categories</label>
@@ -206,7 +212,6 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Facilities */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-medium">Facilities</label>
@@ -243,30 +248,27 @@ export default function Sidebar({
     );
   }
 
-  // Default view (used for Desktop middle column AND Mobile list view now)
   return (
     <div className="h-full flex flex-col">
-      {/* Header and Search */}
       <div className="p-4 border-b sticky top-0 bg-white z-10">
-        <h2 className="text-sm font-semibold mb-2">
-          Showing {courses.length} of {totalCourses} courses found
+        <h2 className="text-lg font-semibold mb-2">
+          {courses.length} of {totalCourses} Courses Found
         </h2>
-        {/* Search Input */}
         <Input 
           type="text"
-          placeholder="Search courses by name or city"
+          placeholder="Search courses by name, city, state..."
           value={filters.searchQuery || ''}
           onChange={(e) => updateFilters({ searchQuery: e.target.value })}
           className="w-full"
         />
       </div>
 
-      {/* Course List */}
       <div className="flex-1 overflow-y-auto">
         {courses.length === 0 ? (
           <p className="text-center text-gray-500 p-4">No courses found matching your criteria.</p>
         ) : (
           <Virtuoso
+            ref={virtuosoRef}
             style={{ height: '100%' }}
             data={courses}
             itemContent={(index, course) => (
@@ -284,7 +286,6 @@ export default function Sidebar({
   );
 }
 
-// Separate the course card into its own component for better performance
 function CourseCard({ course, isSelected, onSelect }: {
   course: GolfCourse;
   isSelected: boolean;

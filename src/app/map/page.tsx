@@ -41,6 +41,7 @@ export default function MapPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedCourseIndex, setSelectedCourseIndex] = useState<number | null>(null);
   
   const [filteredCourses, setFilteredCourses] = useState<GolfCourse[]>([]);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
@@ -155,11 +156,17 @@ export default function MapPage(): JSX.Element {
     });
 
     setFilteredCourses(result);
-  }, [courses, filters, mapBounds]);
+    setSelectedCourseIndex(null);
+    if (selectedCourseId && !result.some(c => c.id === selectedCourseId)) {
+      setSelectedCourseId(null);
+    }
+  }, [courses, filters, mapBounds, selectedCourseId]);
 
   const handleCourseSelect = useCallback((course: GolfCourse) => {
     setSelectedCourseId(course.id);
-  }, []);
+    const index = filteredCourses.findIndex(c => c.id === course.id);
+    setSelectedCourseIndex(index !== -1 ? index : null);
+  }, [filteredCourses]);
 
   const handleFilterChange = useCallback((newFilters: Partial<CourseFilters>) => {
     setFilters(prev => ({
@@ -275,6 +282,7 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             selectedCourseId={selectedCourseId || null}
             totalCourses={courses.length}
+            selectedCourseIndex={selectedCourseIndex}
           />
         </div>
 
