@@ -3,8 +3,10 @@
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 
 import { MarkerClusterer as GoogleMarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
-import { GoogleMap, useLoadScript, Libraries } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Libraries, InfoWindow } from '@react-google-maps/api';
 import { debounce } from 'lodash';
+import Link from 'next/link';
+import { Star } from 'lucide-react';
 
 import { GolfCourse, MapBounds } from '@/types/course';
 
@@ -76,6 +78,7 @@ export default function Map({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<GoogleMarkerClusterer | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
@@ -183,15 +186,20 @@ return;
       if (clustererRef.current) {
         clustererRef.current.clearMarkers();
       }
+      // Close InfoWindow if markers are hidden
+      setSelectedInfoWindowCourse(null);
       return;
     }
 
     // Only create new markers if we don't have any or if courses have changed
+    // Added selectedInfoWindowCourse check to avoid recreating markers just for InfoWindow changes
     if (markersRef.current.length === 0 || markersRef.current.length !== courses.length) {
       // Clear existing markers
       if (clustererRef.current) {
         clustererRef.current.clearMarkers();
       }
+      // Close any existing InfoWindow when rebuilding markers
+      setSelectedInfoWindowCourse(null);
 
       // Create new markers only for courses that are passed in (already filtered)
       const newMarkers = courses
@@ -209,29 +217,19 @@ return;
               lng: course.location_coordinates_longitude
             },
             title: course.courseName,
+            // Pass selectedCourseId for icon styling, not selectedInfoWindowCourse
             content: createMarkerIcon(course, course.id === selectedCourseId).element
           });
 
-          const infoWindow = new google.maps.InfoWindow({
-            content: createInfoWindowContent(course),
-            pixelOffset: new google.maps.Size(0, -30)
-          });
-
-          // Use proper event handling for Advanced Markers
-          marker.addEventListener('pointerenter', () => {
-            infoWindow.open({
-              map: mapRef.current,
-              anchor: marker
-            });
-          });
-
-          marker.addEventListener('pointerleave', () => {
-            infoWindow.close();
-          });
-
-          marker.addEventListener('click', () => {
+          // MODIFIED click listener
+          marker.addEventListener('click', (event: MouseEvent) => {
+            // Stop the click from bubbling up to the map
+            event.stopPropagation();
+            
             console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`);
-            onCourseSelect(course);
+            onCourseSelect(course); // Still notify parent for list selection
+            console.log('[MapComponent] Setting selectedInfoWindowCourse:', course);
+            setSelectedInfoWindowCourse(course); // Set this marker for persistent InfoWindow
           });
 
           return marker;
@@ -251,11 +249,12 @@ return;
       // Just update marker icons for selected state changes
       markersRef.current.forEach((marker, index) => {
         if (courses[index]) {
+          // Update icon based on list selection (selectedCourseId)
           marker.content = createMarkerIcon(courses[index], courses[index].id === selectedCourseId).element;
         }
       });
     }
-  }, [courses, selectedCourseId, onCourseSelect, isLoaded, createMarkerIcon]);
+  }, [courses, selectedCourseId, onCourseSelect, isLoaded, createMarkerIcon, selectedInfoWindowCourse]);
 
   const onMapLoad = useCallback((map: google.maps.Map): void => {
     console.debug("onMapLoad: Map instance loaded.");
@@ -330,7 +329,7 @@ return;
 return;
 }
     updateVisibleMarkers();
-  }, [courses, updateVisibleMarkers, isLoaded, loading]);
+  }, [courses, selectedCourseId, updateVisibleMarkers, isLoaded, loading]);
 
   const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
     if (!place.geometry || !mapRef.current) {
@@ -426,6 +425,10 @@ return;
         }}
         onBoundsChanged={handleBoundsChanged}
         options={mapOptions}
+        onClick={() => {
+           console.log('[MapComponent] Map clicked, closing InfoWindow.');
+           setSelectedInfoWindowCourse(null);
+        }}
       >
         {mapLoaded && !userLocation && showLocationPrompt && (
           <LocationPrompt
@@ -435,6 +438,52 @@ return;
         )}
 
         {isLoading && <LoadingIndicator progress={progress} />}
+
+        {/* Persistent InfoWindow - Simplified conditional rendering */}
+        {selectedInfoWindowCourse && isValidCoordinate(selectedInfoWindowCourse.location_coordinates_latitude, selectedInfoWindowCourse.location_coordinates_longitude) && (
+          <InfoWindow
+            position={{
+              // No ! needed, type guaranteed by outer check
+              lat: selectedInfoWindowCourse.location_coordinates_latitude,
+              lng: selectedInfoWindowCourse.location_coordinates_longitude,
+            }}
+            onCloseClick={() => {
+              console.log('[MapComponent] InfoWindow close clicked.');
+              setSelectedInfoWindowCourse(null);
+            }}
+            options={{
+              pixelOffset: new google.maps.Size(0, -35), 
+              disableAutoPan: true, 
+            }}
+          >
+            {/* No inner null check needed now */}
+            <div className="p-1 font-sans text-sm">
+              <h3 className="text-base font-semibold mb-1 text-gray-800">
+                {selectedInfoWindowCourse.courseName}
+              </h3>
+              {(selectedInfoWindowCourse.location_city || selectedInfoWindowCourse.location_state) && (
+                <p className="mb-1 text-gray-600">
+                  {selectedInfoWindowCourse.location_city}{selectedInfoWindowCourse.location_city && selectedInfoWindowCourse.location_state ? ', ' : ''}{selectedInfoWindowCourse.location_state}
+                </p>
+              )}
+              <div className="flex items-center text-xs mb-2 text-gray-600">
+                <Star className="w-3.5 h-3.5 mr-1 fill-amber-400 text-amber-500" />
+                <span>
+                  {typeof selectedInfoWindowCourse.walkabilityRating_overall === 'number' ?
+                    `${selectedInfoWindowCourse.walkabilityRating_overall.toFixed(1)}/5 Walkability` :
+                    'Walkability: Not rated yet'}
+                </span>
+              </div>
+              <Link
+                href={`/courses/${selectedInfoWindowCourse.id}`}
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                View Details &rarr;
+              </Link>
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </div>
   );
@@ -514,17 +563,5 @@ const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {
       }
     }
   });
-};
-
-const createInfoWindowContent = (course: GolfCourse): string => {
-  return `
-    <div style="padding: 8px; max-width: 200px;">
-      <h3 style="font-weight: 600; margin-bottom: 4px;">${course.courseName}</h3>
-      <p style="margin: 4px 0;">${course.location_city}, ${course.location_state}</p>
-      <p style="margin: 4px 0;">Walkability: ${course.walkabilityRating_overall ? 
-        course.walkabilityRating_overall + '/5' : 
-        'Not rated yet'}</p>
-    </div>
-  `;
 };
 
