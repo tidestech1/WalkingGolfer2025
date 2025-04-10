@@ -24,11 +24,20 @@ export default function MapFooter(): JSX.Element {
           <Footer /> {/* Render the actual standard footer content here */}
         </div>
 
-        {/* Mini Footer Bar */}
-        <div className="h-8 min-h-[32px] flex items-center justify-end px-4 text-xs text-white bg-[#0A3357]">
+        {/* Mini Footer Bar - Added 'relative' */}
+        <div className="relative h-8 min-h-[32px] flex items-center justify-end px-4 text-xs text-white bg-[#0A3357]">
+          
+          {/* Centered Partnership Text (only when collapsed) - Added text-gray-300 */}
+          {!isExpanded && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-300">
+              In partnership with Stewart Golf
+            </div>
+          )}
+
+          {/* Expand/Collapse Button */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center space-x-1 hover:text-[#00FFFF]"
+            className="flex items-center space-x-1 hover:text-[#00FFFF] relative z-10" // Added relative z-10 to ensure button is clickable over text
             aria-label={isExpanded ? 'Collapse footer' : 'Expand footer'}
           >
             <span>{isExpanded ? 'Less' : 'More'}</span>

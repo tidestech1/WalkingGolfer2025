@@ -42,12 +42,19 @@ export default function MiniHeader(): JSX.Element {
 
           {/* Right section - Actions */}
           <div className="flex items-center space-x-4">
-            <Link 
+            <Link
               href="/rate-course"
-              className="flex items-center bg-[#00FFFF] hover:bg-[#00CCCC] text-[#0A3357] rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-150"
+              className="bg-white rounded-md px-2 py-1 flex items-center gap-0.5 hover:bg-[#00FFFF] transition-colors"
             >
-              <Star className="w-3 h-3 mr-1" />
-              <span>Rate</span>
+              <span className="font-medium text-[#0A3357] text-xs">RATE</span>
+              <div className="flex">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-2.5 h-2.5 fill-[#FF9A00] text-[#FF9A00]"
+                  />
+                ))}
+              </div>
             </Link>
             
             {/* Login/Profile for desktop */}
