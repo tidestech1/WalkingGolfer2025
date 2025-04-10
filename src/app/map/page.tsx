@@ -45,8 +45,9 @@ export default function MapPage(): JSX.Element {
   const [filteredCourses, setFilteredCourses] = useState<GolfCourse[]>([]);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [filters, setFilters] = useState<CourseFilters>(DEFAULT_FILTERS);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [activeMobileView, setActiveMobileView] = useState<'map' | 'list'>('map');
 
   const loadCourses = useCallback(async (bounds?: MapBounds) => {
     if (!isFirebaseAvailable() || !db) {
@@ -174,6 +175,17 @@ export default function MapPage(): JSX.Element {
     };
   }, [loadCourses, debouncedLoadCourses]);
 
+  // Handle view changes from BottomNav
+  const handleViewChange = useCallback((view: 'map' | 'list' | 'filters') => {
+    if (view === 'filters') {
+      setFilterSheetOpen(true);
+      // Keep the underlying map/list view state as is
+    } else {
+      setActiveMobileView(view);
+      setFilterSheetOpen(false); // Close filter sheet when switching main views
+    }
+  }, []);
+
   if (error) {
     return <ErrorMessage message={error} />;
   }
@@ -185,7 +197,8 @@ export default function MapPage(): JSX.Element {
         {/* Map View */}
         <div className={cn(
           'fixed inset-x-0 top-10 bottom-24 transition-transform duration-300 transform',
-          sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          // Corrected logic: Show map when activeMobileView is 'map'
+          activeMobileView === 'map' ? 'translate-x-0' : 'translate-x-full' 
         )}>
           <MapComponent
             courses={filteredCourses}
@@ -199,7 +212,8 @@ export default function MapPage(): JSX.Element {
         {/* List View */}
         <div className={cn(
           'fixed inset-x-0 top-10 bottom-24 bg-white transition-transform duration-300 transform',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+           // Show list when activeMobileView is 'list'
+           activeMobileView === 'list' ? 'translate-x-0' : '-translate-x-full'
         )}>
           <div className="h-full">
             <Sidebar
@@ -210,7 +224,9 @@ export default function MapPage(): JSX.Element {
               selectedCourseId={selectedCourseId || null}
               totalCourses={courses.length}
               listOnly={true}
-              onClose={() => setSidebarOpen(false)}
+               // The sidebar doesn't strictly need an onClose for this mobile pattern
+               // We control visibility via the parent's activeMobileView state
+              onClose={() => {}} // Provide a no-op or remove if not required by Sidebar props
             />
           </div>
         </div>
@@ -221,19 +237,14 @@ export default function MapPage(): JSX.Element {
           onClose={() => setFilterSheetOpen(false)}
           filters={filters}
           onFilterChange={handleFilterChange}
-          allCourses={filteredCourses}
+          allCourses={filteredCourses} // Pass filtered courses, or all courses if filters should apply to the full set
         />
 
-        {/* Bottom Navigation - Positioning handled internally */}
+        {/* Bottom Navigation */}
         <BottomNav
-          activeView={sidebarOpen ? 'list' : 'map'}
-          onViewChange={(view) => {
-            if (view === 'map') {
-              setSidebarOpen(false);
-            } else {
-              setSidebarOpen(true);
-            }
-          }}
+          // Pass the active view state and the handler
+          activeView={filterSheetOpen ? 'filters' : activeMobileView}
+          onViewChange={handleViewChange}
           totalCourses={filteredCourses.length}
         />
       </div>

@@ -126,7 +126,7 @@ export function FilterBottomSheet({
       <div className="flex flex-col" style={{ height: 'calc(100vh - 60px)'}}>
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-4 pt-2 pb-4 space-y-6">
+          <div className="px-4 pt-2 pb-2 space-y-6">
             {/* Header with filter count and reset */}
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
@@ -353,8 +353,8 @@ export function FilterBottomSheet({
         </div>
 
         {/* Fixed bottom section */}
-        <div className="flex-shrink-0 border-t bg-white px-4 py-4">
-          <div className="text-sm text-gray-600 text-center mb-3">
+        <div className="flex-shrink-0 border-t bg-white px-4 pt-2 pb-24">
+          <div className="text-sm text-gray-600 text-center mb-2">
             {matchingCoursesCount} course{matchingCoursesCount !== 1 ? 's' : ''} match filters
           </div>
           
