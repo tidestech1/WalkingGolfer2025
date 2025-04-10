@@ -40,13 +40,13 @@ const DEFAULT_FILTERS: CourseFilters = {
 };
 
 export default function MapPage(): JSX.Element {
-  const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedCourseIndex, setSelectedCourseIndex] = useState<number | null>(null);
   
   const [filteredCourses, setFilteredCourses] = useState<GolfCourse[]>([]);
+  const [coursesInBoundsCount, setCoursesInBoundsCount] = useState<number>(0);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [filters, setFilters] = useState<CourseFilters>(DEFAULT_FILTERS);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,11 +68,19 @@ export default function MapPage(): JSX.Element {
   // Define mapRef here in MapPage
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const loadCourses = useCallback(async (bounds?: MapBounds) => {
+  const loadCourses = useCallback(async (bounds?: MapBounds, currentFilters?: CourseFilters) => {
     if (!isFirebaseAvailable() || !db) {
       console.error('Firebase not initialized or DB is null');
       setError('Unable to connect to the course database');
       return;
+    }
+
+    // Don't fetch if bounds are missing (unless we add filter-only logic later)
+    if (!bounds) {
+      console.debug("loadCourses skipped: no bounds provided.")
+      // Optionally clear courses if bounds become null?
+      // setFilteredCourses([]); 
+      return; 
     }
 
     setLoading(true);
@@ -82,105 +90,115 @@ export default function MapPage(): JSX.Element {
       const coursesRef = collection(db, 'courses');
       let q;
 
-      if (bounds) {
-        q = query(
-          coursesRef,
-          where('location_coordinates_latitude', '>=', bounds.south),
-          where('location_coordinates_latitude', '<=', bounds.north),
-          orderBy('location_coordinates_latitude')
-        );
-      } else {
-        q = query(
-          coursesRef,
-          orderBy('walkabilityRating_overall', 'desc'),
-          limit(COURSES_PER_PAGE)
-        );
-      }
+      // === Query based on Bounds (Filter logic to be added later) ===
+      // Basic bounds query
+      q = query(
+        coursesRef,
+        where('location_coordinates_latitude', '>=', bounds.south),
+        where('location_coordinates_latitude', '<=', bounds.north),
+        orderBy('location_coordinates_latitude')
+        // Add orderBy for longitude if needed for more complex queries
+        // Potentially add limit here if needed for performance (e.g., limit(100))
+      );
+      // TODO: Add filter integration (where clauses for rating, type, category, facilities etc.)
 
       const snapshot = await getDocs(q);
-      const loadedCourses = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as GolfCourse))
+      let fetchedCourses = snapshot.docs // Rename to fetchedCourses
+        .map(doc => ({ id: doc.id, ...doc.data() } as GolfCourse))
+        // Secondary filter for longitude needed because Firestore can only range filter on one field
         .filter((course: GolfCourse) =>
-          !bounds || (
             course.location_coordinates_longitude >= bounds.west &&
             course.location_coordinates_longitude <= bounds.east
-          )
         );
 
-      console.log(`Loaded ${loadedCourses.length} courses`);
-      setCourses(loadedCourses);
-      setFilteredCourses(loadedCourses);
+      // Store count *before* client-side filters
+      const countBeforeFiltering = fetchedCourses.length;
+      setCoursesInBoundsCount(countBeforeFiltering);
+      console.log(`Found ${countBeforeFiltering} courses within bounds before client filters.`);
+
+      // === Apply Client-Side Filtering ===
+      if (currentFilters) {
+        console.log("Applying client-side filters:", currentFilters);
+        fetchedCourses = fetchedCourses.filter((course: GolfCourse) => {
+          // Walkability
+          if (currentFilters.walkabilityRating_overall_min && 
+              (course.walkabilityRating_overall || 0) < currentFilters.walkabilityRating_overall_min) {
+            return false;
+          }
+          // Course Types (using 'in' requires separate queries or client-side filter)
+          if (currentFilters.course_types && 
+              currentFilters.course_types.length > 0 && 
+              !currentFilters.course_types.includes(course.course_type)) {
+            return false;
+          }
+          // Course Categories
+          if (currentFilters.course_categories && 
+              currentFilters.course_categories.length > 0 && 
+              !currentFilters.course_categories.includes(course.course_category)) {
+            return false;
+          }
+          // Facilities
+          if (currentFilters.facilities_pushCarts && 
+              !course.facilities_pushCarts) {
+            return false;
+          }
+          // Add other filters (price, search query) here if needed
+          if (currentFilters.searchQuery) { // Example: Client-side search filter
+             const lowerSearch = currentFilters.searchQuery.toLowerCase();
+             const nameMatch = course.courseName?.toLowerCase().includes(lowerSearch);
+             const cityMatch = course.location_city?.toLowerCase().includes(lowerSearch);
+             // Add state match etc.
+             if (!nameMatch && !cityMatch) return false;
+          }
+
+          return true; // Course passes all filters
+        });
+        console.log(`Courses after client-side filtering: ${fetchedCourses.length}`);
+      } else {
+        console.log("No client-side filters to apply.");
+      }
+      // === End Client-Side Filtering ===
+
+      console.log(`Setting filteredCourses with ${fetchedCourses.length} courses.`);
+      // Set filteredCourses with the final list
+      setFilteredCourses(fetchedCourses);
+
     } catch (err) {
       console.error('Error loading courses:', err);
       setError('Error loading courses. Please try again.');
+      setFilteredCourses([]); // Clear on error
+      setCoursesInBoundsCount(0); // Clear count on error
     } finally {
       setLoading(false);
     }
   }, []);
 
   const debouncedLoadCourses = useMemo(
-    () => debounce((bounds: MapBounds) => {
-      loadCourses(bounds);
+    () => debounce((bounds: MapBounds, currentFilters?: CourseFilters) => {
+      loadCourses(bounds, currentFilters);
     }, 500),
     [loadCourses]
   );
 
   const handleBoundsChanged = useCallback((bounds: MapBounds) => {
     setMapBounds(bounds);
-    debouncedLoadCourses(bounds);
-  }, [debouncedLoadCourses]);
+    // Trigger fetch with new bounds and current filters
+    debouncedLoadCourses(bounds, filters); 
+  }, [debouncedLoadCourses, filters]);
 
   useEffect(() => {
-    let result = courses;
-
-    if (filters.searchQuery) {
-      const lowerSearchTerm = filters.searchQuery.toLowerCase();
-      result = result.filter((course: GolfCourse) =>
-        course.courseName.toLowerCase().includes(lowerSearchTerm) ||
-        course.location_city.toLowerCase().includes(lowerSearchTerm) ||
-        course.location_state.toLowerCase().includes(lowerSearchTerm)
-      );
-    }
-
     if (mapBounds) {
-      result = result.filter((course: GolfCourse) => {
-        const { location_coordinates_latitude: lat, location_coordinates_longitude: lng } = course;
-        return (
-          lat >= mapBounds.south &&
-          lat <= mapBounds.north &&
-          lng >= mapBounds.west &&
-          lng <= mapBounds.east
-        );
-      });
+        console.debug("mapBounds changed, triggering loadCourses:", mapBounds);
+        // Directly call loadCourses or use debounced version?
+        // Using debounced version seems safer if bounds change rapidly initially
+        debouncedLoadCourses(mapBounds, filters);
+    } else {
+        // Optional: Clear courses if bounds become null (e.g., initial state)
+        // setFilteredCourses([]);
     }
+  // Watch mapBounds and filters
+  }, [mapBounds, filters, debouncedLoadCourses]);
 
-    result = result.filter((course: GolfCourse) => {
-      if (filters.walkabilityRating_overall_min && (course.walkabilityRating_overall || 0) < filters.walkabilityRating_overall_min) {
-        return false;
-      }
-      if (filters.course_types && filters.course_types.length > 0 && !filters.course_types.includes(course.course_type)) {
-        return false;
-      }
-      if (filters.course_categories && filters.course_categories.length > 0 && !filters.course_categories.includes(course.course_category)) {
-        return false;
-      }
-      if (filters.facilities_pushCarts && !course.facilities_pushCarts) {
-        return false;
-      }
-      return true;
-    });
-
-    setFilteredCourses(result);
-    setSelectedCourseIndex(null);
-    if (selectedCourseId && !result.some(c => c.id === selectedCourseId)) {
-      setSelectedCourseId(null);
-    }
-  }, [courses, filters, mapBounds, selectedCourseId]);
-
-  // handleCourseSelect now uses component state mapRef
   const handleCourseSelect = useCallback((course: GolfCourse) => {
     setSelectedCourseId(course.id);
     const index = filteredCourses.findIndex(c => c.id === course.id);
@@ -194,13 +212,6 @@ export default function MapPage(): JSX.Element {
       ...newFilters
     }));
   }, []);
-
-  useEffect(() => {
-    loadCourses();
-    return () => {
-      debouncedLoadCourses.cancel();
-    };
-  }, [loadCourses, debouncedLoadCourses]);
 
   // Handle view changes from BottomNav
   const handleViewChange = useCallback((view: 'map' | 'list' | 'filters') => {
@@ -301,10 +312,9 @@ export default function MapPage(): JSX.Element {
               onFilterChange={handleFilterChange}
               onCourseSelect={handleCourseSelect}
               selectedCourseId={selectedCourseId || null}
-              totalCourses={courses.length}
-               // The sidebar doesn't strictly need an onClose for this mobile pattern
-               // We control visibility via the parent's activeMobileView state
-              onClose={() => {}} // Provide a no-op or remove if not required by Sidebar props
+              totalInBounds={coursesInBoundsCount}
+              selectedCourseIndex={selectedCourseIndex}
+              onClose={() => {}}
             />
           </div>
         </div>
@@ -315,12 +325,11 @@ export default function MapPage(): JSX.Element {
           onClose={() => setFilterSheetOpen(false)}
           filters={filters}
           onFilterChange={handleFilterChange}
-          allCourses={filteredCourses} // Pass filtered courses, or all courses if filters should apply to the full set
+          allCourses={filteredCourses}
         />
 
         {/* Bottom Navigation */}
         <BottomNav
-          // Pass the active view state and the handler
           activeView={filterSheetOpen ? 'filters' : activeMobileView}
           onViewChange={handleViewChange}
           totalCourses={filteredCourses.length}
@@ -339,8 +348,7 @@ export default function MapPage(): JSX.Element {
             filters={filters}
             onFilterChange={handleFilterChange}
             onCourseSelect={handleCourseSelect}
-            selectedCourseId={selectedCourseId || null}
-            totalCourses={courses.length}
+            selectedCourseId={null}
             filtersOnly={true}
           />
         </div>
@@ -353,7 +361,7 @@ export default function MapPage(): JSX.Element {
             onFilterChange={handleFilterChange}
             onCourseSelect={handleCourseSelect}
             selectedCourseId={selectedCourseId || null}
-            totalCourses={courses.length}
+            totalInBounds={coursesInBoundsCount}
             selectedCourseIndex={selectedCourseIndex}
           />
         </div>
