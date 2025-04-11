@@ -33,7 +33,7 @@ export default function TerrainRating({
   const sizes = sizeMaps[size];
 
   return (
-    <div className="flex flex-col items-center sm:items-start"> {/* Center items */}
+    <div>
       {/* Container for the mountain icons */}
       <div className="flex gap-1 sm:gap-2 items-end"> {/* Adjust gap */}
         {[1, 2, 3, 4, 5].map((value) => {
@@ -67,13 +67,6 @@ export default function TerrainRating({
           );
         })}
       </div>
-      {/* Display description if available and a rating/hover is active */}
-      {descriptions && (hovered || rating) > 0 && (
-        <p className="mt-2 text-sm text-gray-600 text-center sm:text-left min-h-[1.25rem]"> {/* Add min-height */}
-          {/* Show description for hovered state first, fallback to selected rating */}
-          {descriptions[hovered] || descriptions[rating] || ''}
-        </p>
-      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth'; // Adjust import path if needed
 import { getCourseById } from '@/lib/firebase/courseUtils'; // Adjust import path if needed
 import { GolfCourse } from '@/types/course';
@@ -10,9 +10,14 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 // Removed CourseSearch import
 import RatingForm from './RatingForm';
 
-// Accept params prop
-export default function ReviewCoursePage({ params }: { params: { id: string } }) {
-  const { id: courseId } = params; // Destructure and rename id
+// Remove params prop from function signature
+export default function ReviewCoursePage() { 
+  // Get params using the hook
+  const params = useParams(); 
+  // Extract courseId, ensure it's a string (useParams can return string | string[])
+  // Use bracket notation to satisfy linter rule
+  const courseId = typeof params['id'] === 'string' ? params['id'] : undefined;
+
   const [course, setCourse] = useState<GolfCourse | null>(null);
   const [isLoadingCourse, setIsLoadingCourse] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +26,7 @@ export default function ReviewCoursePage({ params }: { params: { id: string } })
 
   useEffect(() => {
     if (!courseId) {
-      setError('No course ID provided.');
+      setError('No course ID provided or invalid ID format.'); // Updated error message
       setIsLoadingCourse(false);
       return;
     }
@@ -100,20 +105,12 @@ export default function ReviewCoursePage({ params }: { params: { id: string } })
         </div>
 
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="space-y-6">
-            {/* Removed the old Course Info Section with CourseSearch */}
-            
-            {/* Display minimal course info for context (optional) */}
-            <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-[#0A3357]">Confirming Course</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {course.location_address1}, {course.location_city}, {course.location_state}
-                </p>
-            </div>
-
-            {/* Rating Form - Pass courseId and potentially user */}
-            <RatingForm course={course} user={user} /> 
-          </div>
+          {/* REMOVED wrapper div and its p-6 */}
+          {/* REMOVED Confirming Course div */}
+          
+          {/* Rating Form - Pass courseId and potentially user */}
+          {/* Pass necessary course details for the confirming section */}
+          <RatingForm course={course} user={user} /> 
         </div>
 
         {/* Rating Guidelines (can remain as is) */}
@@ -123,27 +120,9 @@ export default function ReviewCoursePage({ params }: { params: { id: string } })
           </h2>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-[#0A3357]">Walkability (1-5 stars)</h3>
+              <h3 className="font-medium text-[#0A3357]">OverallWalkability (1-5 stars)</h3>
               <p className="text-gray-600">
                 Consider terrain, distances between holes, path conditions, and overall walking experience.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-[#0A3357]">Caddie Program</h3>
-              <p className="text-gray-600">
-                Indicate if caddies are available and any relevant details about the program.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-[#0A3357]">Push Cart Policy</h3>
-              <p className="text-gray-600">
-                Note if push carts are allowed and any restrictions that may apply.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-[#0A3357]">Walking Restrictions</h3>
-              <p className="text-gray-600">
-                Specify any time-based restrictions or seasonal limitations on walking.
               </p>
             </div>
           </div>

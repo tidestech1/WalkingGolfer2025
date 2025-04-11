@@ -65,7 +65,7 @@ export default function Navbar(): JSX.Element {
             <div className="flex items-center space-x-2">
               {/* Mobile Rate a Course Button */}
               <Link
-                href="/rate-course"
+                href="/add-review"
                 className="bg-white rounded-lg px-3 py-1.5 flex items-center gap-1 hover:bg-[#00FFFF] transition-colors"
               >
                 <span className="font-medium text-[#0A3357] text-sm">RATE</span>
@@ -102,7 +102,7 @@ export default function Navbar(): JSX.Element {
         {/* Top row with Rate a Course - Desktop */}
         <div className="hidden md:flex justify-end pt-4 pb-2">
           <Link
-            href="/rate-course"
+            href="/add-review"
             className="bg-white rounded-lg px-4 py-2 flex items-center gap-2 hover:bg-[#00FFFF] transition-colors"
           >
             <span className="font-medium text-[#0A3357]">RATE A COURSE</span>

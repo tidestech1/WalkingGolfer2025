@@ -59,13 +59,13 @@ const ratingFormSchema = z.object({
   accessibilityRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
   lengthRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
   costRating: z.number().min(1, { message: "Value rating is required." }).max(5),
-  comment: z.string().min(10, { message: "Review comment must be at least 10 characters." }),
-  walkingDate: z.string().nonempty({ message: "Please select the date you played." }), // Validate non-empty string first
-  pros: z.array(z.string()).optional(), // Optional, validated as trimmed later
-  cons: z.array(z.string()).optional(), // Optional, validated as trimmed later
+  comment: z.string().optional(), // Made optional
+  walkingDate: z.string().optional(), // Made optional
+  pros: z.array(z.string()).optional(),
+  cons: z.array(z.string()).optional(),
   usedGolfCart: z.boolean(),
   usedPushCart: z.boolean(),
-  cartExperience: z.string().optional(),
+  cartExperience: z.string().optional(), // Keep optional in schema if API might use it later
 });
 type RatingFormData = z.infer<typeof ratingFormSchema>;
 
@@ -182,7 +182,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     // Extract raw data from state and form elements
     const commentElement = e.currentTarget.elements.namedItem('review') as HTMLTextAreaElement;
     const walkingDateElement = e.currentTarget.elements.namedItem('date-played') as HTMLInputElement;
-    const cartExperienceElement = e.currentTarget.elements.namedItem('cart-experience') as HTMLTextAreaElement;
 
     const rawFormData = {
         walkabilityRating: calculateWeightedWalkabilityRating({ terrain: terrainRating, distance: distanceRating, cost: costRating }) ?? 0,
@@ -190,15 +189,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         overallRating: overallRating,
         hillinessRating: terrainRating,
         accessibilityRating: distanceRating,
-        lengthRating: distanceRating, // Map existing state to new schema fields (verify this mapping)
+        lengthRating: distanceRating, 
         costRating: costRating,
-        comment: commentElement?.value || '',
-        walkingDate: walkingDateElement?.value || '',
-        pros: pros.filter(pro => pro.trim()), // Pre-filter for validation check? Maybe not necessary.
+        comment: commentElement?.value || undefined, // Use undefined for optional empty string
+        walkingDate: walkingDateElement?.value || undefined, // Use undefined for optional empty string
+        pros: pros.filter(pro => pro.trim()),
         cons: cons.filter(con => con.trim()),
         usedGolfCart: facilities.golfCarts,
         usedPushCart: facilities.pushCarts,
-        cartExperience: cartExperienceElement?.value || undefined,
+        cartExperience: undefined, // Set explicitly to undefined as field is removed
     };
 
     // Validate the raw data
@@ -213,7 +212,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
             }
         });
         setFormErrors(formattedErrors);
-        toast.error("Please fix the errors highlighted in the form."); // Use toast for general validation error
+        toast.error("Please fix the errors highlighted in the form.");
         return;
     }
 
@@ -221,12 +220,16 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     setIsSubmitting(true); 
     const validatedData = validationResult.data; // Use validated data
 
+    // Explicitly handle date conversion to satisfy TypeScript
+    const walkingDateISO = validatedData.walkingDate 
+        ? new Date(validatedData.walkingDate).toISOString() 
+        : undefined;
+
     const coreReviewData = {
         courseId: course.id,
         ...validatedData,
-        // Convert walkingDate string to ISO string for API AFTER validation
-        walkingDate: new Date(validatedData.walkingDate).toISOString(), 
-        // Ensure pros/cons are properly filtered if not done before validation
+        walkingDate: walkingDateISO, // Use the converted date or undefined
+        // Ensure pros/cons are properly filtered 
         pros: pros.filter(pro => pro.trim()),
         cons: cons.filter(con => con.trim()),
     };
@@ -435,113 +438,16 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-8">
-      {/* Section 1: Ratings */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
-          <h2 className="text-xl font-semibold text-[#0A3357]">Your Ratings</h2>
-          
-          {/* Overall Rating */}
-          <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Overall Experience *</label>
-              <StarRating
-                rating={overallRating}
-                hovered={hoveredOverallRating}
-                setRating={setOverallRating}
-                setHovered={setHoveredOverallRating}
-                size="lg"
-                disabled={isWalkable === false}
-                descriptions={{
-                  1: "Very difficult to walk",
-                  2: "Challenging to walk",
-                  3: "Moderately walkable",
-                  4: "Good walkability",
-                  5: "Excellent walkability"
-                }}
-              />
-              {formErrors['overallRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['overallRating']}</p>}
-          </div>
-
-          {/* Course Condition Rating */}
-          <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Course Condition *</label>
-              <ConditionsRating
-                rating={courseConditionRating}
-                hovered={hoveredConditionRating}
-                setRating={setCourseConditionRating}
-                setHovered={setHoveredConditionRating}
-                size="lg"
-                descriptions={{
-                  1: "Poor conditions",
-                  2: "Below average conditions",
-                  3: "Average conditions",
-                  4: "Good conditions",
-                  5: "Excellent conditions"
-                }}
-              />
-              {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
-          </div>
-
-          {/* Terrain Rating */}
-           <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Terrain / Hilliness *</label>
-              <TerrainRating
-                rating={terrainRating}
-                hovered={hoveredTerrainRating}
-                setRating={setTerrainRating}
-                setHovered={setHoveredTerrainRating}
-                size="lg"
-                descriptions={{
-                  1: "Very flat and easy terrain",
-                  2: "Gentle slopes, mostly flat",
-                  3: "Moderate hills and terrain",
-                  4: "Hilly with significant elevation changes",
-                  5: "Very hilly and challenging terrain"
-                }}
-              />
-              {formErrors['hillinessRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['hillinessRating']}</p>}
-           </div>
-
-          {/* Distance Rating */}
-           <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Distance / Accessibility *</label>
-               <DistanceRating
-                 rating={distanceRating}
-                 hovered={hoveredDistanceRating}
-                 setRating={setDistanceRating}
-                 setHovered={setHoveredDistanceRating}
-                 size="lg"
-                 descriptions={{
-                   1: "Very compact layout",
-                   2: "Relatively compact",
-                   3: "Average distances",
-                   4: "Spread out layout",
-                   5: "Very spread out"
-                 }}
-               />
-               {formErrors['accessibilityRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['accessibilityRating']}</p>}
-           </div>
-
-          {/* Cost/Value Rating */}
-           <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Value for Money *</label>
-               <CostRating
-                 rating={costRating}
-                 hovered={hoveredCostRating}
-                 setRating={setCostRating}
-                 setHovered={setHoveredCostRating}
-                 size="lg"
-                 descriptions={{
-                   1: "Budget-friendly pricing",
-                   2: "Moderate pricing",
-                   3: "Standard pricing",
-                   4: "Premium pricing",
-                   5: "Ultra-premium pricing"
-                 }}
-               />
-               {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
-           </div>
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* ADDED Confirming Course Section */}
+      <div className="bg-white p-6 rounded-lg shadow-sm space-y-2">
+          <h2 className="text-xl font-semibold text-[#0A3357]">Confirming Course</h2>
+          <p className="text-sm text-gray-600">
+            {/* Access course prop directly */}
+            {course.location_address1}, {course.location_city}, {course.location_state}
+          </p>
       </div>
-      
+
       {/* Section 2: Overall Walkability Experience */}
       <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
         <h2 className="text-xl font-semibold text-[#0A3357]">Overall Walkability</h2>
@@ -628,9 +534,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 5: "Very hilly and challenging terrain"
               }}
             />
-            {!terrainRating && !hoveredTerrainRating && (
-              <p className="mt-1 text-sm text-gray-500">Small mountains = flatter terrain</p>
-            )}
+            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+              {(hoveredTerrainRating || terrainRating) > 0
+                ? (
+                    {1: "Very flat and easy terrain", 2: "Gentle slopes, mostly flat", 3: "Moderate hills and terrain", 4: "Hilly with significant elevation changes", 5: "Very hilly and challenging terrain"}
+                    [hoveredTerrainRating || terrainRating] || ''
+                  )
+                : 'Small mountains = flatter terrain'
+              }
+            </p>
           </div>
 
           <div>
@@ -651,9 +563,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 5: "Very spread out"
               }}
             />
-            {!distanceRating && !hoveredDistanceRating && (
-              <p className="mt-1 text-sm text-gray-500">Small footprints = short distance</p>
-            )}
+            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+              {(hoveredDistanceRating || distanceRating) > 0
+                ? (
+                    {1: "Very compact layout", 2: "Relatively compact", 3: "Average distances", 4: "Spread out layout", 5: "Very spread out"}
+                    [hoveredDistanceRating || distanceRating] || ''
+                  )
+                : 'Small footprints = short distance'
+              }
+            </p>
           </div>
 
           <div>
@@ -674,9 +592,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 5: "Ultra-premium pricing"
               }}
             />
-            {!costRating && !hoveredCostRating && (
-              <p className="mt-1 text-sm text-gray-500">Larger $ icons mean higher pricing</p>
-            )}
+            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+              {(hoveredCostRating || costRating) > 0
+                ? (
+                    {1: "Budget-friendly pricing", 2: "Moderate pricing", 3: "Standard pricing", 4: "Premium pricing", 5: "Ultra-premium pricing"}
+                    [hoveredCostRating || costRating] || ''
+                  )
+                : 'Larger $ icons mean higher pricing'
+              }
+            </p>
           </div>
 
           <div>
@@ -697,9 +621,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 5: "Excellent conditions"
               }}
             />
-            {!courseConditionRating && !hoveredConditionRating && (
-              <p className="mt-1 text-sm text-gray-500">Larger icons mean better maintained</p>
-            )}
+            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+              {(hoveredConditionRating || courseConditionRating) > 0
+                ? (
+                    {1: "Poor conditions", 2: "Below average conditions", 3: "Average conditions", 4: "Good conditions", 5: "Excellent conditions"}
+                    [hoveredConditionRating || courseConditionRating] || ''
+                  )
+                : 'Larger icons mean better maintained'
+              }
+            </p>
           </div>
         </div>
       </div>
@@ -751,7 +681,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
       {/* Section 5: Photos & Media */}
       {user && (
-        <div className="space-y-4">
+        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Add Photos (Optional)</h3>
           <p className="text-sm text-gray-500">Share photos of the course conditions, views, or specific walking challenges (max 8 images).</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -798,7 +728,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         {/* Pros */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            What did you like about walking this course? *
+            What did you like about walking this course?
           </label>
           {pros.map((pro, index) => (
             <div key={index} className="flex gap-2 mb-2">
@@ -836,7 +766,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         {/* Cons */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            What were the challenges of walking this course? *
+            What were the challenges of walking this course?
           </label>
           {cons.map((con, index) => (
             <div key={index} className="flex gap-2 mb-2">
@@ -878,13 +808,12 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         
         <div>
           <label htmlFor="review" className="block text-sm font-medium text-gray-700">
-            Detailed Review *
+            Your Review
           </label>
           <textarea
             id="review"
             name="review"
             rows={5}
-            required
             className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${formErrors['comment'] ? 'border-red-500' : ''}`}
             placeholder="Share your detailed experience walking this course. What would other walking golfers want to know?"
           />
@@ -892,52 +821,20 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         </div>
       </div>
 
-      {/* Example Date Played Input (ensure it exists in your JSX) */}
-      <div>
+      {/* Date Played Input */}
+      <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
          <label htmlFor="date-played" className="block text-sm font-medium text-gray-700 mb-1">
-            Date Played *
+            Date Played
          </label>
          <input
             type="date"
             id="date-played"
             name="date-played"
-            required
             max={new Date().toISOString().split('T')[0]} // Prevent future dates
             className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formErrors['walkingDate'] ? 'border-red-500' : ''}`}
          />
          {formErrors['walkingDate'] && <p className="text-xs text-red-500 mt-1">{formErrors['walkingDate']}</p>}
       </div>
-
-      {/* Example Comment Textarea */}
-      <div>
-         <label htmlFor="review" className="block text-sm font-medium text-gray-700 mb-1">
-            Your Review *
-         </label>
-         <textarea
-            id="review"
-            name="review"
-            rows={4}
-            required
-            minLength={10}
-            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formErrors['comment'] ? 'border-red-500' : ''}`}
-            placeholder="Share details about your walking experience..."
-         ></textarea>
-         {formErrors['comment'] && <p className="text-xs text-red-500 mt-1">{formErrors['comment']}</p>}
-      </div>
-      
-      {/* Example Cart Experience Textarea (Optional) */}
-      <div>
-          <label htmlFor="cart-experience" className="block text-sm font-medium text-gray-700 mb-1">
-             Cart Experience (Optional)
-          </label>
-          <textarea
-             id="cart-experience"
-             name="cart-experience"
-             rows={2}
-             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-             placeholder="Did you use a cart? Any notes on push/pull cart friendliness or electric cart paths?"
-          ></textarea>
-       </div>
 
       {/* Submission Button and Error Message */}
       <button 
