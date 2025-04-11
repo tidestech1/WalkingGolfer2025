@@ -30,7 +30,6 @@ const MapComponent = dynamic(
 const DEFAULT_FILTERS: CourseFilters = {
   course_types: [],
   course_categories: [],
-  facilities_pushCarts: false,
   pricing_fee_min: 0,
   pricing_fee_max: 0,
   walkabilityRating_overall_min: 0,
@@ -46,6 +45,7 @@ export default function MapPage(): JSX.Element {
   const [selectedCourseIndex, setSelectedCourseIndex] = useState<number | null>(null);
   
   const [filteredCourses, setFilteredCourses] = useState<GolfCourse[]>([]);
+  const [coursesInBounds, setCoursesInBounds] = useState<GolfCourse[]>([]);
   const [coursesInBoundsCount, setCoursesInBoundsCount] = useState<number>(0);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [filters, setFilters] = useState<CourseFilters>(DEFAULT_FILTERS);
@@ -111,6 +111,9 @@ export default function MapPage(): JSX.Element {
             course.location_coordinates_longitude <= bounds.east
         );
 
+      // Set the state for courses within bounds BEFORE client-side filtering
+      setCoursesInBounds(fetchedCourses);
+
       // Store count *before* client-side filters
       const countBeforeFiltering = fetchedCourses.length;
       setCoursesInBoundsCount(countBeforeFiltering);
@@ -137,12 +140,19 @@ export default function MapPage(): JSX.Element {
               !currentFilters.course_categories.includes(course.course_category)) {
             return false;
           }
-          // Facilities
-          if (currentFilters.facilities_pushCarts && 
-              !course.facilities_pushCarts) {
+          
+          // Price Range Filter
+          if (currentFilters.pricing_fee_min && 
+              course.pricing_fee < currentFilters.pricing_fee_min) {
             return false;
           }
-          // Add other filters (price, search query) here if needed
+          if (currentFilters.pricing_fee_max && 
+              currentFilters.pricing_fee_max > 0 && // Treat 0 as no upper limit
+              course.pricing_fee > currentFilters.pricing_fee_max) {
+            return false;
+          }
+          
+          // Add other filters (search query) here if needed
           if (currentFilters.searchQuery) { // Example: Client-side search filter
              const lowerSearch = currentFilters.searchQuery.toLowerCase();
              const nameMatch = course.courseName?.toLowerCase().includes(lowerSearch);
@@ -325,7 +335,7 @@ export default function MapPage(): JSX.Element {
           onClose={() => setFilterSheetOpen(false)}
           filters={filters}
           onFilterChange={handleFilterChange}
-          allCourses={filteredCourses}
+          allCourses={coursesInBounds}
         />
 
         {/* Bottom Navigation */}

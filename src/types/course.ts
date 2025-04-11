@@ -127,7 +127,6 @@ export interface CourseFilters {
   // Required fields with defaults
   course_types: string[];
   course_categories: string[];
-  facilities_pushCarts: boolean;
   pricing_fee_min: number;
   pricing_fee_max: number;
   walkabilityRating_overall_min: number;
