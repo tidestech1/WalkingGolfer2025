@@ -1,27 +1,9 @@
-import type { CourseReview, CreateReviewInput } from '@/types/review';
+import type { CourseReview, ReviewStatus, DisplayNameType, CreateReviewInput } from '@/types/review';
 
 import { addDocument, getDocuments } from './firebaseUtils';
 import { uploadImage } from './storageUtils';
-
-export async function createReview(data: CreateReviewInput): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Create the review document
-    const reviewData: Omit<CourseReview, 'id'> = {
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    await addDocument('reviews', reviewData as CourseReview);
-    return { success: true };
-  } catch (error) {
-    console.error('Error creating review:', error);
-    return { 
-      success: false, 
-      error: 'Failed to submit review. Please try again.' 
-    };
-  }
-}
+import { query, where, orderBy, collection, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
+import { getFirestoreDB } from './firebaseUtils';
 
 export async function uploadReviewImages(
   courseId: string, 
@@ -33,7 +15,6 @@ export async function uploadReviewImages(
       const path = `reviews/${courseId}/${userId}/${Date.now()}-${file.name}`;
       return uploadImage(file, path);
     });
-
     const urls = await Promise.all(uploadPromises);
     return { urls };
   } catch (error) {
@@ -51,11 +32,56 @@ export async function getUserReviewForCourse(
 ): Promise<CourseReview | null> {
   try {
     const reviews = await getDocuments('reviews');
-    return reviews.find(
+    const foundReview = reviews.find(
       review => review.userId === userId && review.courseId === courseId
-    ) || null;
+    );
+    return foundReview ? (foundReview as CourseReview) : null;
   } catch (error) {
     console.error('Error fetching user review:', error);
     return null;
+  }
+}
+
+/**
+ * Fetches all published reviews for a specific course, ordered by creation date.
+ * 
+ * @param courseId The ID of the course.
+ * @returns Promise<CourseReview[]> An array of published reviews.
+ * @throws Throws an error if Firestore operation fails.
+ */
+export async function getPublishedReviewsForCourse(courseId: string): Promise<CourseReview[]> {
+  try {
+    const db = getFirestoreDB(); 
+    if (!db) {
+      throw new Error('Firestore database is not available.');
+    }
+
+    const reviewsCollection = collection(db, 'reviews');
+    const q = query(
+      reviewsCollection, 
+      where('courseId', '==', courseId),
+      where('status', '==', 'published' as ReviewStatus),
+      orderBy('createdAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const reviews: CourseReview[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const review = {
+        id: doc.id,
+        ...data,
+        createdAt: (data['createdAt'] as Timestamp)?.toDate ? (data['createdAt'] as Timestamp).toDate() : new Date(),
+        updatedAt: (data['updatedAt'] as Timestamp)?.toDate ? (data['updatedAt'] as Timestamp).toDate() : new Date(),
+        walkingDate: (data['walkingDate'] as Timestamp)?.toDate ? (data['walkingDate'] as Timestamp).toDate() : new Date(), 
+      } as CourseReview;
+      reviews.push(review);
+    });
+
+    return reviews;
+
+  } catch (error) {
+    console.error(`Error fetching published reviews for course ${courseId}:`, error);
+    return []; 
   }
 }

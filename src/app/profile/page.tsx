@@ -5,26 +5,35 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { getUserReviews, getUserProfile } from '@/lib/firebase/userUtils'
+import { getUserReviews, getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
-import type { CourseReview } from '@/types/review'
+import type { CourseReview, DisplayNameType } from '@/types/review'
 import type { UserProfile } from '@/types/user'
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import ReviewItem from '../courses/[id]/ReviewItem';
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading: loadingAuth } = useAuth()
   const [reviews, setReviews] = useState<CourseReview[]>([])
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loadingData, setLoadingData] = useState(true)
+  
+  const [displayNameType, setDisplayNameType] = useState<DisplayNameType | '' >('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [initialDisplayNameType, setInitialDisplayNameType] = useState<DisplayNameType | '' >('');
 
   const loadUserData = useCallback(async () => {
     if (!user) {
-      router.push('/login')
-      return
+      return;
     }
-
+    setLoadingData(true);
     try {
-      setLoading(true)
       const [userReviews, userProfile] = await Promise.all([
         getUserReviews(user.uid),
         getUserProfile(user.uid)
@@ -32,127 +41,139 @@ export default function ProfilePage() {
 
       setReviews(userReviews)
       setProfile(userProfile)
+      const currentType = userProfile?.reviewDisplayNameType || 'full';
+      setDisplayNameType(currentType);
+      setInitialDisplayNameType(currentType);
+
     } catch (error) {
       console.error('Error loading user data:', error)
+      toast.error("Failed to load your profile data. Please refresh the page.");
     } finally {
-      setLoading(false)
+      setLoadingData(false)
     }
-  }, [user, router])
+  }, [user])
 
   useEffect(() => {
-    loadUserData()
-  }, [loadUserData])
+    if (!loadingAuth && user) {
+      loadUserData()
+    }
+    if (!loadingAuth && !user) {
+        router.push('/login?returnUrl=/profile');
+    }
+  }, [user, loadingAuth, loadUserData, router])
 
   async function handleSignOut() {
     try {
       await signOut()
+      toast.success("Signed out successfully.")
       router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
+      toast.error("Failed to sign out.");
     }
   }
 
+  const handleSaveSettings = async () => {
+    if (!user || !profile || displayNameType === '' || displayNameType === initialDisplayNameType) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateUserProfile(user.uid, { reviewDisplayNameType: displayNameType });
+      setProfile(prevProfile => prevProfile ? { ...prevProfile, reviewDisplayNameType: displayNameType } : null);
+      setInitialDisplayNameType(displayNameType);
+      toast.success("Preferences saved successfully!");
+    } catch (error) {
+      console.error("Error saving profile settings:", error);
+      toast.error("Failed to save preferences.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loadingAuth || loadingData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+  
   if (!user) {
-return null
-}
+      return null;
+  }
+
+  const hasChanges = displayNameType !== '' && displayNameType !== initialDisplayNameType;
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Profile Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-2">{profile?.displayName || user.displayName}</h1>
+              <h1 className="text-2xl font-bold mb-2">{profile?.displayName || user.displayName || 'Your Profile'}</h1>
               <p className="text-gray-600">{profile?.email || user.email}</p>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              Sign Out
-            </button>
+            <Button onClick={handleSignOut} variant="outline">Sign Out</Button>
           </div>
+        </div>
+
+        {/* Profile Settings Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+           <h2 className="text-xl font-bold mb-4">Preferences</h2>
+           <fieldset disabled={loadingData} className="space-y-4 max-w-sm">
+              <div>
+                 <Label htmlFor="displayNameType">Review Display Name</Label>
+                 <Select 
+                    value={displayNameType} 
+                    onValueChange={(value) => setDisplayNameType(value as DisplayNameType)}
+                  >
+                    <SelectTrigger id="displayNameType">
+                       <SelectValue placeholder="Select display preference" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       <SelectItem value="full">Full Name (e.g., John Doe)</SelectItem>
+                       <SelectItem value="first_initial">First Name, Last Initial (e.g., John D.)</SelectItem>
+                       <SelectItem value="initials">Initials (e.g., J.D.)</SelectItem>
+                       <SelectItem value="private">Private Reviewer</SelectItem>
+                    </SelectContent>
+                 </Select>
+                 <p className="text-xs text-gray-500 mt-1">Choose how your name appears on your reviews.</p>
+              </div>
+              <div className="flex justify-end">
+                  <Button 
+                    onClick={handleSaveSettings} 
+                    disabled={isSaving || !hasChanges}
+                  >
+                    {isSaving ? (
+                       <>
+                         <span className="mr-2 h-4 w-4 inline-block">
+                             <LoadingSpinner />
+                         </span>
+                         Saving...
+                       </>
+                     ) : (
+                      'Save Preferences'
+                     )}
+                  </Button>
+              </div>
+           </fieldset>
         </div>
 
         {/* Reviews Section */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-bold mb-6">Your Reviews</h2>
+          <h2 className="text-xl font-bold mb-6">Your Reviews ({reviews.length})</h2>
 
-          {loading ? (
+          {loadingData ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-600 border-t-transparent mx-auto"></div>
+              <LoadingSpinner />
             </div>
           ) : reviews.length > 0 ? (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="border-b border-gray-200 last:border-0 pb-6 last:pb-0"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <Link
-                      href={`/courses/${review.courseId}`}
-                      className="text-lg font-medium text-green-600 hover:text-green-700"
-                    >
-                      {review.courseId}
-                    </Link>
-                    <div className="text-sm text-gray-500">
-                      {new Date(review.walkingDate).toLocaleDateString()}
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-6 mb-2">
-                    <div>
-                      <span className="text-sm text-gray-500">Walkability:</span>{' '}
-                      <span className="font-medium">
-                        {review.walkabilityRating}/5
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Condition:</span>{' '}
-                      <span className="font-medium">
-                        {review.courseConditionRating}/5
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Overall:</span>{' '}
-                      <span className="font-medium">{review.overallRating}/5</span>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 mb-4">{review.comment}</p>
-
-                  {(review.pros.length > 0 || review.cons.length > 0) && (
-                    <div className="flex space-x-6">
-                      {review.pros.length > 0 && (
-                        <div>
-                          <div className="text-sm font-medium text-green-600 mb-1">
-                            Pros
-                          </div>
-                          <ul className="list-disc list-inside text-sm text-gray-600">
-                            {review.pros.map((pro, index) => (
-                              <li key={index}>{pro}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {review.cons.length > 0 && (
-                        <div>
-                          <div className="text-sm font-medium text-red-600 mb-1">
-                            Cons
-                          </div>
-                          <ul className="list-disc list-inside text-sm text-gray-600">
-                            {review.cons.map((con, index) => (
-                              <li key={index}>{con}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <ReviewItem key={review.id} review={review} />
               ))}
             </div>
           ) : (

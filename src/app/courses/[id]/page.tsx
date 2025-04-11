@@ -21,10 +21,13 @@ import CourseRatings from '@/app/components/CourseRatings'
 import WalkabilityDetails from '@/app/components/WalkabilityDetails'
 import { IMAGES } from '@/lib/constants/images'
 import { getCourseById } from '@/lib/firebase/courseUtils'
+import { getPublishedReviewsForCourse } from '@/lib/firebase/reviewUtils'
 import type { GolfCourse } from '@/types/course'
+import type { CourseReview } from '@/types/review'
 
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
+import ReviewItem from './ReviewItem'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -72,26 +75,33 @@ function serializeDates(obj: unknown): unknown {
 // Provide inline type for the destructured params
 export default async function CourseDetailsPage({ params }: { params: { id: string } }): Promise<JSX.Element> {
   const { id } = params;
-  const courseResult: GolfCourse | null = await getCourseById(id);
+  
+  // Fetch course and reviews in parallel
+  const [courseResult, reviewsResult] = await Promise.all([
+    getCourseById(id),
+    getPublishedReviewsForCourse(id)
+  ]);
 
   if (!courseResult) {
     notFound();
   }
 
-  const serializedCourse = serializeDates(courseResult) as GolfCourse;
+  // Serialize course data (assuming reviews don't need deep serialization for Timestamps here as reviewUtils handles it)
+  const course = serializeDates(courseResult) as GolfCourse;
+  const reviews = reviewsResult; // Already processed in getPublishedReviewsForCourse
 
-  const courseName = serializedCourse?.courseName ?? 'Unknown Course';
-  const city = serializedCourse?.location_city ?? '';
-  const state = serializedCourse?.location_state ?? '';
+  const courseName = course?.courseName ?? 'Unknown Course';
+  const city = course?.location_city ?? '';
+  const state = course?.location_state ?? '';
   const coordinates = {
-    lat: serializedCourse?.location_coordinates_latitude ?? 39.8283,
-    lng: serializedCourse?.location_coordinates_longitude ?? -98.5795,
+    lat: course?.location_coordinates_latitude ?? 39.8283,
+    lng: course?.location_coordinates_longitude ?? -98.5795,
   };
   const heroImageUrl = IMAGES.placeholders.course;
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <CourseAnalytics course={serializedCourse} />
+      <CourseAnalytics course={course} />
       
       <div className="relative h-64 md:h-80 w-full">
         <Image
@@ -124,75 +134,83 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold mb-3 text-gray-800">About This Course</h2>
               <p className="text-gray-700 mb-4 prose prose-sm max-w-none">
-                {serializedCourse?.course_description ?? `${courseName} is a ${serializedCourse?.course_holes ?? 18}-hole golf course located in ${city}, ${state}.`}
+                {course?.course_description ?? `${courseName} is a ${course?.course_holes ?? 18}-hole golf course located in ${city}, ${state}.`}
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 border-t pt-4">
                 <div className="bg-gray-50 p-3 rounded-lg text-center sm:text-left">
                   <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Holes</div>
-                  <div className="text-lg font-bold text-gray-800">{serializedCourse?.course_holes ?? 'N/A'}</div>
+                  <div className="text-lg font-bold text-gray-800">{course?.course_holes ?? 'N/A'}</div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg text-center sm:text-left">
                   <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Established</div>
-                  <div className="text-lg font-bold text-gray-800">{serializedCourse?.course_yearEstablished ?? 'N/A'}</div>
+                  <div className="text-lg font-bold text-gray-800">{course?.course_yearEstablished ?? 'N/A'}</div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg text-center sm:text-left">
                   <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Type</div>
-                  <div className="text-lg font-bold text-gray-800">{serializedCourse?.course_type ?? 'N/A'}</div>
+                  <div className="text-lg font-bold text-gray-800">{course?.course_type ?? 'N/A'}</div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-3">Reviews</h2>
-              <p className="text-gray-500 italic">
-                Reviews are coming soon. Be the first to review this course!
-              </p>
+              <h2 className="text-xl font-semibold mb-4">Reviews ({reviews.length})</h2>
+              {reviews.length > 0 ? (
+                <div className="space-y-6">
+                  {reviews.map((review) => (
+                    <ReviewItem key={review.id} review={review} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">
+                  No reviews yet. Be the first to review this course!
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-6 md:space-y-8">
-            <CourseRatings course={serializedCourse} />
+            <CourseRatings course={course} />
 
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Walkability Details</h2>
-              <WalkabilityDetails course={serializedCourse} />
+              <WalkabilityDetails course={course} />
             </div>
 
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Contact Information</h2>
 
               <div className="space-y-4">
-                {(serializedCourse?.location_address1 || serializedCourse?.location_city) && (
+                {(course?.location_address1 || city) && (
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm text-gray-700">
-                      {serializedCourse?.location_address1 && <p>{serializedCourse.location_address1}</p>}
-                      {serializedCourse?.location_address2 && <p>{serializedCourse.location_address2}</p>}
+                      {course?.location_address1 && <p>{course.location_address1}</p>}
+                      {course?.location_address2 && <p>{course.location_address2}</p>}
                       <p>
-                        {serializedCourse?.location_city ?? ''}{serializedCourse?.location_city && serializedCourse?.location_state ? ', ' : ''}{serializedCourse?.location_state ?? ''} {serializedCourse?.location_zip ?? ''}
+                        {city}{city && state ? ', ' : ''}{state} {course?.location_zip ?? ''}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {serializedCourse?.contact_phone && (
+                {course?.contact_phone && (
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                      <a href={`tel:${serializedCourse.contact_phone}`} className="text-blue-600 hover:underline">
-                        {serializedCourse.contact_phone}
+                      <a href={`tel:${course.contact_phone}`} className="text-blue-600 hover:underline">
+                        {course.contact_phone}
                       </a>
                     </div>
                   </div>
                 )}
 
-                {serializedCourse?.contact_website && (
+                {course?.contact_website && (
                   <div className="flex items-start gap-3">
                     <Globe className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                      <a href={serializedCourse.contact_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
-                        {(serializedCourse.contact_website ?? '').replace(/^https?:\/\/(www\.)?/, '')}
+                      <a href={course.contact_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
+                        {(course.contact_website ?? '').replace(/^https?:\/\/(www\.)?/, '')}
                       </a>
                     </div>
                   </div>
@@ -210,7 +228,7 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
               </div>
             </div>
 
-            <CourseActions course={serializedCourse} />
+            <CourseActions course={course} />
           </div>
         </div>
       </div>
