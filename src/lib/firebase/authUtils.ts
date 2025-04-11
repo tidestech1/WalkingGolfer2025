@@ -1,11 +1,14 @@
 import { 
   getAuth,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   type User
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 import { getFirestoreDB } from './firebaseUtils';
+import { createUserProfile } from './userUtils'; // Assuming userUtils exists
 
 interface AuthResult {
   user: User | null;
@@ -20,6 +23,32 @@ export async function signInWithEmail(email: string, password: string): Promise<
     return { user: result.user };
   } catch (error) {
     console.error('Email sign-in error:', error);
+    return { user: null, error: formatAuthError(error) };
+  }
+}
+
+// New function for signing up with email and password
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  displayName: string
+): Promise<AuthResult> {
+  try {
+    const db = getFirestoreDB();
+    const auth = getAuth(db.app);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Update the Firebase Auth profile with the display name
+    if (userCredential.user) {
+      await updateProfile(userCredential.user, { displayName });
+
+      // Create the user profile document in Firestore
+      await createUserProfile(userCredential.user);
+    }
+
+    return { user: userCredential.user };
+  } catch (error) {
+    console.error('Email sign-up error:', error);
     return { user: null, error: formatAuthError(error) };
   }
 }
