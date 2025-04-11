@@ -9265,7 +9265,6 @@ _**Assistant**_
 
 _****_
 
-
             
 
 ---
@@ -9445,6 +9444,171 @@ In the confriming course section, I think the course name has been removed? Coul
 ---
 
 _**Assistant**_
+
+
+
+---
+
+_****_
+
+You are absolutely right! My apologies, when I moved the "Confirming Course" section into the form and reconstructed it, I only included the `h2` title and the address paragraph, omitting the course name itself.
+
+Let's add the course name back into that section in `src/app/courses/[id]/review/RatingForm.tsx`. I'll add a paragraph for the course name below the "Confirming Course" heading.
+
+---
+
+_****_
+
+```diff
+        <div className="bg-white p-6 rounded-lg shadow-sm space-y-2">
+            <h2 className="text-xl font-semibold text-[#0A3357]">Confirming Course</h2>
++           <p className="font-medium text-gray-800">
++             {course.courseName}
++           </p>
+            <p className="text-sm text-gray-600">
+              {/* Access course prop directly */}
+```
+
+---
+
+_****_
+
+Okay, I've added a paragraph to display the `course.courseName` within the "Confirming Course" section at the top of the form in `src/app/courses/[id]/review/RatingForm.tsx`.
+
+The course name should now appear between the "Confirming Course" heading and the address line.
+
+---
+
+_**User**_
+
+We have a few errros encountered in REplit's deploy:
+
+2025-04-11T15:42:10Z info: Deployment: 105e531a-cf33-42d5-89a9-67009de1edcd
+2025-04-11T15:42:10Z info: Connecting to builder
+2025-04-11T15:42:14Z info: Builder connected
+2025-04-11T15:42:15Z info: Installing packages
+2025-04-11T15:42:15Z info: Starting Build
+
+> template-2@0.1.0 prebuild
+> rm -rf public/design
+
+
+
+> template-2@0.1.0 build
+> next build
+
+
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+
+ ✓ Compiled successfully
+
+   Skipping validation of types
+
+   Skipping linting
+
+   Collecting page data ...
+
+Initializing Firebase Admin SDK...
+
+Firebase Admin SDK initialized successfully.
+
+Initializing Firebase Admin SDK...
+
+Firebase Admin SDK initialized successfully.
+
+Initializing Firebase Admin SDK...
+
+Firebase Admin SDK initialized successfully.
+
+   Generating static pages (0/29) ...
+
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/verify-email". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at s (/home/runner/workspace/.next/server/chunks/6532.js:3:25344)
+    at A (/home/runner/workspace/.next/server/chunks/6532.js:39:64809)
+    at u (/home/runner/workspace/.next/server/app/verify-email/page.js:1:1181)
+    at nL (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:46773)
+    at nF (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48548)
+    at nq (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:67434)
+    at nH (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:65009)
+    at nU (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:47125)
+    at nF (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48594)
+    at nF (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:64360)
+Error occurred prerendering page "/verify-email". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /verify-email/page: /verify-email, exiting the build.
+
+ ⨯ Next.js build worker exited with code: 1 and signal: null
+
+npm notice
+npm notice New minor version of npm available! 11.2.0 -> 11.3.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.3.0
+npm notice To update run: npm install -g npm@11.3.0
+npm notice
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+_****_
+
+Okay, this build error is happening because the `/verify-email` page uses the `useSearchParams` hook, which needs access to the URL parameters *after* the page loads on the client-side. However, Next.js tries to pre-render pages during the build, and `useSearchParams` doesn't work in that server-side context without being specifically marked for client-side rendering with a Suspense boundary.
+
+The fix is to wrap the part of the `/verify-email/page.tsx` component that uses `useSearchParams` within a `<Suspense>` boundary. This tells Next.js to render a fallback UI (like a loading spinner) initially, and then render the actual component content once it's hydrated on the client.
+
+**Plan:**
+
+1.  Import `Suspense` from `react`.
+2.  Import a `LoadingSpinner` component (assuming you have one, like in `src/components/ui/LoadingSpinner.tsx`).
+3.  Wrap the main return content of the `VerifyEmailPage` component in `<Suspense fallback={<LoadingSpinner />}>`.
+
+Let's modify `src/app/verify-email/page.tsx`.
+
+---
+
+_****_
+
+Read file: undefined
+
+---
+
+_****_
+
+```diff
+  'use client';
+  
+- import { useEffect, useState } from 'react';
++ import { useEffect, useState, Suspense } from 'react';
+  import { useSearchParams, useRouter } from 'next/navigation';
+  import { 
+  import { LoadingSpinner } from '@/components/ui/LoadingSpinner'; // Correct named import
+  
+- export default function VerifyEmailPage() {
++ // Define the component that uses searchParams
++ function VerifyEmailContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+      </div>
+    );
++ }
++ 
++ // Main page component wraps the content in Suspense
++ export default function VerifyEmailPage() {
++   return (
++     <Suspense fallback={<div className="container mx-auto px-4 py-16 flex justify-center items-center min-h-[300px]"><LoadingSpinner /></div>}>
++       <VerifyEmailContent />
++     </Suspense>
++   );
+  } 
+```
+
+---
+
+_****_
 
 
 
