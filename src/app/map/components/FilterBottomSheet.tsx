@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { StarRating } from '@/components/ui/star-rating';
 import { CourseFilters, CourseType, CourseCategory, GolfCourse } from '@/types/course';
@@ -31,7 +32,6 @@ export function FilterBottomSheet({
     walkabilityRating_overall_min: filters.walkabilityRating_overall_min,
     course_types: filters.course_types || [],
     course_categories: filters.course_categories || [],
-    facilities_pushCarts: filters.facilities_pushCarts,
     pricing_fee_min: filters.pricing_fee_min,
     pricing_fee_max: filters.pricing_fee_max
   });
@@ -58,11 +58,6 @@ export function FilterBottomSheet({
         return false;
       }
 
-      // Facilities - Push Carts
-      if (localFilters.facilities_pushCarts && !course.facilities_pushCarts) {
-        return false;
-      }
-
       // Price Range
       if (localFilters.pricing_fee_min > 0 && typeof course.pricing_fee === 'number' && course.pricing_fee < localFilters.pricing_fee_min) {
         return false;
@@ -75,17 +70,21 @@ export function FilterBottomSheet({
     }).length;
   }, [localFilters, allCourses]);
 
-  // Update local filters when props change
+  // Update local filters only when the sheet opens
   useEffect(() => {
-    setLocalFilters({
-      walkabilityRating_overall_min: filters.walkabilityRating_overall_min,
-      course_types: filters.course_types || [],
-      course_categories: filters.course_categories || [],
-      facilities_pushCarts: filters.facilities_pushCarts,
-      pricing_fee_min: filters.pricing_fee_min,
-      pricing_fee_max: filters.pricing_fee_max
-    });
-  }, [filters]);
+    // Only sync from props to local state when the sheet becomes visible
+    if (isOpen) { 
+      setLocalFilters({
+        walkabilityRating_overall_min: filters.walkabilityRating_overall_min,
+        course_types: filters.course_types || [],
+        course_categories: filters.course_categories || [],
+        pricing_fee_min: filters.pricing_fee_min,
+        pricing_fee_max: filters.pricing_fee_max
+      });
+    }
+    // Depend on isOpen to trigger sync when sheet opens.
+    // Also depend on filters object identity in case parent filters change while closed.
+  }, [isOpen, filters]);
 
   const updateLocalFilters = (updates: Partial<CourseFilters>): void => {
     setLocalFilters(prev => ({ ...prev, ...updates }));
@@ -102,7 +101,6 @@ export function FilterBottomSheet({
     localFilters.walkabilityRating_overall_min > 0 ||
     (localFilters.course_types && localFilters.course_types.length > 0) ||
     (localFilters.course_categories && localFilters.course_categories.length > 0) ||
-    localFilters.facilities_pushCarts ||
     localFilters.pricing_fee_min > 0 ||
     localFilters.pricing_fee_max > 0;
 
@@ -111,7 +109,6 @@ export function FilterBottomSheet({
     localFilters.walkabilityRating_overall_min > 0,
     (localFilters.course_types && localFilters.course_types.length > 0),
     (localFilters.course_categories && localFilters.course_categories.length > 0),
-    localFilters.facilities_pushCarts,
     localFilters.pricing_fee_min > 0 || localFilters.pricing_fee_max > 0
   ].filter(Boolean).length;
 
@@ -123,10 +120,10 @@ export function FilterBottomSheet({
       initialSnap={0}
       title="Filter Courses"
     >
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 60px)'}}>
+      <div className="flex flex-col h-full">
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-4 pt-2 pb-2 space-y-6">
+          <div className="px-4 pt-2 pb-4 space-y-4">
             {/* Header with filter count and reset */}
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
@@ -142,7 +139,6 @@ export function FilterBottomSheet({
                     walkabilityRating_overall_min: 0,
                     course_types: [],
                     course_categories: [],
-                    facilities_pushCarts: false,
                     pricing_fee_min: 0,
                     pricing_fee_max: 0
                   })}
@@ -155,7 +151,7 @@ export function FilterBottomSheet({
             </div>
 
             {/* Filter sections */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Walkability Rating */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -275,13 +271,13 @@ export function FilterBottomSheet({
                 </div>
               </div>
 
-              {/* Facilities */}
+              {/* Price Range */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Facilities</label>
-                  {localFilters.facilities_pushCarts && (
+                  <label className="text-sm font-medium">Price Range ($)</label>
+                  {(localFilters.pricing_fee_min > 0 || localFilters.pricing_fee_max > 0) && (
                     <button
-                      onClick={() => updateLocalFilters({ facilities_pushCarts: false })}
+                      onClick={() => updateLocalFilters({ pricing_fee_min: 0, pricing_fee_max: 0 })}
                       className="text-xs text-gray-500 hover:text-gray-700"
                     >
                       Clear
@@ -289,71 +285,43 @@ export function FilterBottomSheet({
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="pushCarts"
-                    checked={localFilters.facilities_pushCarts || false}
-                    onCheckedChange={(checked) => {
-                      updateLocalFilters({ 
-                        facilities_pushCarts: checked === true
-                      });
+                  <Input
+                    id="mobileMinPrice"
+                    type="number"
+                    placeholder="Min"
+                    min="0"
+                    value={localFilters.pricing_fee_min > 0 ? localFilters.pricing_fee_min : ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(value)) {
+                        updateLocalFilters({ pricing_fee_min: Math.max(0, value) });
+                      }
                     }}
+                    className="h-10 text-sm w-1/2"
                   />
-                  <label htmlFor="pushCarts" className="text-sm">
-                    Push Carts Available
-                  </label>
-                </div>
-              </div>
-
-              {/* Price Range */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Price Range</label>
-                  {(localFilters.pricing_fee_min > 0 || localFilters.pricing_fee_max > 0) && (
-                    <button
-                      onClick={() => updateLocalFilters({ 
-                        pricing_fee_min: 0,
-                        pricing_fee_max: 0
-                      })}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-3 items-center">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      className="w-full p-2 border rounded text-sm"
-                      value={localFilters.pricing_fee_min || ''}
-                      min="0"
-                      onChange={(e) => updateLocalFilters({
-                        pricing_fee_min: e.target.value ? Number(e.target.value) : 0
-                      })}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-400">to</span>
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      className="w-full p-2 border rounded text-sm"
-                      value={localFilters.pricing_fee_max || ''}
-                      min="0"
-                      onChange={(e) => updateLocalFilters({
-                        pricing_fee_max: e.target.value ? Number(e.target.value) : 0
-                      })}
-                    />
-                  </div>
+                  <span className="text-gray-500">-</span>
+                  <Input
+                    id="mobileMaxPrice"
+                    type="number"
+                    placeholder="Max"
+                    min="0"
+                    value={localFilters.pricing_fee_max > 0 ? localFilters.pricing_fee_max : ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(value)) {
+                        updateLocalFilters({ pricing_fee_max: Math.max(0, value) });
+                      }
+                    }}
+                    className="h-10 text-sm w-1/2"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Fixed bottom section */}
-        <div className="flex-shrink-0 border-t bg-white px-4 pt-2 pb-24">
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t bg-white px-4 pt-2 pb-4">
           <div className="text-sm text-gray-600 text-center mb-2">
             {matchingCoursesCount} course{matchingCoursesCount !== 1 ? 's' : ''} match filters
           </div>

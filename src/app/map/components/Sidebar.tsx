@@ -57,7 +57,6 @@ export default function Sidebar({
       filters.walkabilityRating_overall_min > 0 ||
       filters.course_types.length > 0 ||
       filters.course_categories.length > 0 ||
-      filters.facilities_pushCarts ||
       filters.pricing_fee_min > 0 ||
       filters.pricing_fee_max > 0;
 
@@ -79,7 +78,6 @@ export default function Sidebar({
                   walkabilityRating_overall_min: 0,
                   course_types: [],
                   course_categories: [],
-                  facilities_pushCarts: false,
                   pricing_fee_min: 0,
                   pricing_fee_max: 0
                 })}
@@ -214,32 +212,46 @@ export default function Sidebar({
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium">Facilities</label>
-              {filters.facilities_pushCarts && (
+              <label className="block text-xs font-medium">Price Range ($)</label>
+              {(filters.pricing_fee_min > 0 || filters.pricing_fee_max > 0) && (
                 <button
-                  onClick={() => updateFilters({ facilities_pushCarts: false })}
+                  onClick={() => updateFilters({ pricing_fee_min: 0, pricing_fee_max: 0 })}
                   className="text-xs text-gray-500 hover:text-gray-700"
                 >
                   Clear
                 </button>
               )}
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="pushCarts"
-                  checked={filters.facilities_pushCarts || false}
-                  onCheckedChange={(checked) => {
-                    updateFilters({ 
-                      facilities_pushCarts: checked === true
-                    });
-                  }}
-                  className="h-3.5 w-3.5"
-                />
-                <label htmlFor="pushCarts" className="text-xs">
-                  Push Carts Available
-                </label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Input
+                id="minPrice"
+                type="number"
+                placeholder="Min"
+                min="0"
+                value={filters.pricing_fee_min > 0 ? filters.pricing_fee_min : ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(value)) {
+                    updateFilters({ pricing_fee_min: Math.max(0, value) });
+                  }
+                }}
+                className="h-8 text-xs w-1/2"
+              />
+              <span className="text-gray-500">-</span>
+              <Input
+                id="maxPrice"
+                type="number"
+                placeholder="Max"
+                min="0"
+                value={filters.pricing_fee_max > 0 ? filters.pricing_fee_max : ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                   if (!isNaN(value)) {
+                    updateFilters({ pricing_fee_max: Math.max(0, value) });
+                  }
+                }}
+                className="h-8 text-xs w-1/2"
+              />
             </div>
           </div>
 
