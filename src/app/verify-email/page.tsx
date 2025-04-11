@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
     getAuth, 
@@ -11,7 +11,8 @@ import { auth as firebaseClientAuth } from '@/lib/firebase/firebase'; // Client 
 import { useAuth } from '@/lib/hooks/useAuth'; // Auth context hook
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'; // Correct named import
 
-export default function VerifyEmailPage() {
+// Define the component that uses searchParams
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authContext = useAuth(); // Get auth context methods
@@ -143,5 +144,14 @@ export default function VerifyEmailPage() {
         </>
       )}
     </div>
+  );
+}
+
+// Main page component wraps the content in Suspense
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-16 flex justify-center items-center min-h-[300px]"><LoadingSpinner /></div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 } 
