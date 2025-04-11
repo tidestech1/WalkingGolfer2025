@@ -204,7 +204,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     const validationResult = ratingFormSchema.safeParse(rawFormData);
 
     if (!validationResult.success) {
-        console.error("Client-side validation failed:", validationResult.error.flatten());
         const formattedErrors: Record<string, string | undefined> = {};
         validationResult.error.errors.forEach(err => {
             if (err.path[0]) {
@@ -442,6 +441,9 @@ export default function RatingForm({ course, user }: RatingFormProps) {
       {/* ADDED Confirming Course Section */}
       <div className="bg-white p-6 rounded-lg shadow-sm space-y-2">
           <h2 className="text-xl font-semibold text-[#0A3357]">Confirming Course</h2>
+          <p className="font-medium text-gray-800">
+            {course.courseName}
+          </p>
           <p className="text-sm text-gray-600">
             {/* Access course prop directly */}
             {course.location_address1}, {course.location_city}, {course.location_state}
@@ -503,6 +505,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               5: "Excellent walkability"
             }}
           />
+          {formErrors['overallRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['overallRating']}</p>}
         </div>
       </div>
 
@@ -543,6 +546,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 : 'Small mountains = flatter terrain'
               }
             </p>
+            {formErrors['hillinessRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['hillinessRating']}</p>}
           </div>
 
           <div>
@@ -572,6 +576,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 : 'Small footprints = short distance'
               }
             </p>
+            {formErrors['accessibilityRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['accessibilityRating']}</p>}
           </div>
 
           <div>
@@ -601,6 +606,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 : 'Larger $ icons mean higher pricing'
               }
             </p>
+            {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
           </div>
 
           <div>
@@ -630,6 +636,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 : 'Larger icons mean better maintained'
               }
             </p>
+            {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
           </div>
         </div>
       </div>

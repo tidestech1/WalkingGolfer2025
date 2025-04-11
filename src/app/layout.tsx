@@ -2,6 +2,7 @@ import React from 'react'
 
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Toaster } from 'sonner'
 
 import './globals.css'
 import FooterWrapper from '@/app/components/FooterWrapper'
@@ -48,9 +49,10 @@ export default function RootLayout({
         <MobileMenuProvider>
           <AuthProvider>
             <NavbarWrapper />
-            {children}
+            <main>{children}</main>
             <ScrollToTop />
             <FooterWrapper />
+            <Toaster richColors position="top-right" />
           </AuthProvider>
         </MobileMenuProvider>
       </body>
