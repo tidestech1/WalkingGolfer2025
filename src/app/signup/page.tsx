@@ -1,104 +1,167 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { auth } from '@/lib/firebase/firebase'
-import { checkFirebaseAvailability } from '@/lib/firebase/firebase'
+import { signUpWithEmail } from '@/lib/firebase/authUtils'
+import { createUserProfile, getUserProfile } from '@/lib/firebase/userUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Loader2, AlertCircle } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
-  const { user, signInWithGoogle } = useAuth()
+  const { user, loading: authLoading, signInWithGoogle } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Redirect if already logged in
-  if (user) {
-    router.push('/profile')
-    return null
-  }
+  useEffect(() => {
+    if (!authLoading && user) {
+      setLoading(true)
+      createUserProfile(user)
+        .then(() => {
+          return getUserProfile(user.uid)
+        })
+        .then(profile => {
+          if (!profile?.zipcode) {
+            console.log('Redirecting to complete profile for user:', user.uid)
+            router.push('/complete-profile')
+          } else {
+            console.log('User profile complete, redirecting to courses:', user.uid)
+            router.push('/map')
+          }
+        })
+        .catch(err => {
+          console.error('Failed to check user profile, redirecting to courses as fallback:', err)
+          setError('Could not verify profile status. Redirecting...')
+          router.push('/map')
+        })
+        .finally(() => setLoading(false))
+    }
+  }, [user, authLoading, router])
 
-  async function handleEmailSignUp(e: React.FormEvent) {
+  const handleEmailSignUp = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading || authLoading) return
+
     setError('')
     setLoading(true)
 
     try {
-      if (!auth || !checkFirebaseAvailability()) {
-        throw new Error('Authentication service is not available')
+      const result = await signUpWithEmail(email, password, name)
+      if (result.error) {
+        setError(result.error)
       }
-
-      const { user } = await createUserWithEmailAndPassword(auth, email, password)
-      await updateProfile(user, { displayName: name })
-      router.push('/profile')
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      console.error('Unexpected Sign Up Error:', error)
+      if (error instanceof Error) {
+        setError(error.message || 'An unexpected error occurred during sign up.')
+      } else {
+        setError('An unknown error occurred during sign up.')
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [email, password, name, loading, authLoading, router])
 
-  async function handleGoogleSignUp() {
+  const handleGoogleSignUp = useCallback(async () => {
+    if (loading || authLoading) return
+
     setError('')
     setLoading(true)
 
     try {
       await signInWithGoogle()
-      router.push('/profile')
     } catch (error: any) {
       setError(error.message)
     } finally {
       setLoading(false)
     }
+  }, [loading, authLoading, signInWithGoogle, router])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#0A3357]" />
+      </div>
+    )
+  }
+
+  const onSubmitWrapper = (e: React.FormEvent) => {
+    handleEmailSignUp(e).catch(err => {
+      console.error("Error during email signup submission:", err)
+      setError("An unexpected error occurred during signup.")
+      setLoading(false)
+    })
+  }
+
+  const onGoogleClickWrapper = () => {
+    handleGoogleSignUp().catch(err => {
+      console.error("Error during Google signup click:", err)
+      setError("An unexpected error occurred during Google signup.")
+      setLoading(false)
+    })
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen flex flex-col items-center bg-gray-100 p-4 pt-16 sm:pt-20 font-sans">
+      <Card className="w-full max-w-md shadow-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold text-[#0A3357]">
             Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          </CardTitle>
+          <CardDescription className="text-gray-600">
             Or{' '}
             <Link
               href="/login"
-              className="font-medium text-green-600 hover:text-green-500"
+              className="font-medium text-[#0A3357] hover:underline"
             >
               sign in to your existing account
             </Link>
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        <form className="mt-8 space-y-6" onSubmit={handleEmailSignUp}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-6 bg-red-50 border-red-500 text-red-700">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form className="space-y-4" onSubmit={onSubmitWrapper}>
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-gray-700">
                 Full name
-              </label>
-              <input
+              </Label>
+              <Input
                 id="name"
                 name="name"
                 type="text"
+                autoComplete="name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0A3357] focus:border-transparent"
                 placeholder="Full name"
               />
             </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">
+            <div className="space-y-2">
+              <Label htmlFor="email-address" className="text-gray-700">
                 Email address
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email-address"
                 name="email"
                 type="email"
@@ -106,15 +169,15 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0A3357] focus:border-transparent"
                 placeholder="Email address"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-gray-700">
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
                 id="password"
                 name="password"
                 type="password"
@@ -122,57 +185,57 @@ export default function SignUpPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0A3357] focus:border-transparent"
                 placeholder="Password"
               />
             </div>
-          </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
-
-          <div>
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              disabled={loading || authLoading}
+              className="w-full py-2 px-4 rounded-lg bg-[#0A3357] text-white font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0A3357] disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
             >
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">
-                Or continue with
-              </span>
-            </div>
-          </div>
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : 'Create account'}
+            </Button>
+          </form>
 
           <div className="mt-6">
-            <button
-              onClick={handleGoogleSignUp}
-              disabled={loading}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            >
-              <svg
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 24 24"
-                fill="currentColor"
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                onClick={onGoogleClickWrapper}
+                disabled={loading || authLoading}
+                className="w-full flex items-center justify-center py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0A3357] disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
               >
-                <path d="M12.545,12.151L12.545,12.151c0,1.054,0.855,1.909,1.909,1.909h3.536c-0.447,1.722-1.504,3.18-2.945,4.181 c-1.441,1.001-3.176,1.586-5.045,1.586c-2.358,0-4.572-0.917-6.236-2.581S1.182,14.367,1.182,12.01s0.917-4.572,2.581-6.236 S7.642,3.193,10,3.193c2.194,0,4.219,0.781,5.79,2.075l2.728-2.728c-2.149-2.034-5.055-3.276-8.518-3.276 c-3.345,0-6.49,1.303-8.856,3.67C-1.223,5.3-2.526,8.445-2.526,11.79s1.303,6.49,3.67,8.856c2.366,2.367,5.511,3.67,8.856,3.67 c3.016,0,5.87-1.06,8.115-2.984c2.245-1.924,3.797-4.576,4.285-7.563l-11.854-0.004V12.151z" />
-              </svg>
-              Sign up with Google
-            </button>
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                )}
+                Sign up with Google
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-    </main>
+        </CardContent>
+      </Card>
+    </div>
   )
 } 

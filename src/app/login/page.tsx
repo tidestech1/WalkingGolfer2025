@@ -89,7 +89,7 @@ return
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex flex-col items-center bg-gray-50 p-4 pt-16 sm:pt-20 font-sans">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-[#0A3357]">Welcome back</h2>
