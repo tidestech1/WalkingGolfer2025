@@ -1,10 +1,16 @@
 import type { CourseReview } from '@/types/review';
 import type { UserProfile } from '@/types/user';
-
 import { getDocuments, updateDocument } from './firebaseUtils';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
-import { type User } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, type Firestore, Timestamp } from 'firebase/firestore';
 import { getFirestoreDB } from './firebaseUtils';
+
+// Define a type for the necessary user data for profile creation
+export interface CreateUserProfileInput {
+  uid: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
 
 /**
  * Retrieves the Firestore database instance.
@@ -22,71 +28,62 @@ function getDb(): Firestore {
 
 /**
  * Creates a user profile document in Firestore if it doesn't already exist.
- * Populates the profile with data from the Firebase Auth user object.
+ * Populates the profile with provided user data.
  * Sets initial default values for preferences and review counts.
  * 
- * @param user - The Firebase Auth User object.
+ * @param userData - An object containing uid, email, displayName, photoURL.
  * @returns Promise<boolean> - True if a new profile was created, false if it already existed.
  * @throws Throws an error if Firestore operation fails.
  */
-export async function createUserProfile(user: User): Promise<boolean> {
-  if (!user) throw new Error('User object is required to create a profile.');
+export async function createUserProfile(userData: CreateUserProfileInput): Promise<boolean> {
+  if (!userData?.uid) throw new Error('User data with UID is required to create a profile.');
   
   const db = getDb();
-  const userRef = doc(db, 'users', user.uid);
+  const userRef = doc(db, 'users', userData.uid);
 
   try {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      const newUserProfile: UserProfile = {
-        id: user.uid,
-        email: user.email || '', // Ensure email is not null
-        displayName: user.displayName || 'Walking Golfer', // Default display name
-        photoURL: user.photoURL || null, // Use null if missing
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any, updatedAt: any } = {
+        id: userData.uid,
+        email: userData.email || '', 
+        displayName: userData.displayName || 'Walking Golfer', 
+        photoURL: userData.photoURL || null,
         preferences: {
           emailNotifications: true,
           newsletterSubscribed: false,
         },
         reviewCount: 0,
-        zipcode: null, // Initialize zipcode as null
+        zipcode: null,
+        createdAt: serverTimestamp(), 
+        updatedAt: serverTimestamp()
       };
       
-      await setDoc(userRef, {
-        ...newUserProfile,
-        createdAt: serverTimestamp(), // Use server timestamp for creation
-        updatedAt: serverTimestamp()  // Use server timestamp for update
-      });
-      console.log('Created new user profile for:', user.uid);
-      return true; // Indicate new profile was created
+      await setDoc(userRef, newUserProfile);
+      console.log('Created new user profile for:', userData.uid);
+      return true;
     } else {
-      console.log('User profile already exists for:', user.uid);
-      // Optionally update display name/photo URL if they changed during sign-in
+      console.log('User profile already exists for:', userData.uid);
       const updateData: Partial<UserProfile> = {};
       const existingData = docSnap.data();
-      if (user.displayName && existingData['displayName'] !== user.displayName) {
-        updateData.displayName = user.displayName;
+      if (userData.displayName && existingData['displayName'] !== userData.displayName) {
+        updateData.displayName = userData.displayName;
       }
-      if (user.photoURL && existingData['photoURL'] !== user.photoURL) {
-        updateData.photoURL = user.photoURL;
-      } else if (!user.photoURL && existingData['photoURL']) {
-        // Handle case where auth photoURL is removed
-        updateData.photoURL = null;
+      if (userData.photoURL !== undefined && existingData['photoURL'] !== userData.photoURL) {
+        updateData.photoURL = userData.photoURL || null;
       }
       if (Object.keys(updateData).length > 0) {
         await updateDoc(userRef, { 
           ...updateData,
           updatedAt: serverTimestamp()
         });
-        console.log('Updated existing user profile with latest auth info:', user.uid);
+        console.log('Updated existing user profile with latest info:', userData.uid);
       }
-      return false; // Indicate profile already existed
+      return false;
     }
   } catch (error) {
     console.error('Error creating/checking user profile:', error);
-    // Consider more specific error handling or re-throwing a custom error
     throw new Error('Failed to create or verify user profile.');
   }
 }
@@ -103,21 +100,19 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     console.error('User ID is required to fetch profile.');
     return null;
   }
-  
   const db = getDb();
   const userRef = doc(db, 'users', userId);
-
   try {
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
-      // We need to manually convert Timestamps if they exist
       const data = docSnap.data();
       return {
         ...data,
         id: docSnap.id,
-        createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate().toISOString() : new Date().toISOString(),
-        updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate().toISOString() : new Date().toISOString(),
-      } as UserProfile; // Assert type after processing
+        createdAt: (data['createdAt'] as Timestamp)?.toDate ? (data['createdAt'] as Timestamp).toDate().toISOString() : new Date().toISOString(),
+        updatedAt: (data['updatedAt'] as Timestamp)?.toDate ? (data['updatedAt'] as Timestamp).toDate().toISOString() : new Date().toISOString(),
+        lastReviewDate: (data['lastReviewDate'] instanceof Timestamp) ? (data['lastReviewDate'] as Timestamp).toDate().toISOString() : data['lastReviewDate'],
+      } as UserProfile;
     } else {
       console.log('No user profile found for:', userId);
       return null;
@@ -142,15 +137,12 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
     console.warn('Update user profile called with no data.');
     return;
   }
-  
   const db = getDb();
   const userRef = doc(db, 'users', userId);
-
   try {
-    // Ensure we don't try to update immutable fields like id or createdAt
     const updateData = { 
       ...data,
-      updatedAt: serverTimestamp() // Always update the timestamp
+      updatedAt: serverTimestamp()
     };
     await updateDoc(userRef, updateData);
     console.log('Successfully updated user profile for:', userId);
@@ -163,7 +155,13 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
 export async function getUserReviews(userId: string): Promise<CourseReview[]> {
   try {
     const reviews = await getDocuments('reviews');
-    return reviews.filter(review => review.userId === userId);
+    const userReviews = reviews.filter(review => review.userId === userId);
+    return userReviews.map(review => ({
+        ...review,
+        createdAt: (review.createdAt instanceof Timestamp) ? review.createdAt.toDate() : new Date(review.createdAt),
+        updatedAt: (review.updatedAt instanceof Timestamp) ? review.updatedAt.toDate() : new Date(review.updatedAt),
+        walkingDate: (review.walkingDate instanceof Timestamp) ? review.walkingDate.toDate() : new Date(review.walkingDate),
+    })) as CourseReview[];
   } catch (error) {
     console.error('Error fetching user reviews:', error);
     return [];

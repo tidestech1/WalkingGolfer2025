@@ -1,3 +1,5 @@
+import { DisplayNameType } from './review'; // Import the type
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -12,6 +14,9 @@ export interface UserProfile {
   reviewCount: number;
   lastReviewDate?: string;
   zipcode?: string | null;
+
+  // User's preferred display name setting for reviews
+  reviewDisplayNameType?: DisplayNameType;
 }
 
 export interface UserReviewSummary {
