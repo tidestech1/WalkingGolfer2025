@@ -58,7 +58,6 @@ export default function CourseSearch({ onSelect, selectedCourse }: CourseSearchP
         searchQuery,
         course_types: [],
         course_categories: [],
-        facilities_pushCarts: false,
         pricing_fee_min: 0,
         pricing_fee_max: 0,
         walkabilityRating_overall_min: 0,
@@ -155,10 +154,10 @@ export default function CourseSearch({ onSelect, selectedCourse }: CourseSearchP
                             <CheckIcon className="h-5 w-5 text-blue-600" aria-hidden="true" />
                           )}
                         </div>
-                        <span className={`block truncate text-sm ${
+                        <span className={`block truncate text-sm text-left ${
                           active ? 'text-blue-700' : 'text-gray-500'
                         }`}>
-                          {course.location_city}, {course.location_state}
+                          {course.location_address1 ? `${course.location_address1}, ` : ''}{course.location_city}, {course.location_state}
                         </span>
                       </div>
                     )}

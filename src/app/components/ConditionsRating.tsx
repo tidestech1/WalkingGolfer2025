@@ -55,11 +55,6 @@ export default function ConditionsRating({
           </button>
         ))}
       </div>
-      {descriptions && (hovered || rating) > 0 && (
-        <p className="mt-1 text-sm text-gray-500">
-          {descriptions[hovered || rating]}
-        </p>
-      )}
     </div>
   )
 } 

@@ -37,9 +37,25 @@ export const useAdmin = () => {
 
         // If response is successful, the user is an admin
         setIsAdmin(response.ok);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
+      } catch (error: unknown) {
+        // Check if the error is an instance of Error and resembles a fetch response error
+        // We don't want to log the expected 403 Forbidden for non-admins
+        let shouldLogError = true;
+        if (error instanceof Response) { 
+            // If the error is a Response object itself (can happen with fetch)
+            if (error.status === 403) {
+              shouldLogError = false; 
+            }
+        } else if (error instanceof Error && error.message.includes('403')){
+            // Crude check if the error message contains 403 (less reliable)
+            // A more robust way might involve custom error classes from the API call
+            shouldLogError = false;
+        }
+
+        if (shouldLogError) {
+            console.error('Error checking admin status:', error);
+        }
+        setIsAdmin(false); // Ensure isAdmin is false on any error
       } finally {
         setLoading(false);
       }
