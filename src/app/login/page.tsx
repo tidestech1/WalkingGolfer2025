@@ -4,13 +4,16 @@ import { useState, useEffect, useCallback } from 'react'
 import React from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { signInWithEmail } from '@/lib/firebase/authUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function LoginPage(): JSX.Element {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnUrl = searchParams.get('returnUrl') || ''
+
   const { user, loading: authLoading, signInWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,9 +23,13 @@ export default function LoginPage(): JSX.Element {
   // Handle navigation after successful auth
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/courses');
+      if (returnUrl) {
+        router.push(returnUrl);
+      } else {
+        router.push('/map');
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, returnUrl]);
 
   const handleEmailLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()

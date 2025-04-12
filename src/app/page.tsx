@@ -29,7 +29,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             <Link 
-              href="/courses" 
+              href="/map" 
               className="bg-[#0A3357] hover:bg-[#0A3357]/90 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors w-full sm:w-auto min-w-[200px]"
             >
               Find Courses
