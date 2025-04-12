@@ -33,15 +33,34 @@ export default function MiniHeader(): JSX.Element {
             </Link>
           </div>
 
-          {/* Center section - Essential Navigation */}
-          <div className="hidden md:flex items-center space-x-6 text-sm">
-            <Link href="/map" className="hover:text-[#00FFFF]">Course Finder</Link>
-            <Link href="/about" className="hover:text-[#00FFFF]">About Us</Link>
-            <Link href="/news" className="hover:text-[#00FFFF]">News</Link>
-          </div>
-
-          {/* Right section - Actions */}
+          {/* Right section - Actions - Reordered for Desktop */}
           <div className="flex items-center space-x-4">
+            
+            {/* Desktop Nav Links + Login (Grouped) */}
+            <div className="hidden md:flex items-center space-x-6 text-sm">
+              <Link href="/about" className="hover:text-[#00FFFF]">About Us</Link>
+              <Link href="/map" className="hover:text-[#00FFFF]">Course Finder</Link>
+              <Link href="/news" className="hover:text-[#00FFFF]">News</Link>
+              <Link href="/shop" className="hover:text-[#00FFFF]">Shop</Link>
+              {/* Login/Profile for desktop - styled as plain link */}
+              {user ? (
+                <Link 
+                  href="/profile"
+                  className="text-sm hover:text-[#00FFFF]" 
+                >
+                  Profile
+                </Link>
+              ) : (
+                <Link 
+                  href="/login"
+                  className="text-sm hover:text-[#00FFFF]" 
+                >
+                  Login / Sign Up
+                </Link>
+              )}
+            </div>
+
+            {/* Rate Button (Visible all sizes in this section) */}
             <Link
               href="/rate-course"
               className="bg-white rounded-md px-2 py-1 flex items-center gap-0.5 hover:bg-[#00FFFF] transition-colors"
@@ -57,23 +76,6 @@ export default function MiniHeader(): JSX.Element {
               </div>
             </Link>
             
-            {/* Login/Profile for desktop */}
-            {user ? (
-              <Link 
-                href="/profile"
-                className="hidden md:block text-xs hover:text-[#00FFFF]"
-              >
-                Profile
-              </Link>
-            ) : (
-              <Link 
-                href="/login"
-                className="hidden md:block text-xs hover:text-[#00FFFF]"
-              >
-                Login
-              </Link>
-            )}
-
             {/* Hamburger menu for mobile */}
             <button
               onClick={toggleMenu}

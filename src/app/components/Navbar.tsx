@@ -193,7 +193,7 @@ export default function Navbar(): JSX.Element {
             ) : (
               <Link
                 href="/login"
-                className="bg-white text-[#0A3357] px-6 py-2 rounded-lg hover:bg-[#00FFFF] transition-colors font-medium"
+                className="text-white hover:text-[#00FFFF] font-medium transition-colors"
               >
                 Login / Sign Up
               </Link>
