@@ -56,18 +56,13 @@ export default function CourseActions({ course }: CourseActionsProps): JSX.Eleme
     // Track review attempt
     trackUserInteraction('review_attempt', courseId)
     
-    if (!user) {
-      // Track redirect to login
-      trackUserInteraction('redirect_to_login', 'review_flow')
-      // If not logged in, redirect to login
-      router.push('/login?returnUrl=' + encodeURIComponent(`/courses/${courseId}/review`))
-      return
+    // Track successful review navigation (might need adjustment if user is anonymous initially)
+    // Consider tracking only after successful *submission* for anonymous flow
+    if (user) { // Only track this event if the user IS logged in when clicking
+        trackCourseEvent('start_review', courseId, courseName)
     }
     
-    // Track successful review navigation
-    trackCourseEvent('start_review', courseId, courseName)
-    
-    // Navigate to review page
+    // Navigate to review page for everyone
     router.push(`/courses/${courseId}/review`)
   }
   
