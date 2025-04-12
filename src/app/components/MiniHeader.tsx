@@ -35,7 +35,7 @@ export default function MiniHeader(): JSX.Element {
 
           {/* Center section - Essential Navigation */}
           <div className="hidden md:flex items-center space-x-6 text-sm">
-            <Link href="/courses" className="hover:text-[#00FFFF]">Course Finder</Link>
+            <Link href="/map" className="hover:text-[#00FFFF]">Course Finder</Link>
             <Link href="/about" className="hover:text-[#00FFFF]">About Us</Link>
             <Link href="/news" className="hover:text-[#00FFFF]">News</Link>
           </div>
@@ -98,7 +98,7 @@ export default function MiniHeader(): JSX.Element {
               About Us
             </Link>
             <Link
-              href="/courses"
+              href="/map"
               className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
               onClick={() => toggleMenu()}
             >
