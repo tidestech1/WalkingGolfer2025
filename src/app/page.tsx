@@ -1,46 +1,67 @@
-import { Heart, Leaf, DollarSign } from 'lucide-react'
+import { Heart, Leaf, DollarSign, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
 import { IMAGES } from '@/lib/constants/images'
+import { Button } from '@/components/ui/button'
 
 export default function Home() {
   return (
     <main className="min-h-screen font-outfit">
       {/* Hero Section */}
-      <section className="relative h-[60vh] sm:h-[68vh] flex items-center justify-center">
+      <section className="relative h-[75vh] flex items-center">
         <div className="absolute inset-0 z-0">
           <Image
-            src={IMAGES.backgrounds.hero}
-            alt="Beautiful golf course landscape"
+            src="/backgrounds/hero-walking-couple.png"
+            alt="Man and woman walking on a scenic golf course"
             fill
-            className="object-cover object-[center_65%] brightness-[0.65]"
+            className="object-cover object-center brightness-[0.65]"
             priority
             sizes="100vw"
             quality={90}
           />
         </div>
-        <div className="relative z-10 text-center text-white px-4 max-w-5xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 tracking-tight">
-            The Walking Golfer
+        <div className="relative z-10 text-white px-4 sm:px-8 md:px-16 lg:px-24 max-w-3xl">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
+            Find the Best Walkable Golf Courses in the USA
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl mb-8 sm:mb-10 font-light">
-            Your Ultimate Guide to Walking-Friendly Golf Courses in the USA
+          <p className="text-lg sm:text-xl md:text-2xl mb-8 sm:mb-10 font-light">
+            Use our interactive map to search walkable courses near you, and rate your favorites.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-            <Link 
-              href="/map" 
-              className="bg-[#0A3357] hover:bg-[#0A3357]/90 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors w-full sm:w-auto min-w-[200px]"
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+            <Button 
+              asChild 
+              className="min-w-[200px] h-12 px-10 text-lg bg-[#0A3357] hover:brightness-110 transition-all duration-150 ease-in-out"
             >
-              Find Courses
-            </Link>
-            <Link 
-              href="/map" 
-              className="bg-white hover:bg-[#00FFFF] text-[#0A3357] px-8 py-4 rounded-lg font-semibold text-lg transition-colors w-full sm:w-auto min-w-[200px]"
+              <Link href="/map">
+                FIND A COURSE
+              </Link>
+            </Button>
+            <Button 
+              asChild 
+              variant="outline" 
+              className="min-w-[200px] h-12 px-10 text-lg bg-transparent border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/10 hover:text-[#00FFFF] transition-colors duration-150 ease-in-out"
             >
-              View Map
-            </Link>
+              <Link href="/map" className="flex items-center">
+                <Star className="mr-2 h-5 w-5 text-yellow-500" fill="currentColor" />
+                Rate a Course
+              </Link>
+            </Button>
           </div>
+        </div>
+        <div className="absolute z-10 bottom-8 right-8 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 hidden md:block">
+          <Link href="/map" className="block group">
+            <Image
+              src="/icons/mini-map.png"
+              alt="Mini map illustration"
+              width={270}
+              height={270}
+              className="rounded-full border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300"
+            />
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mb-2 bg-black/70 text-white text-xs font-semibold px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+              Explore Nearby Courses
+            </span>
+          </Link>
         </div>
       </section>
 
