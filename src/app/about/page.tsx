@@ -44,7 +44,7 @@ export default function AboutPage(): JSX.Element {
           </div>
           <div className="relative h-[500px] rounded-xl overflow-hidden shadow-lg">
             <Image
-              src="https://placehold.co/1000x1200/0A3357/FFFFFF?text=Rob+Rigg%0AFounder+of+The+Walking+Golfer"
+              src="https://placehold.co/1000x1200/0A3357/FFFFFF?text=Image+Placeholder%0ARob+Rigg%0AFounder+of+The+Walking+Golfer"
               alt="Rob Rigg, founder of The Walking Golfer"
               fill
               className="object-cover"
@@ -57,12 +57,15 @@ export default function AboutPage(): JSX.Element {
         <div className="relative rounded-xl overflow-hidden mb-24">
           <div className="absolute inset-0">
             <Image
-              src="https://placehold.co/1920x1080/2A5C45/FFFFFF?text=Golf+Course+Landscape%0ASunrise+at+the+First+Tee"
-              alt="Beautiful golf course landscape"
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
+              alt="Golfer walking on a course"
+              className="rounded-lg object-cover w-full h-full"
+              height={1080}
+              src="/images/about-page/sghero-about.webp"
+              style={{
+                aspectRatio: "1920/1080",
+                objectFit: "cover",
+              }}
+              width={1920}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0A3357]/90 to-transparent" />
           </div>
@@ -115,7 +118,7 @@ export default function AboutPage(): JSX.Element {
             </div>
             <div className="relative rounded-lg overflow-hidden h-[300px]">
               <Image
-                src="https://placehold.co/800x600/458332/FFFFFF?text=Walking+Golfer%0AEnjoying+the+Game"
+                src="https://placehold.co/800x600/458332/FFFFFF?text=Image+Placeholder%0Ascreenshot+of+course+info+page"
                 alt="Golfer walking the course"
                 fill
                 className="object-cover"
@@ -129,6 +132,15 @@ export default function AboutPage(): JSX.Element {
         <div className="bg-[#0A3357] rounded-xl shadow-md p-8 text-white">
           <h2 className="text-3xl font-bold mb-6">Our Partnership with Stewart Golf</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div className="relative h-[200px] rounded-lg overflow-hidden">
+              <Image
+                src="/images/about-page/StewartGolf-15.jpg"
+                alt="Stewart Golf Q Follow Electric Trolley and walking golfers"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
             <div className="lg:col-span-2">
               <p className="text-lg leading-relaxed mb-6">
                 We&apos;re proud to partner with Stewart Golf, a company that shares our
@@ -136,21 +148,14 @@ export default function AboutPage(): JSX.Element {
                 more accessible and enjoyable for players of all skill levels.
               </p>
               <a 
-                href="/partners"
+                href="https://www.stewartgolfusa.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center text-white hover:text-blue-200 transition-colors"
               >
-                Learn more about our partnerships
+                Visit Stewart Golf USA
                 <ArrowRight className="ml-2 h-5 w-5" />
               </a>
-            </div>
-            <div className="relative h-[200px] rounded-lg overflow-hidden">
-              <Image
-                src="/images/stewart-golf.jpg"
-                alt="Stewart Golf Q Follow Electric Trolley"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
             </div>
           </div>
         </div>

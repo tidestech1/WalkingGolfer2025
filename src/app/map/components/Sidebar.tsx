@@ -268,7 +268,7 @@ export default function Sidebar({
         </h2>
         <Input 
           type="text"
-          placeholder="Search courses by name, city, state..."
+          placeholder="Type to filter courses by name"
           value={filters.searchQuery || ''}
           onChange={(e) => updateFilters({ searchQuery: e.target.value })}
           className="w-full"
