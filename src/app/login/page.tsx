@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { signInWithEmail } from '@/lib/firebase/authUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { Button } from '@/components/ui/button'
 
 // Wrap the component logic in a separate function to use hooks
 const LoginContent = () => {
@@ -164,6 +165,12 @@ const LoginContent = () => {
               {loading ? 'Signing in...' : 'Sign in with Email'}
             </button>
           </form>
+
+          <Button asChild variant="outline" className="w-full mt-4 border-[#0A3357] text-[#0A3357] hover:bg-[#0A3357]/10">
+            <Link href="/signup">
+              Don&apos;t have an account? Sign up
+            </Link>
+          </Button>
         </div>
         
         <div className="mt-6">
@@ -194,13 +201,6 @@ const LoginContent = () => {
             </button>
           </div>
         </div>
-        
-        <p className="text-center mt-8 text-sm text-gray-600">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-medium text-blue-600 hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
