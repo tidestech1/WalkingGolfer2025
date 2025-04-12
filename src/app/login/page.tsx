@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import React from 'react'
 
 import Link from 'next/link'
@@ -9,7 +9,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { signInWithEmail } from '@/lib/firebase/authUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
 
-export default function LoginPage(): JSX.Element {
+// Wrap the component logic in a separate function to use hooks
+const LoginContent = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnUrl = searchParams.get('returnUrl') || ''
@@ -34,8 +35,8 @@ export default function LoginPage(): JSX.Element {
   const handleEmailLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) {
-return
-}
+      return;
+    }
 
     setError('')
     setLoading(true)
@@ -52,8 +53,8 @@ return
 
   const handleGoogleLogin = useCallback(async () => {
     if (loading) {
-return
-}
+      return;
+    }
 
     setError('')
     setLoading(true)
@@ -81,18 +82,18 @@ return
 
   const onSubmitWrapper = (e: React.FormEvent) => {
     handleEmailLogin(e).catch(err => {
-        console.error("Error during email login submission:", err);
-        setError("An unexpected error occurred during login.");
-        setLoading(false);
+      console.error("Error during email login submission:", err);
+      setError("An unexpected error occurred during login.");
+      setLoading(false);
     });
   }
 
   const onClickWrapper = () => {
-      handleGoogleLogin().catch(err => {
-          console.error("Error during Google login click:", err);
-          setError("An unexpected error occurred during Google login.");
-          setLoading(false);
-      });
+    handleGoogleLogin().catch(err => {
+      console.error("Error during Google login click:", err);
+      setError("An unexpected error occurred during Google login.");
+      setLoading(false);
+    });
   }
 
   return (
@@ -202,5 +203,20 @@ return
         </p>
       </div>
     </div>
-  )
+  );
+}
+
+export default function LoginPage(): JSX.Element {
+  // Define a simple loading fallback UI
+  const fallback = (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+
+  return (
+    <Suspense fallback={fallback}>
+      <LoginContent />
+    </Suspense>
+  );
 } 
