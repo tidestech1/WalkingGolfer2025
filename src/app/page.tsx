@@ -42,7 +42,7 @@ export default function Home() {
               variant="outline" 
               className="w-full sm:flex-1 h-12 px-10 text-lg bg-transparent border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/10 hover:text-[#00FFFF] transition-colors duration-150 ease-in-out"
             >
-              <Link href="/map" className="flex items-center justify-center">
+              <Link href="/add-review" className="flex items-center justify-center">
                 <Star className="mr-2 h-5 w-5 text-yellow-500" fill="currentColor" />
                 Rate a Course
               </Link>
