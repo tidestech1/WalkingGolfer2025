@@ -307,6 +307,16 @@ export default function MapPage(): JSX.Element {
               />
             </div>
           )}
+          {/* Loading Indicator Overlay */}
+          {mapLoaded && loading && (
+            <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-10 pointer-events-none">
+              {/* Style using tokens/Tailwind according to brandguide.md */}
+              <div className="bg-white p-4 rounded-lg shadow-xl">
+                <p className="text-lg font-semibold text-gray-800">Loading courses...</p>
+                {/* Optional: Add a spinner component here if available */}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* List View */}
@@ -397,6 +407,16 @@ export default function MapPage(): JSX.Element {
                 onLocationSelect={handleLocationSelect} 
                 onSkip={handleSkipLocation} 
               />
+            </div>
+          )}
+          {/* Loading Indicator Overlay */}
+          {mapLoaded && loading && (
+            <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-10 pointer-events-none">
+              {/* Style using tokens/Tailwind according to brandguide.md */}
+              <div className="bg-white p-4 rounded-lg shadow-xl">
+                <p className="text-lg font-semibold text-gray-800">Loading courses...</p>
+                {/* Optional: Add a spinner component here if available */}
+              </div>
             </div>
           )}
         </div>
