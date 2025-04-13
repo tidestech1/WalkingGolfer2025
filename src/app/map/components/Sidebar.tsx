@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useEffect } from 'react';
 
-import { MapPin, ArrowLeft } from 'lucide-react';
+import { MapPin, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
@@ -53,12 +53,16 @@ export default function Sidebar({
   }, [selectedCourseIndex]);
 
   if (filtersOnly) {
-    const hasActiveFilters = 
-      filters.walkabilityRating_overall_min > 0 ||
-      filters.course_types.length > 0 ||
-      filters.course_categories.length > 0 ||
-      filters.pricing_fee_min > 0 ||
-      filters.pricing_fee_max > 0;
+    // Calculate active filter count (matching mobile logic)
+    const activeFilterCount = [
+        filters.walkabilityRating_overall_min > 0,
+        (filters.course_types && filters.course_types.length > 0),
+        (filters.course_categories && filters.course_categories.length > 0),
+        filters.pricing_fee_min > 0 || filters.pricing_fee_max > 0
+    ].filter(Boolean).length;
+
+    // Use activeFilterCount to determine if any filters are active
+    const hasActiveFilters = activeFilterCount > 0;
 
     return (
       <div className="h-full flex flex-col">
@@ -89,12 +93,31 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="hidden lg:block p-3">
-          {hasActiveFilters && (
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-xs text-gray-500">Active filters</span>
+        <div className="hidden lg:block p-3 border-b mb-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {activeFilterCount > 0 ? (
+                <span>{activeFilterCount} active filter{activeFilterCount !== 1 ? 's' : ''}</span>
+              ) : (
+                <span>No filters applied</span>
+              )}
             </div>
-          )}
+            {hasActiveFilters && (
+              <button
+                onClick={() => onFilterChange({
+                  walkabilityRating_overall_min: 0,
+                  course_types: [],
+                  course_categories: [],
+                  pricing_fee_min: 0,
+                  pricing_fee_max: 0
+                })}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <X className="w-4 h-4" />
+                Reset all
+              </button>
+            )}
+          </div>
         </div>
         
         <div className={cn(
