@@ -98,7 +98,7 @@ const LoginContent = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 p-4 pt-16 sm:pt-20 font-sans">
+    <div className="flex flex-col items-center bg-gray-50 p-4 pt-16 sm:pt-20 font-sans mb-16">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-[#0A3357]">Welcome back</h2>
