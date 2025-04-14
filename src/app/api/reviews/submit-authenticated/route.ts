@@ -24,9 +24,6 @@ const authenticatedSubmitSchema = z.object({
   pros: z.array(z.string()),
   cons: z.array(z.string()),
   imageUrls: z.array(z.string().url()).optional(),
-  usedGolfCart: z.boolean(),
-  usedPushCart: z.boolean(),
-  cartExperience: z.string().optional(),
 });
 type AuthenticatedSubmitData = z.infer<typeof authenticatedSubmitSchema>;
 
@@ -119,17 +116,12 @@ export async function POST(request: NextRequest) {
       walkingDate: new Date(data.walkingDate),
       pros: data.pros,
       cons: data.cons,
-      usedGolfCart: data.usedGolfCart,
-      usedPushCart: data.usedPushCart,
       createdAt: FieldValue.serverTimestamp() as any,
       updatedAt: FieldValue.serverTimestamp() as any,
     };
 
     // Conditionally add optional fields 
     const reviewData: Omit<CourseReview, 'id'> = { ...reviewDataBase };
-    if (data.cartExperience) {
-      reviewData.cartExperience = data.cartExperience;
-    }
     if (data.imageUrls && data.imageUrls.length > 0) {
       reviewData.imageUrls = data.imageUrls;
     }

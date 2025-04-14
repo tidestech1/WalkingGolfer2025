@@ -373,10 +373,6 @@ export default function Map({
 
   return (
     <div className="relative w-full h-full">
-      <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border text-sm">
-        {courses.length} courses
-      </div>
-
       {/* Ensure SearchBox is above overlays */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-[600px] z-30">
         <SearchBox onPlaceSelect={internalHandlePlaceSelect} />

@@ -63,9 +63,6 @@ const ratingFormSchema = z.object({
   walkingDate: z.string().optional(), // Made optional
   pros: z.array(z.string()).optional(),
   cons: z.array(z.string()).optional(),
-  usedGolfCart: z.boolean(),
-  usedPushCart: z.boolean(),
-  cartExperience: z.string().optional(), // Keep optional in schema if API might use it later
 });
 type RatingFormData = z.infer<typeof ratingFormSchema>;
 
@@ -97,24 +94,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   // Course conditions state - ensure non-null values
   const [courseConditionRating, setCourseConditionRating] = useState<number>(0)
   const [hoveredConditionRating, setHoveredConditionRating] = useState<number>(0)
-
-  // Facilities state
-  const [facilities, setFacilities] = useState({
-    proShop: false,
-    barRestaurant: false,
-    changingRoom: false,
-    lockers: false,
-    
-    drivingRange: false,
-    puttingGreen: false,
-    chippingGreen: false,
-    practiceBunker: false,
-    
-    caddies: false,
-    clubRental: false,
-    golfCarts: false,
-    pushCarts: false
-  })
 
   // Pros and Cons
   const [pros, setPros] = useState<string[]>([''])
@@ -195,9 +174,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         walkingDate: walkingDateElement?.value || undefined, // Use undefined for optional empty string
         pros: pros.filter(pro => pro.trim()),
         cons: cons.filter(con => con.trim()),
-        usedGolfCart: facilities.golfCarts,
-        usedPushCart: facilities.pushCarts,
-        cartExperience: undefined, // Set explicitly to undefined as field is removed
     };
 
     // Validate the raw data
@@ -611,7 +587,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Conditions *
+              Course Quality *
             </label>
             <ConditionsRating
               rating={courseConditionRating}
@@ -620,17 +596,17 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               setHovered={setHoveredConditionRating}
               size="lg"
               descriptions={{
-                1: "Poor conditions",
-                2: "Below average conditions",
-                3: "Average conditions",
-                4: "Good conditions",
-                5: "Excellent conditions"
+                1: "Poor course quality",
+                2: "Below average course quality",
+                3: "Average course quality",
+                4: "Good course quality",
+                5: "Excellent course quality"
               }}
             />
             <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
               {(hoveredConditionRating || courseConditionRating) > 0
                 ? (
-                    {1: "Poor conditions", 2: "Below average conditions", 3: "Average conditions", 4: "Good conditions", 5: "Excellent conditions"}
+                    {1: "Poor course quality", 2: "Below average course quality", 3: "Average course quality", 4: "Good course quality", 5: "Excellent course quality"}
                     [hoveredConditionRating || courseConditionRating] || ''
                   )
                 : 'Larger icons mean better maintained'
@@ -638,51 +614,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
             </p>
             {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
           </div>
-        </div>
-      </div>
-
-      {/* Section 4: Course Facilities */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-[#0A3357]">Course Facilities & Cart Options</h2>
-          <p className="text-sm text-gray-600">
-            Please select all the facilities and amenities available at this course.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[
-            // Main facilities
-            { id: 'proShop', label: 'Pro Shop' },
-            { id: 'barRestaurant', label: 'Bar/Restaurant' },
-            { id: 'changingRoom', label: 'Changing Room' },
-            { id: 'lockers', label: 'Lockers' },
-
-            // Practice areas
-            { id: 'drivingRange', label: 'Driving Range' },
-            { id: 'puttingGreen', label: 'Putting Green' },
-            { id: 'chippingGreen', label: 'Chipping Green' },
-            { id: 'practiceBunker', label: 'Practice Bunker' },
-
-            // Rentals and services
-            { id: 'caddies', label: 'Caddies' },
-            { id: 'clubRental', label: 'Club Rental' },
-            { id: 'golfCarts', label: 'Cart Rental (Ride-in)' },
-            { id: 'pushCarts', label: 'Push/Pull Cart Rental' }
-          ].map(({ id, label }) => (
-            <div key={id} className="flex items-center">
-              <input
-                id={id}
-                type="checkbox"
-                checked={facilities[id as keyof typeof facilities]}
-                onChange={(e) => setFacilities({...facilities, [id]: e.target.checked})}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor={id} className="ml-3 text-sm text-gray-700">
-                {label}
-              </label>
-            </div>
-          ))}
         </div>
       </div>
 

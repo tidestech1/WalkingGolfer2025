@@ -28,9 +28,6 @@ const submitReviewSchema = z.object({
   pros: z.array(z.string()),
   cons: z.array(z.string()),
   imageUrls: z.array(z.string().url()).optional(),
-  usedGolfCart: z.boolean(),
-  usedPushCart: z.boolean(),
-  cartExperience: z.string().optional(),
 
   // Fields from the pre-submission modal
   submittedEmail: z.string().email(),
@@ -54,7 +51,7 @@ export async function POST(request: NextRequest) {
     const data: SubmitReviewData = validationResult.data;
 
     // Base object with required fields and fields guaranteed by validation
-    const reviewToCreateBase: Omit<CourseReview, 'id' | 'submittedName' | 'imageUrls' | 'cartExperience'> = {
+    const reviewToCreateBase: Omit<CourseReview, 'id' | 'submittedName' | 'imageUrls'> = {
       courseId: data.courseId,
       userId: null,
       userDisplayName: null,
@@ -74,8 +71,6 @@ export async function POST(request: NextRequest) {
       walkingDate: new Date(data.walkingDate),
       pros: data.pros,
       cons: data.cons,
-      usedGolfCart: data.usedGolfCart,
-      usedPushCart: data.usedPushCart,
       createdAt: FieldValue.serverTimestamp() as any,
       updatedAt: FieldValue.serverTimestamp() as any,
     };
@@ -87,9 +82,6 @@ export async function POST(request: NextRequest) {
     }
     if (data.imageUrls && data.imageUrls.length > 0) {
       reviewToCreate.imageUrls = data.imageUrls;
-    }
-    if (data.cartExperience) {
-      reviewToCreate.cartExperience = data.cartExperience;
     }
 
     // Add the pending review to Firestore using Admin SDK syntax

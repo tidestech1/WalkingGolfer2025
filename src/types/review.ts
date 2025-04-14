@@ -37,11 +37,6 @@ export interface CourseReview {
   cons: string[];
   imageUrls?: string[];
   
-  // Cart experience
-  usedGolfCart: boolean;
-  usedPushCart: boolean;
-  cartExperience?: string;
-  
   // Timestamps (createdAt can represent submitted_at for pending reviews)
   createdAt: Date;
   updatedAt: Date;
@@ -54,8 +49,7 @@ export interface ReviewFilters {
   maxRating?: number;
   minWalkabilityRating?: number;
   maxWalkabilityRating?: number;
-  usedGolfCart?: boolean;
-  usedPushCart?: boolean;
+  // REMOVED cart filters
   dateRange?: {
     start: Date;
     end: Date;
@@ -77,10 +71,7 @@ export interface ReviewStats {
   };
   mostCommonPros: string[];
   mostCommonCons: string[];
-  cartUsageStats: {
-    golfCartUsage: number;
-    pushCartUsage: number;
-  };
+  // REMOVED cart usage stats
   recentReviews: CourseReview[];
 }
 
@@ -101,9 +92,7 @@ export interface CreateReviewInput {
   pros: string[];
   cons: string[];
   imageUrls?: string[];
-  usedGolfCart: boolean;
-  usedPushCart: boolean;
-  cartExperience?: string;
+  // REMOVED cart fields
 
   // Add fields submitted by potentially non-logged-in user
   submittedEmail: string;
