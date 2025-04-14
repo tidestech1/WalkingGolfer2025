@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 
 import { MapPin, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ interface SidebarProps {
   filtersOnly?: boolean;
   onClose?: () => void;
   selectedCourseIndex?: number | null;
+  isZoomedOut?: boolean;
 }
 
 export default function Sidebar({
@@ -33,7 +34,8 @@ export default function Sidebar({
   totalInBounds,
   filtersOnly = false,
   onClose,
-  selectedCourseIndex
+  selectedCourseIndex,
+  isZoomedOut
 }: SidebarProps) {
   const updateFilters = (updates: Partial<CourseFilters>) => {
     onFilterChange({ ...filters, ...updates });
@@ -51,6 +53,8 @@ export default function Sidebar({
       });
     }
   }, [selectedCourseIndex]);
+
+  const [showAllFilters, setShowAllFilters] = useState(false);
 
   if (filtersOnly) {
     // Calculate active filter count (matching mobile logic)
@@ -284,19 +288,29 @@ export default function Sidebar({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b sticky top-0 bg-white z-10">
-        <h2 className="text-sm font-semibold mb-2">
-          Showing {courses.length} of {totalInBounds ?? courses.length} courses found
-        </h2>
-        <Input 
-          type="text"
-          placeholder="Type to filter courses by name"
-          value={filters.searchQuery || ''}
-          onChange={(e) => updateFilters({ searchQuery: e.target.value })}
-          className="w-full"
-        />
-      </div>
+    <div className={cn("bg-white h-full flex flex-col", filtersOnly ? "w-full" : "w-full lg:w-[360px]")}>
+      {/* Header */}
+      {!filtersOnly && (
+        <div className="p-4 border-b sticky top-0 bg-white z-10">
+          <div className="mb-3">
+            {/* Conditional Header Text */}
+            {isZoomedOut ? (
+              <p className="text-sm text-gray-600">Zoom in or search to find courses</p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Showing {courses.length} of {totalInBounds ?? courses.length} courses found
+              </p>
+            )}
+          </div>
+          <Input 
+            type="text"
+            placeholder="Type to filter courses by name"
+            value={filters.searchQuery || ''}
+            onChange={(e) => updateFilters({ searchQuery: e.target.value })}
+            className="w-full"
+          />
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {courses.length === 0 ? (

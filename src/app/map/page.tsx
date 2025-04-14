@@ -20,6 +20,7 @@ import { LocationPrompt } from './components/LocationPrompt';
 const COURSES_PER_PAGE = 20;
 const LOCATION_PROMPT_SEEN_KEY = 'walkingGolfer_hasSeenLocationPrompt';
 const DEFAULT_ZOOM = 8;
+const MIN_ZOOM_FOR_MARKERS = 7.5;
 
 // Dynamically import the Map component with no SSR
 const MapComponent = dynamic(
@@ -54,6 +55,8 @@ export default function MapPage(): JSX.Element {
   const [activeMobileView, setActiveMobileView] = useState<'map' | 'list'>('map');
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [targetMapBounds, setTargetMapBounds] = useState<MapBounds | null>(null);
+  const [isZoomedOut, setIsZoomedOut] = useState<boolean>(false);
 
   // Initialize showLocationPrompt state based on sessionStorage
   const [showLocationPrompt, setShowLocationPrompt] = useState<boolean>(() => {
@@ -69,6 +72,19 @@ export default function MapPage(): JSX.Element {
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const loadCourses = useCallback(async (bounds?: MapBounds, currentFilters?: CourseFilters) => {
+    // Get current zoom level directly from mapRef
+    const currentZoom = mapRef.current?.getZoom(); 
+
+    // Guard: Check zoom level before proceeding
+    if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
+        console.log(`loadCourses skipped: Current zoom (${currentZoom}) is below threshold (${MIN_ZOOM_FOR_MARKERS}).`);
+        // Ensure data is cleared if we skip loading due to zoom
+        setFilteredCourses([]);
+        setCoursesInBounds([]);
+        setCoursesInBoundsCount(0);
+        return; // Do not proceed with fetching
+    }
+
     if (!isFirebaseAvailable() || !db) {
       console.error('Firebase not initialized or DB is null');
       setError('Unable to connect to the course database');
@@ -85,6 +101,8 @@ export default function MapPage(): JSX.Element {
 
     setLoading(true);
     setError(null);
+
+    console.log(`[page.tsx LOG] loadCourses: Querying with bounds:`, JSON.stringify(bounds));
 
     try {
       const coursesRef = collection(db, 'courses');
@@ -197,17 +215,18 @@ export default function MapPage(): JSX.Element {
   }, [debouncedLoadCourses, filters]);
 
   useEffect(() => {
-    if (mapBounds) {
-        console.debug("mapBounds changed, triggering loadCourses:", mapBounds);
-        // Directly call loadCourses or use debounced version?
-        // Using debounced version seems safer if bounds change rapidly initially
-        debouncedLoadCourses(mapBounds, filters);
-    } else {
-        // Optional: Clear courses if bounds become null (e.g., initial state)
-        // setFilteredCourses([]);
+    // Guard: Only proceed if map is loaded and bounds are available
+    if (!mapLoaded || !mapBounds || !mapRef.current) {
+        return; 
     }
-  // Watch mapBounds and filters
-  }, [mapBounds, filters, debouncedLoadCourses]);
+    
+    // Always call debouncedLoadCourses, passing the current zoom level.
+    // loadCourses itself will decide whether to proceed based on zoom.
+    console.debug(`useEffect[mapLoaded, mapBounds, filters]: Calling debouncedLoadCourses`);
+    debouncedLoadCourses(mapBounds, filters);
+
+  // Watch mapLoaded, mapBounds, filters. LoadCourses handles zoom check.
+  }, [mapLoaded, mapBounds, filters, debouncedLoadCourses]);
 
   const handleCourseSelect = useCallback((course: GolfCourse) => {
     setSelectedCourseId(course.id);
@@ -234,20 +253,41 @@ export default function MapPage(): JSX.Element {
     }
   }, []);
 
-  // handlePlaceSelect now uses component state mapRef
+  // handlePlaceSelect: Calculate target bounds and update state, let MapComponent handle view
   const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
-    if (!place.geometry || !mapRef.current) {
-      console.warn("handlePlaceSelect: Invalid place data or map not ready.");
+    if (!place.geometry) {
+      console.warn("handlePlaceSelect: Invalid place data.");
       return;
     }
-    if (place.geometry.viewport) {
-      mapRef.current.fitBounds(place.geometry.viewport);
-    } else if (place.geometry.location) {
-      mapRef.current.setCenter(place.geometry.location);
-      mapRef.current.setZoom(DEFAULT_ZOOM);
+
+    let newBounds: MapBounds | null = null;
+
+    if (place.geometry?.viewport) {
+        console.log("handlePlaceSelect: Calculating bounds from viewport");
+        const ne = place.geometry.viewport.getNorthEast();
+        const sw = place.geometry.viewport.getSouthWest();
+        if (ne && sw) {
+            newBounds = {
+                north: ne.lat(),
+                south: sw.lat(),
+                east: ne.lng(),
+                west: sw.lng()
+            };
+        }
+    } else {
+        console.warn("handlePlaceSelect: Viewport not available for place. Cannot set target bounds.");
     }
-    setShowLocationPrompt(false);
-  }, []); // No dependency on mapRef needed
+
+    if (newBounds) {
+        console.log("handlePlaceSelect: Setting targetMapBounds and mapBounds states:", newBounds);
+        setTargetMapBounds(newBounds); // Update state for MapComponent prop
+        setMapBounds(newBounds);      // Update state to trigger data loading effect
+    } else {
+        console.warn("handlePlaceSelect: Could not determine new bounds for place selection.");
+    }
+
+    setShowLocationPrompt(false); 
+  }, [setTargetMapBounds, setMapBounds]); // Depends only on setters
 
   // handleLocationSelect now uses component state mapRef
   const handleLocationSelect = useCallback((location: google.maps.LatLngLiteral): void => {
@@ -270,6 +310,11 @@ export default function MapPage(): JSX.Element {
     setUserLocation(null);
     // Persist the choice in sessionStorage
     sessionStorage.setItem(LOCATION_PROMPT_SEEN_KEY, 'true'); // Use sessionStorage
+  }, []);
+
+  // Callback for MapComponent to report zoom status
+  const handleZoomStatusChange = useCallback((status: boolean) => {
+    setIsZoomedOut(status);
   }, []);
 
   if (error) {
@@ -297,6 +342,8 @@ export default function MapPage(): JSX.Element {
               setMapLoaded(true);
             }}
             onPlaceSelect={handlePlaceSelect}
+            targetBounds={targetMapBounds}
+            onZoomStatusChange={handleZoomStatusChange}
           />
           {/* Render LocationPrompt overlay here for mobile */}
           {mapLoaded && !userLocation && showLocationPrompt && (
@@ -323,7 +370,8 @@ export default function MapPage(): JSX.Element {
         <div className={cn(
           'fixed inset-x-0 top-10 bottom-24 bg-white transition-transform duration-300 transform',
            // Show list when activeMobileView is 'list'
-           activeMobileView === 'list' ? 'translate-x-0' : '-translate-x-full'
+           activeMobileView === 'list' ? 'translate-x-0' : '-translate-x-full', 
+           isZoomedOut ? 'hidden' : ''
         )}>
           <div className="h-full">
             <Sidebar
@@ -335,6 +383,7 @@ export default function MapPage(): JSX.Element {
               totalInBounds={coursesInBoundsCount}
               selectedCourseIndex={selectedCourseIndex}
               onClose={() => {}}
+              isZoomedOut={isZoomedOut}
             />
           </div>
         </div>
@@ -375,15 +424,24 @@ export default function MapPage(): JSX.Element {
 
         {/* Middle Column - Course Listings */}
         <div className="w-[360px] border-r">
-          <Sidebar
-            courses={filteredCourses}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onCourseSelect={handleCourseSelect}
-            selectedCourseId={selectedCourseId || null}
-            totalInBounds={coursesInBoundsCount}
-            selectedCourseIndex={selectedCourseIndex}
-          />
+          {/* Conditionally render sidebar based on zoom */}
+          {!isZoomedOut ? (
+            <Sidebar
+              courses={filteredCourses}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onCourseSelect={handleCourseSelect}
+              selectedCourseId={selectedCourseId || null}
+              totalInBounds={coursesInBoundsCount}
+              selectedCourseIndex={selectedCourseIndex}
+              isZoomedOut={isZoomedOut}
+            />
+          ) : (
+            // Placeholder or message when zoomed out for desktop list column
+            <div className="p-4 text-center text-gray-500">
+              <p>Zoom in on the map to view courses.</p>
+            </div>
+          )}
         </div>
 
         {/* Right Column - Map */}
@@ -399,6 +457,8 @@ export default function MapPage(): JSX.Element {
               setMapLoaded(true);
             }}
             onPlaceSelect={handlePlaceSelect}
+            targetBounds={targetMapBounds}
+            onZoomStatusChange={handleZoomStatusChange}
           />
           {/* Render LocationPrompt overlay here for desktop */}
           {mapLoaded && !userLocation && showLocationPrompt && (

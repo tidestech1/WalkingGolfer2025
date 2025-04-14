@@ -7,6 +7,7 @@ import { GoogleMap, useLoadScript, Libraries, InfoWindow } from '@react-google-m
 import { debounce } from 'lodash';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 import { GolfCourse, MapBounds } from '@/types/course';
 
@@ -16,7 +17,7 @@ import { SearchBox } from './SearchBox';
 import { useProgressiveLoading } from '../hooks/useProgressiveLoading';
 import {} from '@/lib/utils';
 
-const MIN_ZOOM_FOR_MARKERS = 5;
+const MIN_ZOOM_FOR_MARKERS = 7.5;
 const DEFAULT_ZOOM = 8;
 
 const GOOGLE_MAPS_LIBRARIES: Libraries = ['places', 'marker'] as const;
@@ -29,6 +30,8 @@ interface MapProps {
   loading?: boolean;
   onMapLoad: (map: google.maps.Map) => void;
   onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
+  targetBounds?: MapBounds | null;
+  onZoomStatusChange: (isZoomedOut: boolean) => void;
 }
 
 const defaultCenter = {
@@ -75,10 +78,12 @@ export default function Map({
   loading,
   onMapLoad,
   onPlaceSelect,
+  targetBounds,
+  onZoomStatusChange,
 }: MapProps): JSX.Element | React.ReactNode {
-  const [showZoomMessage, setShowZoomMessage] = useState(false);
+  const [showZoomMessage, setShowZoomMessage] = useState<boolean>(false);
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [currentMapZoom, setCurrentMapZoom] = useState<number>(DEFAULT_ZOOM);
   const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<GoogleMarkerClusterer | null>(null);
@@ -93,7 +98,7 @@ export default function Map({
   const { isLoading, progress } = useProgressiveLoading({
     allCourses: courses,
     bounds: currentBounds,
-    zoom
+    zoom: currentMapZoom
   });
 
   const mapOptions = useMemo((): google.maps.MapOptions => {
@@ -170,78 +175,85 @@ export default function Map({
   }, [getMarkerScale]);
 
   const updateVisibleMarkers = useCallback((): void => {
+    console.log('[MapComponent LOG] updateVisibleMarkers called.');
     const map = mapRef.current;
 
     if (!map || !isLoaded) {
+      console.log('[MapComponent LOG] updateVisibleMarkers exiting: map or isLoaded false.');
+      return;
+    }
+
+    // Get zoom level directly inside the callback
+    const currentZoom = map.getZoom();
+    console.log(`[MapComponent LOG] updateVisibleMarkers: Direct zoom check=${currentZoom}, courses.length=${courses?.length ?? 'undefined'}`);
+
+    // Check zoom level DIRECTLY before deciding to show markers
+    if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
+      console.log(`[MapComponent LOG] updateVisibleMarkers: Zoom (${currentZoom}) <= threshold, clearing markers.`);
+      if (clustererRef.current) {
+        clustererRef.current.clearMarkers();
+      }
+      setSelectedInfoWindowCourse(null);
       return;
     }
 
     if (!courses || courses.length === 0) {
-        if (clustererRef.current && markersRef.current.length > 0) {
-            clustererRef.current.clearMarkers();
-            markersRef.current = [];
-        }
-        setSelectedInfoWindowCourse(null);
-        return;
-    }
-
-    const bounds = map.getBounds();
-    const currentZoom = map.getZoom();
-
-    if (!bounds || typeof currentZoom !== 'number') {
-      return;
-    }
-
-    const isZoomedOut = currentZoom < MIN_ZOOM_FOR_MARKERS;
-    setShowZoomMessage(isZoomedOut);
-
-    if (isZoomedOut) {
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
+      console.log('[MapComponent LOG] updateVisibleMarkers: No courses or empty array, clearing markers and returning.');
+      if (clustererRef.current && markersRef.current.length > 0) {
+          clustererRef.current.clearMarkers();
+          markersRef.current = [];
       }
       setSelectedInfoWindowCourse(null);
       return;
     }
 
+    console.log('[MapComponent LOG] updateVisibleMarkers: Proceeding to marker creation/update.');
     if (markersRef.current.length === 0 || markersRef.current.length !== courses.length) {
+      console.log(`[MapComponent LOG] updateVisibleMarkers: Recreating markers. Initial courses count: ${courses.length}`);
       if (clustererRef.current) {
         clustererRef.current.clearMarkers();
       }
       setSelectedInfoWindowCourse(null);
 
-      const newMarkers = courses
+      const validCourses = courses
         .filter(course => {
           const valid = isValidCoordinate(course.location_coordinates_latitude, course.location_coordinates_longitude);
           if (!valid) {
             console.warn(`Invalid coordinates for course ${course.id}:`, course.location_coordinates_latitude, course.location_coordinates_longitude);
           }
           return valid;
-        })
-        .map(course => {
-          const marker = new google.maps.marker.AdvancedMarkerElement({
-            position: {
-              lat: course.location_coordinates_latitude,
-              lng: course.location_coordinates_longitude
-            },
-            title: course.courseName,
-            content: createMarkerIcon(course, course.id === selectedCourseId).element
-          });
-
-          marker.addEventListener('click', (event: MouseEvent) => {
-            event.stopPropagation();
-            console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`); 
-            onCourseSelect(course);
-            setSelectedInfoWindowCourse(course);
-          });
-
-          return marker;
         });
 
+      console.log(`[MapComponent LOG] updateVisibleMarkers: Found ${validCourses.length} courses with valid coordinates.`);
+
+      const newMarkers = validCourses.map(course => {
+        const marker = new google.maps.marker.AdvancedMarkerElement({
+          position: {
+            lat: course.location_coordinates_latitude,
+            lng: course.location_coordinates_longitude
+          },
+          title: course.courseName,
+          content: createMarkerIcon(course, course.id === selectedCourseId).element
+        });
+
+        marker.addEventListener('click', (event: MouseEvent) => {
+          event.stopPropagation();
+          console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`); 
+          onCourseSelect(course);
+          setSelectedInfoWindowCourse(course);
+        });
+
+        return marker;
+      });
+
+      console.log(`[MapComponent LOG] updateVisibleMarkers: Created ${newMarkers.length} marker elements.`);
+
       if (clustererRef.current && newMarkers.length > 0) {
-        console.debug(`updateVisibleMarkers: Adding ${newMarkers.length} markers to clusterer.`);
+        console.log(`[MapComponent LOG] updateVisibleMarkers: Adding ${newMarkers.length} markers to clusterer...`);
         clustererRef.current.addMarkers(newMarkers);
+        console.log(`[MapComponent LOG] updateVisibleMarkers: Finished adding markers to clusterer.`);
       } else {
-        console.debug("updateVisibleMarkers: No valid markers to add.");
+        console.log("[MapComponent LOG] updateVisibleMarkers: No clusterer available or no valid markers to add.");
       }
       markersRef.current = newMarkers;
     } else {
@@ -265,44 +277,56 @@ export default function Map({
       const bounds = map.getBounds();
       if (bounds) {
         onBoundsChanged(convertToMapBounds(bounds));
+        // Check zoom level on bounds_changed and update state/notify parent
+        const currentZoom = map.getZoom();
+        if (typeof currentZoom === 'number') {
+          setCurrentMapZoom(currentZoom);
+          const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
+          // Always update state and notify parent on bounds_changed
+          console.log(`[MapComponent LOG] useEffect[bounds_changed]: fitBounds complete. New zoom=${currentZoom}, isNowZoomedOut=${isZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
+          setShowZoomMessage(isZoomedOut);
+          onZoomStatusChange(isZoomedOut);
+        } else {
+           console.warn('[MapComponent LOG] useEffect[bounds_changed]: Could not get zoom after fitBounds.');
+        }
       }
     });
-  }, [onMapLoad, onBoundsChanged]);
 
-  const debouncedBoundsChanged = useMemo(
-    () => debounce((bounds: google.maps.LatLngBounds) => {
-      if (!mapRef.current) {
-return;
-}
-      
-      onBoundsChanged({
-        north: bounds.getNorthEast().lat(),
-        south: bounds.getSouthWest().lat(),
-        east: bounds.getNorthEast().lng(),
-        west: bounds.getSouthWest().lng()
-      });
-    }, 300),
-    [onBoundsChanged]
-  );
+  }, [onMapLoad, onBoundsChanged]);
 
   useEffect(() => {
     if (!mapRef.current || !isLoaded) {
-return;
-}
+      return;
+    }
     
     const map = mapRef.current;
-    const listener = map.addListener('idle', () => {
+    // Use bounds_changed listener to check zoom status and report bounds
+    const boundsListener = map.addListener('bounds_changed', () => {
       const bounds = map.getBounds();
       if (bounds) {
-        debouncedBoundsChanged(bounds);
+        // Directly call onBoundsChanged with converted bounds
+        onBoundsChanged(convertToMapBounds(bounds));
+      }
+
+      // Check zoom level on bounds_changed and update state/notify parent
+      const currentZoom = map.getZoom();
+      if (typeof currentZoom === 'number') {
+        setCurrentMapZoom(currentZoom);
+        const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
+        // Always update state and notify parent on bounds_changed
+        console.log(`[MapComponent LOG] bounds_changed listener: zoom=${currentZoom}, isZoomedOut=${isZoomedOut}. Current state showZoomMessage=${showZoomMessage}. Calling setShowZoomMessage(${isZoomedOut})`);
+        setShowZoomMessage(isZoomedOut);
+        onZoomStatusChange(isZoomedOut);
+      } else {
+        console.warn('[MapComponent LOG] bounds_changed listener: Could not get zoom.');
       }
     });
     
     return () => {
-      google.maps.event.removeListener(listener);
-      debouncedBoundsChanged.cancel();
+      google.maps.event.removeListener(boundsListener); // Clean up bounds listener
     };
-  }, [debouncedBoundsChanged, isLoaded]);
+    // Dependencies: If any of these change, the listener needs to be reset
+  }, [isLoaded, onBoundsChanged, onZoomStatusChange, setShowZoomMessage, setCurrentMapZoom]);
 
   useEffect(() => {
     if (mapRef.current && isLoaded && !loading) {
@@ -313,6 +337,29 @@ return;
   const internalHandlePlaceSelect = useCallback((place: google.maps.places.PlaceResult): void => {
     onPlaceSelect(place);
   }, [onPlaceSelect]);
+
+  // Effect to handle programmatic map fitting based on targetBounds prop
+  useEffect(() => {
+    if (targetBounds && mapRef.current) {
+      const map = mapRef.current;
+      const bounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(targetBounds.north, targetBounds.west),
+        new google.maps.LatLng(targetBounds.south, targetBounds.east)
+      );
+      map.fitBounds(bounds);
+      // Check zoom IMMEDIATELY after fitBounds and update state
+      const newZoom = map.getZoom();
+      if (typeof newZoom === 'number') {
+        setCurrentMapZoom(newZoom); // Update zoom state for display
+        const isNowZoomedOut = newZoom <= MIN_ZOOM_FOR_MARKERS;
+        console.log(`[MapComponent LOG] useEffect[targetBounds]: fitBounds complete. New zoom=${newZoom}, isNowZoomedOut=${isNowZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
+        setShowZoomMessage(isNowZoomedOut);
+        onZoomStatusChange(isNowZoomedOut); // Notify parent immediately
+      } else {
+         console.warn('[MapComponent LOG] useEffect[targetBounds]: Could not get zoom after fitBounds.');
+      }
+    }
+  }, [targetBounds, mapRef.current, onZoomStatusChange, setShowZoomMessage, setCurrentMapZoom]);
 
   if (loadError) {
     console.error("Google Maps Load Error:", loadError);
@@ -330,16 +377,21 @@ return;
         {courses.length} courses
       </div>
 
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-[600px] z-10">
+      {/* Ensure SearchBox is above overlays */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-[600px] z-30">
         <SearchBox onPlaceSelect={internalHandlePlaceSelect} />
       </div>
 
+      {/* Dimming Overlay and Zoom Message */}
       {showZoomMessage && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                    bg-white/90 px-6 py-4 rounded-lg shadow-lg text-gray-700 text-center max-w-md">
-          <h3 className="text-lg font-semibold mb-2">Zoom In to View Courses</h3>
-          <p>Zoom in or search for a specific location to view walkable golf courses in that area</p>
-        </div>
+        <>
+          {/* Message */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+                      bg-white/95 px-6 py-4 rounded-lg shadow-lg text-gray-800 text-center max-w-sm z-20 pointer-events-none">
+            <h3 className="text-lg font-semibold mb-2">Too many courses to display</h3>
+            <p className="text-sm">Please zoom in or search for a specific location.</p>
+          </div>
+        </>
       )}
 
       <GoogleMap
