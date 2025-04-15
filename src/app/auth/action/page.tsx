@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAuth, applyActionCode, checkActionCode } from 'firebase/auth';
+import { getAuth, applyActionCode, checkActionCode, Auth } from 'firebase/auth';
 
-import { updateUserProfile } from '@/lib/firebase/userUtils';
+import { updateUserProfile, getUserProfile } from '@/lib/firebase/userUtils';
 import { app as firebaseApp } from '@/lib/firebase/firebase'; // Import the exported app instance
 
 import { Loader2 } from 'lucide-react';
@@ -23,7 +23,6 @@ function ActionHandler() {
   useEffect(() => {
     const mode = searchParams.get('mode');
     const actionCode = searchParams.get('oobCode');
-    const continueUrl = searchParams.get('continueUrl'); // May not be needed directly here
 
     if (!mode || !actionCode) {
       console.warn('Auth Action Handler: Missing mode or actionCode.');
@@ -38,62 +37,59 @@ function ActionHandler() {
       setErrorMessage('Application error. Please try again later.');
       return;
     }
-    const auth = getAuth(firebaseApp);
 
-    const handleAction = async () => {
+    // --- Define auth instance here ---
+    let auth: Auth | null = null;
+    try {
+        auth = getAuth(firebaseApp);
+    } catch (initError) {
+        console.error('Auth Action Handler: Error getting Auth instance:', initError);
+        setStatus('error');
+        setErrorMessage('Application error initializing authentication.');
+        return;
+    }
+    // --- Ensure auth is not null before proceeding ---
+    if (!auth) {
+        console.error('Auth Action Handler: Failed to get Auth instance.');
+        setStatus('error');
+        setErrorMessage('Application error initializing authentication.');
+        return;
+    }
+
+    const handleAction = async (authInstance: Auth) => {
       try {
         switch (mode) {
           case 'verifyEmail':
             console.log('Auth Action Handler: Handling verifyEmail...');
-            // Check the code first to get user UID before applying
-            // This prevents applying code if user state is somehow lost
-            const actionCodeInfo = await checkActionCode(auth, actionCode);
-            console.log('Action code info:', actionCodeInfo); // Contains user email
+            const actionCodeInfo = await checkActionCode(authInstance, actionCode);
+            console.log('Action code info:', actionCodeInfo);
 
-            // Apply the code to verify the email in Firebase Auth backend
-            await applyActionCode(auth, actionCode);
+            await applyActionCode(authInstance, actionCode);
             console.log('Auth Action Handler: Email verified in Firebase Auth.');
 
-            // Now, attempt to update Firestore profile immediately
-            // Need the user's UID. This is tricky as the user might not be
-            // signed in *in this specific browser tab* when the link is clicked.
-            // The reliable way is often backend-driven via the action code info,
-            // but client-side requires the user to potentially sign in first *after* verifying.
-            //
-            // Alternative/Improvement:
-            // Instead of updating Firestore here, we rely on the AuthContext listener
-            // BUT we need to ensure the user gets redirected to a state where AuthContext runs.
-            // Let's redirect to login and let AuthContext handle the sync on successful login.
+            const currentUser = authInstance.currentUser;
+            if (currentUser) {
+              console.log(`Auth Action Handler: User ${currentUser.uid} is signed in. Attempting Firestore update.`);
+              try {
+                const profile = await getUserProfile(currentUser.uid);
+                if (profile && !profile.emailVerified) {
+                  await updateUserProfile(currentUser.uid, { emailVerified: true });
+                  console.log('Auth Action Handler: Firestore emailVerified updated successfully.');
+                } else if (profile && profile.emailVerified) {
+                  console.log('Auth Action Handler: Firestore emailVerified already true.');
+                } else {
+                   console.warn(`Auth Action Handler: Profile not found for user ${currentUser.uid} when trying to update Firestore.`);
+                }
+              } catch (updateError) {
+                 console.error('Auth Action Handler: Error updating Firestore:', updateError);
+              }
+            } else {
+              console.warn('Auth Action Handler: No currentUser found after applying code. Firestore sync will rely on AuthContext post-login.');
+            }
 
-            // Simplified Success Logic:
             setStatus('success');
-            // Optional: Short delay before redirect?
-            // setTimeout(() => router.push('/login?verified=true'), 3000);
-            // router.push('/login?verified=true'); // Redirect to login, maybe with a flag
-
-            // --- Direct Redirect to Profile Completion (assuming user will be logged in shortly) ---
-            // This relies on AuthContext picking up the verified user state QUICKLY after they log in.
-            // If the user logs in, AuthContext *should* run, see emailVerified=true, update Firestore,
-            // and then the normal redirect logic (e.g., from App layout or login page)
-            // based on profile completion should take over.
-             console.log('Redirecting to complete profile after verification.');
-             router.push('/complete-profile'); // Redirect to profile completion
-
-            // --- Original immediate Firestore update attempt (less reliable client-side) ---
-            // const currentUser = auth.currentUser;
-            // if (currentUser) {
-            //   console.log(`Auth Action Handler: Found current user ${currentUser.uid}. Updating Firestore.`);
-            //   await updateUserProfile(currentUser.uid, { emailVerified: true });
-            //   console.log('Auth Action Handler: Firestore updated.');
-            //   setStatus('success');
-            //   router.push('/complete-profile'); // Redirect on success
-            // } else {
-            //   // This happens if the user clicks the link in a browser where they aren't logged in
-            //   console.warn('Auth Action Handler: User not signed in after applying action code. Cannot update Firestore directly.');
-            //   setStatus('success'); // Mark success, but Firestore might not be updated yet
-            //   // Redirect to login, Firestore update will happen via AuthContext after login
-            //   router.push('/login?verified=true');
-            // }
+            console.log('Redirecting to complete profile after verification attempt.');
+            router.push('/complete-profile');
             break;
 
           case 'resetPassword':
@@ -114,6 +110,7 @@ function ActionHandler() {
             console.warn(`Auth Action Handler: Unhandled mode: ${mode}`);
             setStatus('invalid');
             setErrorMessage(`Unknown action: ${mode}`);
+            break;
         }
       } catch (error: any) {
         console.error('Auth Action Handler: Error applying action code:', error);
@@ -122,9 +119,9 @@ function ActionHandler() {
       }
     };
 
-    handleAction().catch(console.error);
+    handleAction(auth).catch(console.error);
 
-  }, [searchParams, router]); // Dependencies
+  }, [searchParams, router]);
 
 
   const renderContent = () => {
