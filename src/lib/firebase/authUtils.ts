@@ -65,7 +65,7 @@ export async function signUpWithEmail(
 }
 
 // Use unknown type and type guards for safe error handling
-function formatAuthError(error: unknown): string {
+export function formatAuthError(error: unknown): string {
   // Check if it's a FirebaseError first
   if (error instanceof FirebaseError) {
     switch (error.code) {

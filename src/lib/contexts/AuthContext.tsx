@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useCallback } from "react";
 
 import { FirebaseError } from 'firebase/app';
 import type { FirebaseApp } from 'firebase/app';
@@ -12,6 +12,9 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut
 } from "firebase/auth";
+
+import { getUserProfile, updateUserProfile } from '../firebase/userUtils';
+import { formatAuthError } from '../firebase/authUtils';
 
 // Export the interface
 export interface AuthContextType {
@@ -53,16 +56,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
           return;
         }
 
-        // Set up auth state listener
+        console.log("Setting up onAuthStateChanged listener...");
         unsubscribe = onAuthStateChanged(
           auth,
-          (user: User | null) => {
-            console.log('Auth state changed:', user ? 'User logged in' : 'No user');
-            setUser(user);
+          async (authUser: User | null) => {
+            console.log('Auth state changed:', authUser ? `User logged in (${authUser.uid}), Verified: ${authUser?.emailVerified}` : 'No user');
+            setUser(authUser);
+
+            if (authUser && authUser.emailVerified) {
+               console.log(`onAuthStateChanged: Auth state shows user ${authUser.uid} is verified. Checking Firestore.`);
+               try {
+                 const profile = await getUserProfile(authUser.uid);
+                 if (profile && !profile.emailVerified) {
+                   console.log(`onAuthStateChanged: Syncing emailVerified status to Firestore for user ${authUser.uid}`);
+                   await updateUserProfile(authUser.uid, { emailVerified: true });
+                   console.log(`onAuthStateChanged: Firestore emailVerified status updated successfully for user ${authUser.uid}`);
+                 } else if (profile && profile.emailVerified) {
+                    console.log(`onAuthStateChanged: Firestore emailVerified status already synced for user ${authUser.uid}`);
+                 } else if (!profile) {
+                    console.warn(`onAuthStateChanged: Cannot sync emailVerified status for ${authUser.uid}, Firestore profile not found.`);
+                 }
+               } catch(error) {
+                  console.error(`onAuthStateChanged: Error syncing Firestore for user ${authUser.uid}:`, formatAuthError(error));
+               }
+            } else if (authUser && !authUser.emailVerified) {
+                console.log(`onAuthStateChanged: User ${authUser.uid} is logged in but email is not verified.`);
+            }
+
             setLoading(false);
           },
           (error) => {
             console.error('Auth state change error:', formatAuthError(error));
+            setUser(null);
             setLoading(false);
           }
         );
@@ -73,10 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       }
     };
     
-    void initializeAuth();
+    initializeAuth().catch(err => {
+       console.error("Unhandled error during auth initialization:", formatAuthError(err));
+       setLoading(false);
+    });
     
     return (): void => {
       if (unsubscribe) {
+        console.log("Unsubscribing from onAuthStateChanged listener.");
         unsubscribe();
       }
     };
@@ -144,19 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       {children}
     </AuthContext.Provider>
   );
-}
-
-function formatAuthError(error: unknown): string {
-  if (error instanceof FirebaseError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  return 'An unknown error occurred';
 }
 
 export { AuthContext };

@@ -1,148 +1,98 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-
-import { getAuth } from 'firebase/auth'
-import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+import { signUpWithEmail, formatAuthError } from '@/lib/firebase/authUtils'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { signUpWithEmail } from '@/lib/firebase/authUtils'
-import { getFirestoreDB } from '@/lib/firebase/firebaseUtils'
-import { createUserProfile, getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils'
-import { useAuth } from '@/lib/hooks/useAuth'
+import { Input } from '@/components/ui/input' // Assuming Input is used, if not remove
+import { Label } from '@/components/ui/label' // Assuming Label is used, if not remove
+import { Loader2 } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
+  // user object from useAuth will reflect verified status after AuthContext updates
   const { user, loading: authLoading, signInWithGoogle } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      const auth = getAuth(getFirestoreDB().app)
-      const currentUser = auth.currentUser
-
-      currentUser?.reload().then(async () => {
-        const freshUser = auth.currentUser
-        const isVerified = freshUser?.emailVerified ?? false
-
-        console.log(`User ${user.uid} emailVerified status after reload: ${isVerified}`)
-
-        if (!isVerified) {
-          console.log('User detected in signup flow is not verified. Redirecting to /verify-email')
-          router.push('/verify-email')
-          return
-        }
-
-        setLoading(true)
-
-        try {
-          const profile = await getUserProfile(user.uid)
-
-          if (profile && !profile.emailVerified) {
-            console.log(`Updating Firestore emailVerified status for user: ${user.uid}`)
-            await updateUserProfile(user.uid, { emailVerified: true })
-          }
-
-          await createUserProfile(user)
-          const finalProfile = profile?.emailVerified ? profile : await getUserProfile(user.uid)
-
-          if (!finalProfile?.zipcode) {
-            console.log('Redirecting verified user to complete profile:', user.uid)
-            router.push('/complete-profile')
-          } else {
-            console.log('Verified user profile complete, redirecting to map:', user.uid)
-            router.push('/map')
-          }
-        } catch (err) {
-          console.error('Error during profile check/update after verification:', err)
-          setError('Could not verify profile status after verification. Redirecting...')
-          router.push('/map')
-        } finally {
-          setLoading(false)
-        }
-
-      }).catch(reloadError => {
-        console.error("Failed to reload user state:", reloadError)
-        setError("Failed to update verification status. Please try logging in again.")
-        setLoading(false)
-      })
-    }
-  }, [user, authLoading, router])
+  const [loading, setLoading] = useState(false) // Local loading state for form submission/profile check
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
   const handleEmailSignUp = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (loading || authLoading) {
-return
-}
+    e.preventDefault();
+    if (loading || authLoading) return;
 
-    setError('')
-    setLoading(true)
+    setError('');
+    setLoading(true);
+    setShowVerificationMessage(false);
 
     try {
-      const result = await signUpWithEmail(email, password, name)
+      const result = await signUpWithEmail(email, password, name);
       if (result.error) {
-        setError(result.error)
+        setError(result.error);
+      } else {
+        setShowVerificationMessage(true);
+        setName('');
+        setEmail('');
+        setPassword('');
       }
     } catch (error: unknown) {
-      console.error('Unexpected Sign Up Error:', error)
-      if (error instanceof Error) {
-        setError(error.message || 'An unexpected error occurred during sign up.')
-      } else {
-        setError('An unknown error occurred during sign up.')
-      }
+      console.error('Unexpected Sign Up Error:', error);
+      setError(formatAuthError(error) || 'An unknown error occurred during sign up.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [email, password, name, loading, authLoading])
+  }, [email, password, name, loading, authLoading]);
 
   const handleGoogleSignUp = useCallback(async () => {
-    if (loading || authLoading) {
-return
-}
-
-    setError('')
-    setLoading(true)
+    if (loading || authLoading) return;
+    setError('');
+    setLoading(true);
+    setShowVerificationMessage(false);
 
     try {
-      await signInWithGoogle()
+      await signInWithGoogle();
     } catch (error: any) {
-      setError(error.message || 'An error occurred during Google Sign-In.')
+      setError(formatAuthError(error) || 'An error occurred during Google Sign-In.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [loading, authLoading, signInWithGoogle])
+  }, [loading, authLoading, signInWithGoogle]);
 
-  if (authLoading) {
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+          <h1 className="text-2xl font-bold text-[#0A3357] mb-4">Thank You & Check Your Email!</h1>
+          <p className="text-gray-700 mb-6">
+            We've sent a verification link to your email address.
+            Please click the link in the email to activate your account.
+          </p>
+          <p className="text-gray-600 mb-6">
+            Once verified, you will be registered and can publish course reviews.
+            The verification link will take you to the next step: completing your profile.
+          </p>
+          <Button asChild variant="outline" className="w-full mt-4 border-[#0A3357] text-[#0A3357] hover:bg-[#0A3357]/10">
+            <Link href="/login">
+              Go to Login (after verifying)
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    )
-  }
-
-  const onSubmitWrapper = (e: React.FormEvent) => {
-    handleEmailSignUp(e).catch(err => {
-      console.error("Error during email signup submission:", err)
-      setError("An unexpected error occurred during signup.")
-      setLoading(false)
-    })
-  }
-
-  const onGoogleClickWrapper = () => {
-    handleGoogleSignUp().catch(err => {
-      console.error("Error during Google signup click:", err)
-      setError("An unexpected error occurred during Google signup.")
-      setLoading(false)
-    })
+    );
   }
 
   return (
@@ -153,7 +103,7 @@ return
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6" role="alert">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -168,12 +118,12 @@ return
         )}
 
         <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-          <form onSubmit={onSubmitWrapper}>
+          <form onSubmit={handleEmailSignUp}>
             <div className="mb-4">
               <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Full name
               </Label>
-              <input
+              <Input
                 id="name"
                 name="name"
                 type="text"
@@ -189,7 +139,7 @@ return
               <Label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
               </Label>
-              <input
+              <Input
                 id="email-address"
                 name="email"
                 type="email"
@@ -205,7 +155,7 @@ return
               <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </Label>
-              <input
+              <Input
                 id="password"
                 name="password"
                 type="password"
@@ -218,7 +168,7 @@ return
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading || authLoading}
               className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
@@ -226,12 +176,9 @@ return
               }`}
             >
               {loading ? (
-                <>
-                  <Loader2 className="inline mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
+                <><Loader2 className="inline mr-2 h-4 w-4 animate-spin" />Creating...</>
               ) : 'Create account'}
-            </button>
+            </Button>
           </form>
 
           <Button asChild variant="outline" className="w-full mt-4 border-[#0A3357] text-[#0A3357] hover:bg-[#0A3357]/10">
@@ -252,28 +199,20 @@ return
           </div>
 
           <div className="mt-6">
-            <button
-              onClick={onGoogleClickWrapper}
+            <Button
+              variant="outline"
+              onClick={handleGoogleSignUp}
               disabled={loading || authLoading}
               className={`w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${
                 loading || authLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
               }`}
             >
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-              )}
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="w-5 h-5 mr-2">{/* Google Icon */}</svg>}
               Sign up with Google
-            </button>
+            </Button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 } 
