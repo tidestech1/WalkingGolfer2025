@@ -146,7 +146,7 @@ export default function Footer(): JSX.Element {
               <p className="text-gray-300 text-sm italic">Experience the greatest walk in golf</p>
             </div>
             <a 
-              href="https://www.stewartgolf.co.uk/" 
+              href="https://www.stewartgolfusa.com/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center order-1 sm:order-2"

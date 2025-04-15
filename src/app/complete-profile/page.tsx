@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { updateUserProfile } from '@/lib/firebase/userUtils'
+import { updateUserProfile, getUserProfile } from '@/lib/firebase/userUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 
@@ -47,7 +47,7 @@ return
     try {
       await updateUserProfile(user.uid, { zipcode: zipcode || null });
       console.log('Profile updated successfully for user:', user.uid);
-      router.push('/map') // Changed redirect to /map
+      router.push('/welcome')
     } catch (err: unknown) {
       console.error('Failed to update profile:', err)
       if (err instanceof Error) {
@@ -65,7 +65,7 @@ return
 return;
 } // Should not happen due to useEffect redirect
     console.log('User skipped profile completion:', user.uid);
-    router.push('/map') // Changed redirect to /map
+    router.push('/welcome')
   }, [user, router]);
 
   // Show loader during auth check or if user is null temporarily
