@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
+import { UserRecord } from 'firebase-admin/auth';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review';
-import { UserProfile } from '@/types/user';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { getUserProfile, createUserProfile, updateUserProfile, CreateUserProfileInput } from '@/lib/firebase/userUtils'; // Import new type
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils';
-import { z } from 'zod';
-import { UserRecord } from 'firebase-admin/auth';
+import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review';
+import { UserProfile } from '@/types/user';
+
 
 const db = getAdminFirestore();
 const auth = getAdminAuth();

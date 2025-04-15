@@ -1,6 +1,6 @@
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 // Cached instance
 let firebaseAdminApp: App | null = null;

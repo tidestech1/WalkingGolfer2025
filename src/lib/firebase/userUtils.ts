@@ -1,8 +1,12 @@
+import { type User } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, type Firestore, Timestamp } from 'firebase/firestore';
+
 import type { CourseReview } from '@/types/review';
 import type { UserProfile } from '@/types/user';
+
 import { getDocuments, updateDocument } from './firebaseUtils';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, type Firestore, Timestamp } from 'firebase/firestore';
 import { getFirestoreDB } from './firebaseUtils';
+
 
 // Define a type for the necessary user data for profile creation
 export interface CreateUserProfileInput {
@@ -36,7 +40,9 @@ function getDb(): Firestore {
  * @throws Throws an error if Firestore operation fails.
  */
 export async function createUserProfile(userData: CreateUserProfileInput): Promise<boolean> {
-  if (!userData?.uid) throw new Error('User data with UID is required to create a profile.');
+  if (!userData?.uid) {
+throw new Error('User data with UID is required to create a profile.');
+}
   
   const db = getDb();
   const userRef = doc(db, 'users', userData.uid);
@@ -56,6 +62,8 @@ export async function createUserProfile(userData: CreateUserProfileInput): Promi
         },
         reviewCount: 0,
         zipcode: null,
+        emailVerified: false,
+        welcomeEmailSent: false,
         createdAt: serverTimestamp(), 
         updatedAt: serverTimestamp()
       };
@@ -66,12 +74,12 @@ export async function createUserProfile(userData: CreateUserProfileInput): Promi
     } else {
       console.log('User profile already exists for:', userData.uid);
       const updateData: Partial<UserProfile> = {};
-      const existingData = docSnap.data();
-      if (userData.displayName && existingData['displayName'] !== userData.displayName) {
+      const existingData = docSnap.data() as UserProfile;
+      if (userData.displayName && existingData.displayName !== userData.displayName) {
         updateData.displayName = userData.displayName;
       }
-      if (userData.photoURL !== undefined && existingData['photoURL'] !== userData.photoURL) {
-        updateData.photoURL = userData.photoURL || null;
+      if (userData.photoURL !== undefined && existingData.photoURL !== userData.photoURL) {
+        updateData.photoURL = userData.photoURL;
       }
       if (Object.keys(updateData).length > 0) {
         await updateDoc(userRef, { 
@@ -132,7 +140,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
  * @throws Throws an error if Firestore operation fails.
  */
 export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'createdAt'>>): Promise<void> {
-  if (!userId) throw new Error('User ID is required to update profile.');
+  if (!userId) {
+throw new Error('User ID is required to update profile.');
+}
   if (!data || Object.keys(data).length === 0) {
     console.warn('Update user profile called with no data.');
     return;

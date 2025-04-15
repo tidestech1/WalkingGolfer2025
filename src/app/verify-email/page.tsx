@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+
 import { 
     getAuth, 
     isSignInWithEmailLink, 
     signInWithEmailLink 
 } from 'firebase/auth';
+import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation';
+
+import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'; // Correct named import
 import { auth as firebaseClientAuth } from '@/lib/firebase/firebase'; // Client auth instance
 import { useAuth } from '@/lib/hooks/useAuth'; // Auth context hook
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'; // Correct named import
+
+
 
 // Define the component that uses searchParams
 function VerifyEmailContent() {
@@ -21,7 +27,9 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     // Ensure client-side execution
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+return;
+}
 
     const link = window.location.href;
     const reviewId = searchParams.get('reviewId');
@@ -37,7 +45,7 @@ function VerifyEmailContent() {
     if (isSignInWithEmailLink(firebaseClientAuth, link)) {
       setStatus('verifying');
       // 2. Get email from local storage
-      let email = window.localStorage.getItem('emailForSignIn');
+      const email = window.localStorage.getItem('emailForSignIn');
       if (!email) {
         // Ask user for email if not found (more robust flow)
         // For now, show error
@@ -135,12 +143,11 @@ function VerifyEmailContent() {
            <h1 className="text-2xl font-semibold text-gray-800 mb-2">Verification Failed</h1>
            <p className="text-lg text-red-600">{message}</p>
            {/* Optionally add a button to retry or go home */}
-           <button 
-             onClick={() => router.push('/')} 
-             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-             Go Home
-           </button>
+           <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+             <Link href="/login">
+               Go to Login
+             </Link>
+           </Button>
         </>
       )}
     </div>
@@ -150,8 +157,24 @@ function VerifyEmailContent() {
 // Main page component wraps the content in Suspense
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-16 flex justify-center items-center min-h-[300px]"><LoadingSpinner /></div>}>
-      <VerifyEmailContent />
-    </Suspense>
-  );
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
+      <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+        <h1 className="text-2xl font-bold text-[#0A3357] mb-4">Verify Your Email</h1>
+        <p className="text-gray-700 mb-6">
+          Thank you for signing up! We've sent a verification link to your email address. Please check your inbox (and spam folder) and click the link to activate your account.
+        </p>
+        <p className="text-gray-600 mb-6">
+          Once verified, you can log in.
+        </p>
+        <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+          <Link href="/login">
+            Go to Login
+          </Link>
+        </Button>
+        <p className="mt-4 text-sm text-gray-500">
+          Didn't receive the email? Please wait a few minutes or contact support if the problem persists.
+        </p>
+      </div>
+    </div>
+  )
 } 

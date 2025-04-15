@@ -2,8 +2,8 @@ import { Heart, Leaf, DollarSign, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { IMAGES } from '@/lib/constants/images'
 import { Button } from '@/components/ui/button'
+import { IMAGES } from '@/lib/constants/images'
 
 export default function Home() {
   return (

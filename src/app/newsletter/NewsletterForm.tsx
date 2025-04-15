@@ -17,7 +17,9 @@ export default function NewsletterForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!email) { return }
+    if (!email) {
+ return 
+}
 
     setLoading(true)
 

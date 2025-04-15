@@ -1,9 +1,10 @@
+import { query, where, orderBy, collection, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
+
 import type { CourseReview, ReviewStatus, DisplayNameType, CreateReviewInput } from '@/types/review';
 
 import { addDocument, getDocuments } from './firebaseUtils';
-import { uploadImage } from './storageUtils';
-import { query, where, orderBy, collection, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
 import { getFirestoreDB } from './firebaseUtils';
+import { uploadImage } from './storageUtils';
 
 export async function uploadReviewImages(
   courseId: string, 

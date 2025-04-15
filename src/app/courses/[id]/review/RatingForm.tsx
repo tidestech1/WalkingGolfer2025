@@ -1,19 +1,20 @@
 'use client'
 
 import { useState, FormEvent, ChangeEvent } from 'react'
-import { Star, Upload, PlusCircle, MinusCircle, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+
 import { User } from 'firebase/auth' // Import User type
 import { getAuth, sendSignInLinkToEmail } from "firebase/auth"
-import { auth as firebaseClientAuth } from "@/lib/firebase/firebase"
+import { Star, Upload, PlusCircle, MinusCircle, X } from 'lucide-react'
 import Image from 'next/image'
-import { z } from 'zod'
+import { useRouter } from 'next/navigation'
 import { toast } from "sonner"; // Import toast
+import { z } from 'zod'
 
 import ConditionsRating from '@/app/components/ConditionsRating'
 import CostRating from '@/app/components/CostRating'
 import DistanceRating from '@/app/components/DistanceRating'
 import TerrainRating from '@/app/components/TerrainRating'
+import { auth as firebaseClientAuth } from "@/lib/firebase/firebase"
 import { uploadReviewImages } from '@/lib/firebase/reviewUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { calculateWeightedWalkabilityRating } from '@/lib/utils/walkabilityRating'
@@ -212,7 +213,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     // --- Conditional Submission Logic --- 
     if (user) {
       // === AUTHENTICATED USER ===
-      let finalReviewData = { ...coreReviewData, imageUrls: [] as string[] }; // Start with empty array
+      const finalReviewData = { ...coreReviewData, imageUrls: [] as string[] }; // Start with empty array
       const toastId = toast.loading("Submitting your review..."); // Start loading toast
 
       try {

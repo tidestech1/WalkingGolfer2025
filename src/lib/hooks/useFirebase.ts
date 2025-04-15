@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
+
 import { 
   isFirebaseAvailable, 
   db,
@@ -13,9 +17,6 @@ import {
 } from '@/lib/firebase/firebaseUtils';
 
 // Import types for return value
-import type { Firestore } from 'firebase/firestore';
-import type { Auth } from 'firebase/auth';
-import type { FirebaseStorage } from 'firebase/storage';
 
 // Define the return type structure
 interface UseFirebaseReturn {

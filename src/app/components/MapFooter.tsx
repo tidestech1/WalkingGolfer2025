@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 import Footer from './Footer'; // Import the standard Footer

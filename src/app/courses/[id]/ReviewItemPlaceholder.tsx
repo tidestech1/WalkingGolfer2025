@@ -1,6 +1,7 @@
 // Placeholder component - replace with actual ReviewItem implementation
-import { CourseReview } from '@/types/review';
 import React from 'react';
+
+import { CourseReview } from '@/types/review';
 
 interface ReviewItemPlaceholderProps {
   review: CourseReview;

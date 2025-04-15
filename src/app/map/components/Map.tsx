@@ -5,10 +5,10 @@ import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import { MarkerClusterer as GoogleMarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import { GoogleMap, useLoadScript, Libraries, InfoWindow } from '@react-google-maps/api';
 import { debounce } from 'lodash';
-import Link from 'next/link';
 import { Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
+import { Button } from '@/components/ui/button';
 import { GolfCourse, MapBounds } from '@/types/course';
 
 import { LoadingIndicator } from './LoadingIndicator';

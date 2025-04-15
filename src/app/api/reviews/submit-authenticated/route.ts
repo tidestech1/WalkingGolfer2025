@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
+import { getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils';
 import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review';
 import { UserProfile } from '@/types/user';
-import { getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils';
-import { z } from 'zod';
+
 
 const db = getAdminFirestore();
 const auth = getAdminAuth();
@@ -31,7 +33,9 @@ type AuthenticatedSubmitData = z.infer<typeof authenticatedSubmitSchema>;
 // Note: This version doesn't need the 'review' object's submittedName/display_type
 function deriveAuthenticatedDisplayName(profile: UserProfile): string {
   const nameToUse = (profile.displayName || 'Authenticated User').trim();
-  if (!nameToUse) return 'Authenticated User'; 
+  if (!nameToUse) {
+return 'Authenticated User';
+} 
 
   switch (profile.reviewDisplayNameType) {
     case 'full':

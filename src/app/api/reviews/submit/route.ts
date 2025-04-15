@@ -1,11 +1,13 @@
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'; 
 import { NextRequest, NextResponse } from 'next/server';
 // Correct imports for Firebase Admin SDK Firestore
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'; 
-import { getAuth } from 'firebase-admin/auth';
+
 // Correctly import the getter functions
+import { z } from 'zod'; // Assuming Zod is installed
+
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase/firebaseAdmin'; 
 import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review'; // Removed CreateReviewInput as we use Zod type now
-import { z } from 'zod'; // Assuming Zod is installed
 
 // Get Firestore and Auth instances using the getter functions
 // This also handles initialization internally

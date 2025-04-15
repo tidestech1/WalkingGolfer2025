@@ -1,11 +1,12 @@
+import { FirebaseError } from 'firebase/app';
 import { 
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  sendEmailVerification,
   type User
 } from 'firebase/auth';
-import { FirebaseError } from 'firebase/app';
 
 import { getFirestoreDB } from './firebaseUtils';
 import { createUserProfile } from './userUtils'; // Assuming userUtils exists
@@ -41,6 +42,16 @@ export async function signUpWithEmail(
     // Update the Firebase Auth profile with the display name
     if (userCredential.user) {
       await updateProfile(userCredential.user, { displayName });
+
+      // Send verification email
+      try {
+        await sendEmailVerification(userCredential.user);
+        console.log('Verification email sent successfully.');
+      } catch (verificationError) {
+        console.error('Failed to send verification email:', verificationError);
+        // Optionally: Log this error more formally or decide if it should block the process.
+        // For now, we proceed even if verification email fails, but log the error.
+      }
 
       // Create the user profile document in Firestore
       await createUserProfile(userCredential.user);

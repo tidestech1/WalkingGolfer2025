@@ -1,4 +1,7 @@
 import {
+  signOut,
+} from "firebase/auth";
+import {
   collection,
   addDoc,
   getDocs,
@@ -11,9 +14,6 @@ import {
   DocumentData,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  signOut,
-} from "firebase/auth";
 
 import type { ContactFormData } from "@/types/contact";
 import type { NewsArticle } from "@/types/news";

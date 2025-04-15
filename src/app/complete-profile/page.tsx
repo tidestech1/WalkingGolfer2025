@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/hooks/useAuth'
-import { updateUserProfile } from '@/lib/firebase/userUtils'
 
+import { Loader2, AlertCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { updateUserProfile } from '@/lib/firebase/userUtils'
+import { useAuth } from '@/lib/hooks/useAuth'
+
 
 export default function CompleteProfilePage() {
   const router = useRouter()
@@ -28,7 +30,9 @@ export default function CompleteProfilePage() {
 
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault()
-    if (!user || loading) return
+    if (!user || loading) {
+return
+}
 
     setError('')
     setLoading(true)
@@ -57,7 +61,9 @@ export default function CompleteProfilePage() {
   }, [user, zipcode, loading, router])
 
   const handleSkip = useCallback(() => {
-    if (!user) return; // Should not happen due to useEffect redirect
+    if (!user) {
+return;
+} // Should not happen due to useEffect redirect
     console.log('User skipped profile completion:', user.uid);
     router.push('/map') // Changed redirect to /map
   }, [user, router]);

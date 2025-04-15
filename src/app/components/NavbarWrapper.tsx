@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 
-import Navbar from "./Navbar";
 import MiniHeader from "./MiniHeader";
+import Navbar from "./Navbar";
 
 export default function NavbarWrapper(): JSX.Element | null {
   const pathname = usePathname();

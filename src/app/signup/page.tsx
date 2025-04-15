@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
+import { getAuth } from 'firebase/auth'
+import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { signUpWithEmail } from '@/lib/firebase/authUtils'
-import { createUserProfile, getUserProfile } from '@/lib/firebase/userUtils'
-import { useAuth } from '@/lib/hooks/useAuth'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2 } from 'lucide-react'
+import { signUpWithEmail } from '@/lib/firebase/authUtils'
+import { getFirestoreDB } from '@/lib/firebase/firebaseUtils'
+import { createUserProfile, getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -25,32 +27,62 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      setLoading(true)
-      createUserProfile(user)
-        .then(() => {
-          return getUserProfile(user.uid)
-        })
-        .then(profile => {
-          if (!profile?.zipcode) {
-            console.log('Redirecting to complete profile for user:', user.uid)
+      const auth = getAuth(getFirestoreDB().app)
+      const currentUser = auth.currentUser
+
+      currentUser?.reload().then(async () => {
+        const freshUser = auth.currentUser
+        const isVerified = freshUser?.emailVerified ?? false
+
+        console.log(`User ${user.uid} emailVerified status after reload: ${isVerified}`)
+
+        if (!isVerified) {
+          console.log('User detected in signup flow is not verified. Redirecting to /verify-email')
+          router.push('/verify-email')
+          return
+        }
+
+        setLoading(true)
+
+        try {
+          const profile = await getUserProfile(user.uid)
+
+          if (profile && !profile.emailVerified) {
+            console.log(`Updating Firestore emailVerified status for user: ${user.uid}`)
+            await updateUserProfile(user.uid, { emailVerified: true })
+          }
+
+          await createUserProfile(user)
+          const finalProfile = profile?.emailVerified ? profile : await getUserProfile(user.uid)
+
+          if (!finalProfile?.zipcode) {
+            console.log('Redirecting verified user to complete profile:', user.uid)
             router.push('/complete-profile')
           } else {
-            console.log('User profile complete, redirecting to courses:', user.uid)
+            console.log('Verified user profile complete, redirecting to map:', user.uid)
             router.push('/map')
           }
-        })
-        .catch(err => {
-          console.error('Failed to check user profile, redirecting to courses as fallback:', err)
-          setError('Could not verify profile status. Redirecting...')
+        } catch (err) {
+          console.error('Error during profile check/update after verification:', err)
+          setError('Could not verify profile status after verification. Redirecting...')
           router.push('/map')
-        })
-        .finally(() => setLoading(false))
+        } finally {
+          setLoading(false)
+        }
+
+      }).catch(reloadError => {
+        console.error("Failed to reload user state:", reloadError)
+        setError("Failed to update verification status. Please try logging in again.")
+        setLoading(false)
+      })
     }
   }, [user, authLoading, router])
 
   const handleEmailSignUp = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading || authLoading) return
+    if (loading || authLoading) {
+return
+}
 
     setError('')
     setLoading(true)
@@ -73,7 +105,9 @@ export default function SignUpPage() {
   }, [email, password, name, loading, authLoading])
 
   const handleGoogleSignUp = useCallback(async () => {
-    if (loading || authLoading) return
+    if (loading || authLoading) {
+return
+}
 
     setError('')
     setLoading(true)

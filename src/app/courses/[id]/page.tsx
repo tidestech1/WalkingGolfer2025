@@ -9,12 +9,12 @@ Key features of the Firebase version:
 
 import React from 'react'
 
+import { Timestamp } from 'firebase/firestore'
 import { MapPin, Phone, Globe } from 'lucide-react'
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { Metadata } from 'next'
-import { Timestamp } from 'firebase/firestore'
 
 import CourseActions from '@/app/components/CourseActions'
 import CourseRatings from '@/app/components/CourseRatings'

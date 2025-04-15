@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import CourseSearch from '@/app/components/CourseSearch'; // Adjust path if needed
 import { GolfCourse } from '@/types/course';
 

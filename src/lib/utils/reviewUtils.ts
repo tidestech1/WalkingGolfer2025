@@ -1,5 +1,5 @@
-import { UserProfile } from '@/types/user';
 import { CourseReview, DisplayNameType } from '@/types/review';
+import { UserProfile } from '@/types/user';
 
 /**
  * Derives the display name for a review based on user profile and review settings.
@@ -14,7 +14,9 @@ export function deriveReviewerDisplayName(
 ): string {
     // Prioritize submitted name (from pending review), then profile display name
     const nameToUse = (review.submittedName || profile?.displayName || 'Anonymous Golfer').trim();
-    if (!nameToUse) return 'Anonymous Golfer';
+    if (!nameToUse) {
+return 'Anonymous Golfer';
+}
 
     switch (review.display_name_type) {
         case 'full':

@@ -13,8 +13,8 @@ import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
 import { BottomNav } from './components/BottomNav';
 import { FilterBottomSheet } from './components/FilterBottomSheet';
-import Sidebar from './components/Sidebar';
 import { LocationPrompt } from './components/LocationPrompt';
+import Sidebar from './components/Sidebar';
 
 // Constants
 const COURSES_PER_PAGE = 20;
@@ -176,7 +176,9 @@ export default function MapPage(): JSX.Element {
              const nameMatch = course.courseName?.toLowerCase().includes(lowerSearch);
              const cityMatch = course.location_city?.toLowerCase().includes(lowerSearch);
              // Add state match etc.
-             if (!nameMatch && !cityMatch) return false;
+             if (!nameMatch && !cityMatch) {
+return false;
+}
           }
 
           return true; // Course passes all filters

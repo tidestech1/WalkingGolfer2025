@@ -17,6 +17,10 @@ export interface UserProfile {
 
   // User's preferred display name setting for reviews
   reviewDisplayNameType?: DisplayNameType;
+
+  // Add the new fields
+  emailVerified?: boolean;
+  welcomeEmailSent?: boolean;
 }
 
 export interface UserReviewSummary {

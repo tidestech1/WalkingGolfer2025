@@ -1,13 +1,14 @@
 import React from 'react';
-import Image from 'next/image';
-import { Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 
-import { CourseReview } from '@/types/review';
-import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils'; // Import the utility
+import { Star, ThumbsUp, ThumbsDown } from 'lucide-react';
+import Image from 'next/image';
+
 // Assuming ShadCN components are correctly pathed
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils'; // Import the utility
+import { CourseReview } from '@/types/review';
 
 interface ReviewItemProps {
   review: CourseReview;
@@ -15,7 +16,9 @@ interface ReviewItemProps {
 
 // Helper to format date
 const formatDate = (date: Date | string | null): string => {
-  if (!date) return 'N/A';
+  if (!date) {
+return 'N/A';
+}
   try {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric' 

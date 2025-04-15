@@ -4,17 +4,18 @@ import { useState, useEffect, useCallback } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserReviews, getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import type { CourseReview, DisplayNameType } from '@/types/review'
 import type { UserProfile } from '@/types/user'
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
 import ReviewItem from '../courses/[id]/ReviewItem';
 
 export default function ProfilePage() {

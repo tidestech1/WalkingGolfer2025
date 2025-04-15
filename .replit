@@ -13,5 +13,13 @@ deploymentTarget = "cloudrun"
 localPort = 3000
 externalPort = 80
 
+[[ports]]
+localPort = 8528
+externalPort = 3000
+
+[[ports]]
+localPort = 8792
+externalPort = 3001
+
 [deploy]
 ignored = ["public/design"]

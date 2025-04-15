@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export default function Footer(): JSX.Element {

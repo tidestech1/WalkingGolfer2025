@@ -39,7 +39,7 @@ export async function getNewsArticles(options: {
       // Assign to new const to satisfy TS within filter callback
       const tagToFilter = options.tag;
       filteredArticles = filteredArticles.filter(article => 
-        article.tags && article.tags.includes(tagToFilter)
+        article.tags?.includes(tagToFilter)
       );
     }
     

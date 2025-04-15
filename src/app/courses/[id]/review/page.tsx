@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { notFound, useParams } from 'next/navigation';
-import { useAuth } from '@/lib/hooks/useAuth'; // Adjust import path if needed
-import { getCourseById } from '@/lib/firebase/courseUtils'; // Adjust import path if needed
-import { GolfCourse } from '@/types/course';
+
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { getCourseById } from '@/lib/firebase/courseUtils'; // Adjust import path if needed
+import { useAuth } from '@/lib/hooks/useAuth'; // Adjust import path if needed
+import { GolfCourse } from '@/types/course';
 
 // Removed CourseSearch import
 import RatingForm from './RatingForm';

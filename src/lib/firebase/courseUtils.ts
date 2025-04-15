@@ -17,7 +17,8 @@ import {
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
-
+import { Firestore as AdminFirestore } from 'firebase-admin/firestore';
+ 
 import { getCachedCourse, setCachedCourse, getCachedCourseList, setCachedCourseList, generateQueryKey } from '@/lib/utils/courseCache';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
@@ -25,7 +26,6 @@ import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 import { db } from './firebase'; 
 // Server-side Firestore instance (Admin SDK)
 import { getAdminFirestore } from './firebaseAdmin'; 
-import { Firestore as AdminFirestore } from 'firebase-admin/firestore'; 
 
 const COLLECTION_NAME = 'courses';
 const COURSES_PER_PAGE = 20;
@@ -134,8 +134,7 @@ function buildQueryConstraints(
     constraints.push(where('searchableTerms', 'array-contains', filters.searchQuery.trim().toLowerCase()));
     firstOrderByField = filters.sortBy || 'walkabilityRating_overall';
     constraints.push(orderBy(firstOrderByField, sortDirection));
-  }
-  else if (filters.pricing_fee_min > 0 || filters.pricing_fee_max < 9999) {
+  } else if (filters.pricing_fee_min > 0 || filters.pricing_fee_max < 9999) {
     if (filters.pricing_fee_min > 0) {
       constraints.push(where('pricing_fee', '>=', filters.pricing_fee_min));
     }
@@ -145,8 +144,7 @@ function buildQueryConstraints(
     firstOrderByField = 'pricing_fee';
     constraints.push(orderBy(firstOrderByField, 'asc'));
     sortDirection = 'asc';
-  }
-  else if (filters.walkabilityRating_overall_min > 0) {
+  } else if (filters.walkabilityRating_overall_min > 0) {
     constraints.push(where('walkabilityRating_overall', '>=', filters.walkabilityRating_overall_min));
     firstOrderByField = 'walkabilityRating_overall';
     constraints.push(orderBy(firstOrderByField, sortDirection));
@@ -246,7 +244,9 @@ export async function getCourses(
 
   while (attempts < MAX_QUERY_ATTEMPTS) {
     try {
-      if (!db) throw new Error('Client Firestore DB not available');
+      if (!db) {
+throw new Error('Client Firestore DB not available');
+}
       const coursesRef = collection(db, COLLECTION_NAME);
       const q = query(coursesRef, ...clientConstraints); 
       const snapshot = await getDocs(q);
@@ -361,7 +361,9 @@ export async function searchCourses(filters: CourseFilters): Promise<GolfCourse[
  * Add a new course
  */
 export async function addCourse(courseData: Omit<GolfCourse, 'id'>): Promise<string | null> {
-  if (!db) { console.error('Cannot add course: Firebase DB not available on client.'); return null; }
+  if (!db) {
+ console.error('Cannot add course: Firebase DB not available on client.'); return null; 
+}
   try {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...courseData,
@@ -369,14 +371,18 @@ export async function addCourse(courseData: Omit<GolfCourse, 'id'>): Promise<str
       updatedAt: serverTimestamp(),
     });
     return docRef.id;
-  } catch (error) { console.error('Error adding course:', error); return null; }
+  } catch (error) {
+ console.error('Error adding course:', error); return null; 
+}
 }
 
 /**
  * Update an existing course
  */
 export async function updateCourse(id: string, courseData: Partial<GolfCourse>): Promise<boolean> {
-   if (!db) { console.error('Cannot update course: Firebase DB not available on client.'); return false; }
+   if (!db) {
+ console.error('Cannot update course: Firebase DB not available on client.'); return false; 
+}
    try {
     const docRef = doc(db, COLLECTION_NAME, id);
     await updateDoc(docRef, {
@@ -384,19 +390,25 @@ export async function updateCourse(id: string, courseData: Partial<GolfCourse>):
       updatedAt: serverTimestamp(),
     });
     return true;
-  } catch (error) { console.error('Error updating course:', error); return false; }
+  } catch (error) {
+ console.error('Error updating course:', error); return false; 
+}
 }
 
 /**
  * Delete a course
  */
 export async function deleteCourse(id: string): Promise<boolean> {
-   if (!db) { console.error('Cannot delete course: Firebase DB not available on client.'); return false; }
+   if (!db) {
+ console.error('Cannot delete course: Firebase DB not available on client.'); return false; 
+}
    try {
     const docRef = doc(db, COLLECTION_NAME, id);
     await deleteDoc(docRef);
     return true;
-  } catch (error) { console.error('Error deleting course:', error); return false; }
+  } catch (error) {
+ console.error('Error deleting course:', error); return false; 
+}
 }
 
 /**
@@ -429,7 +441,9 @@ export function generateSearchableTerms(course: Omit<GolfCourse, 'searchableTerm
 
 // Use this when creating or updating a course
 export async function createCourse(courseData: Omit<GolfCourse, 'id' | 'searchableTerms'>) {
-  if (!db) { throw new Error('Firebase is not initialized'); }
+  if (!db) {
+ throw new Error('Firebase is not initialized'); 
+}
   const searchableTerms = generateSearchableTerms(courseData);
   const courseRef = doc(collection(db, 'courses'));
   await setDoc(courseRef, {

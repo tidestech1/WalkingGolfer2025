@@ -6,9 +6,9 @@ import React from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+import { Button } from '@/components/ui/button'
 import { signInWithEmail } from '@/lib/firebase/authUtils'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { Button } from '@/components/ui/button'
 
 // Wrap the component logic in a separate function to use hooks
 const LoginContent = () => {
