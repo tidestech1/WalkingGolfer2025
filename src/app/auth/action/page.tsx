@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAuth, applyActionCode, checkActionCode, Auth } from 'firebase/auth';
+import { getAuth, applyActionCode, checkActionCode, Auth, signInWithEmailLink, ActionCodeInfo } from 'firebase/auth';
 
 import { updateUserProfile, getUserProfile } from '@/lib/firebase/userUtils';
 import { app as firebaseApp } from '@/lib/firebase/firebase'; // Import the exported app instance
@@ -12,13 +12,14 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Define possible statuses for the action handler
-type ActionStatus = 'loading' | 'success' | 'error' | 'invalid';
+type ActionStatus = 'loading' | 'success' | 'error' | 'invalid' | 'signing_in' | 'calling_backend';
 
 function ActionHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<ActionStatus>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [message, setMessage] = useState<string>('');
 
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -58,6 +59,17 @@ function ActionHandler() {
 
     const handleAction = async (authInstance: Auth) => {
       try {
+        // --- Get continueUrl from the main URL parameters --- 
+        // Firebase usually appends the original continueUrl to the action handler URL
+        // We need this to extract our custom reviewId and courseId later for the signIn mode
+        const actionLink = window.location.href;
+        const urlParams = new URLSearchParams(window.location.search);
+        // Note: Firebase might not pass continueUrl directly as a top-level param on the action handler URL.
+        // It's usually embedded *within* the link sent via email. We might need to parse it differently if checkActionCode isn't used.
+        // Let's assume for now we can get it or parse it from the actionLink if needed.
+        console.log('[Auth Action] Full action link:', actionLink);
+        // --- End continueUrl handling attempt ---
+        
         switch (mode) {
           case 'verifyEmail':
             console.log('Auth Action Handler: Handling verifyEmail...');
@@ -90,6 +102,89 @@ function ActionHandler() {
             setStatus('success');
             console.log('Redirecting to complete profile after verification attempt.');
             router.push('/complete-profile');
+            break;
+
+          case 'signIn':
+            console.log('Auth Action Handler: Handling signIn (for review verification)...');
+            setStatus('signing_in'); // Use a more specific status if desired
+            
+            const email = window.localStorage.getItem('emailForSignIn');
+            if (!email) {
+                console.error('Auth Action Handler: Email not found in local storage for signIn.');
+                throw new Error('Your verification session may have expired. Please try submitting the review again.');
+            }
+            console.log(`[Auth Action] Email found: ${email}. Attempting signInWithEmailLink...`);
+
+            // Attempt sign-in using the link
+            const userCredential = await signInWithEmailLink(authInstance, email, actionLink);
+            window.localStorage.removeItem('emailForSignIn');
+            console.log('[Auth Action] signInWithEmailLink successful.');
+
+            // Get ID token
+            const user = userCredential.user;
+            const idToken = await user.getIdToken(true);
+            if (!idToken) {
+                throw new Error('Authentication token missing after verification.');
+            }
+            console.log('[Auth Action] Got ID token.');
+
+            // --- Extract reviewId and courseId from the *original* continueUrl --- 
+            // Firebase appends the original continueUrl to the action URL, but it's URL-encoded.
+            // We need to find it and parse it.
+            let originalContinueUrl = '';
+            const continueUrlParam = urlParams.get('continueUrl'); // Check if Firebase passes it directly
+            if (continueUrlParam) {
+               originalContinueUrl = continueUrlParam; 
+            } else {
+                // Fallback: Try to extract from actionLink (less reliable)
+                const match = actionLink.match(/[?&]continueUrl=([^&]+)/);
+                if (match && match[1]) {
+                    originalContinueUrl = decodeURIComponent(match[1]);
+                } else {
+                    console.error('[Auth Action] Could not find original continueUrl in action link.');
+                    throw new Error('Could not parse verification details from link.');
+                }
+            }
+            console.log('[Auth Action] Original continueUrl:', originalContinueUrl);
+
+            const continueUrlSearchParams = new URLSearchParams(new URL(originalContinueUrl).search);
+            const reviewId = continueUrlSearchParams.get('reviewId');
+            const courseId = continueUrlSearchParams.get('courseId');
+            console.log(`[Auth Action] Extracted reviewId: ${reviewId}, courseId: ${courseId}`);
+
+            if (!reviewId) {
+                throw new Error('Missing review ID in verification link details.');
+            }
+            // --- End extraction ---
+
+            // Call backend verification API
+            setStatus('calling_backend');
+            setMessage('Verifying review with server...');
+            console.log('[Auth Action] Calling backend /api/reviews/verify...');
+
+            const response = await fetch('/api/reviews/verify', {
+               method: 'POST',
+               headers: {
+                   'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${idToken}`,
+               },
+               body: JSON.stringify({ reviewId }),
+            });
+            const verifyResult = await response.json();
+            console.log('[Auth Action] Backend response status:', response.status);
+            console.log('[Auth Action] Backend response body:', verifyResult);
+
+            if (!response.ok) {
+                throw new Error(verifyResult.error || `Failed to verify review (status: ${response.status})`);
+            }
+
+            setStatus('success');
+            setMessage('Review successfully verified and published!');
+            console.log('[Auth Action] Review Verification successful! Redirecting...');
+
+            // Redirect to course page or home
+            const redirectPath = courseId ? `/courses/${courseId}?verified=true` : '/';
+            router.push(redirectPath); // Redirect immediately after success
             break;
 
           case 'resetPassword':
@@ -137,7 +232,7 @@ function ActionHandler() {
         // Message might not be seen if redirect is immediate
         return (
            <>
-             <h1 className="text-2xl font-bold text-green-600 mb-4">Email Verified Successfully!</h1>
+             <h1 className="text-2xl font-bold text-green-600 mb-4">{message}</h1>
              <p className="text-gray-700 mb-6">Redirecting you to complete your profile...</p>
              {/* Optional: Add a manual redirect button if needed */}
              {/* <Button onClick={() => router.push('/complete-profile')}>Complete Profile</Button> */}
@@ -154,6 +249,8 @@ function ActionHandler() {
           </>
         );
       case 'invalid':
+      case 'signing_in':
+      case 'calling_backend':
       default:
         return (
           <>

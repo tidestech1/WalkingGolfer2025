@@ -521,9 +521,10 @@ type CourseUpdatePayload = Omit<Partial<GolfCourse>, 'updatedAt' | 'lastRatingUp
  * @param transaction The Firestore transaction object (Admin SDK type).
  * @param courseId The ID of the course to update.
  * @param newReviewData The data from the newly submitted and validated review.
+ * @param currentCourseData The current course data fetched earlier in the transaction.
  */
 async function updateCourseRatingsFromReview(
-    transaction: Transaction, // Use Admin SDK Transaction type
+    transaction: Transaction, 
     courseId: string,
     newReviewData: Pick<
         CourseReview,
@@ -533,21 +534,12 @@ async function updateCourseRatingsFromReview(
         | 'hillinessRating'
         | 'distanceRating' 
         | 'walkabilityRating'
-    >
+    >,
+    currentCourseData: GolfCourse
 ): Promise<void> {
-    // Ensure we use the admin DB instance within the transaction context
-    const adminDb = getAdminFirestore(); // Get the admin instance
-    const courseRef = adminDb.collection(COLLECTION_NAME).doc(courseId);
-
     try {
-        const courseSnap: AdminDocumentSnapshot = await transaction.get(courseRef);
-
-        if (!courseSnap.exists) {
-            console.error(`[updateCourseRatingsFromReview] Course ${courseId} not found during transaction.`);
-            throw new Error(`Course ${courseId} not found.`);
-        }
-
-        const currentData = courseSnap.data() as GolfCourse;
+        const currentData = currentCourseData;
+        const courseRef = getAdminFirestore().collection('courses').doc(courseId);
 
         const currentReviewCount = currentData.reviewCount || 0;
         const currentOverallSum = currentData.overallRatingSum || 0;
@@ -600,5 +592,4 @@ async function updateCourseRatingsFromReview(
     }
 }
 
-// Export the function
 export { updateCourseRatingsFromReview }; 

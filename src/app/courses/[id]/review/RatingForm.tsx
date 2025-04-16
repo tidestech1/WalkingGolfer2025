@@ -333,11 +333,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         
         // Correct env var access
         const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-        // --- Add course.id to the client-side continueUrl --- 
-        const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}&courseId=${course.id}`;
+        // --- Point continueUrl to the main action handler, embedding review/course IDs --- 
+        const paramsForAction = new URLSearchParams({
+           reviewId: pendingReviewId, // pendingReviewId comes from the backend response
+           courseId: course.id // course.id comes from the component props
+        });
+        const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
         // --- End URL change ---
         const actionCodeSettings = {
-            url: continueUrl,
+            url: continueUrl, // This URL now includes reviewId and courseId
             handleCodeInApp: true,
         };
         

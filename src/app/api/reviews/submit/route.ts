@@ -91,7 +91,11 @@ export async function POST(request: NextRequest) {
 
     // Generate the email verification/sign-in link
     const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-    const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}&courseId=${courseId}`;
+    const paramsForAction = new URLSearchParams({
+       reviewId: pendingReviewId,
+       courseId: courseId
+    });
+    const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
     
     const actionCodeSettings = {
       url: continueUrl,

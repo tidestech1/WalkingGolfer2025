@@ -10,6 +10,7 @@ import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils';
 import { CourseReview } from '@/types/review';
 import { UserProfile } from '@/types/user';
 import { CourseRatingUpdateLog } from '@/types/log';
+import { GolfCourse } from '@/types/course';
 
 const db = getAdminFirestore();
 const auth = getAdminAuth();
@@ -94,6 +95,15 @@ export async function POST(request: NextRequest) {
         let userProfileSnap = await transaction.get(userRef);
         let userProfile: UserProfile | null = null;
 
+        // 5. Read Course Document EARLY
+        const courseRef = db.collection('courses').doc(review.courseId);
+        const courseSnap = await transaction.get(courseRef);
+        if (!courseSnap.exists) {
+             console.error(`[Verify Review] Course ${review.courseId} referenced by review ${reviewId} not found.`);
+             throw new Error(`Course ${review.courseId} not found.`);
+        }
+        const courseData = courseSnap.data() as GolfCourse;
+
         if (!userProfileSnap.exists) {
             console.log(`User profile for ${userId} not found, creating one...`);
             try {
@@ -134,7 +144,7 @@ export async function POST(request: NextRequest) {
              throw new Error(`User profile could not be obtained or created for ${userId}.`);
         }
 
-        // 5. Prepare Review Update Data
+        // 6. Prepare Review Update Data
         const derivedName = deriveReviewerDisplayName(userProfile, review);
         const reviewUpdateData: ReviewUpdateData = {
             userId: userId,
@@ -147,7 +157,7 @@ export async function POST(request: NextRequest) {
             submittedName: FieldValue.delete(),
         };
 
-        // 6. Prepare User Profile Update Data
+        // 7. Prepare User Profile Update Data
         const userProfileUpdateData: UserProfileUpdateData = {
             reviewDisplayNameType: userProfile.reviewDisplayNameType || review.display_name_type,
             reviewCount: FieldValue.increment(1),
@@ -156,17 +166,17 @@ export async function POST(request: NextRequest) {
             updatedAt: FieldValue.serverTimestamp(),
         };
 
-        // 7. Perform updates (Review and User)
+        // 8. Perform updates (Review and User)
         transaction.update(reviewRef, reviewUpdateData);
         transaction.update(userRef, userProfileUpdateData as Record<string, any>);
 
-        // 8. Update Course Ratings
+        // 9. Update Course Ratings
         if (!review) {
             throw new Error('Review data is missing unexpectedly.');
         }
-        await updateCourseRatingsFromReview(transaction, review.courseId, review);
+        await updateCourseRatingsFromReview(transaction, review.courseId, review, courseData);
 
-        // 9. Create Rating Update Log Entry
+        // 10. Create Rating Update Log Entry
         const logRef = db.collection('courseRatingUpdates').doc(); // Auto-generate ID
         const logData: Omit<CourseRatingUpdateLog, 'id' | 'timestamp'> & { timestamp: FieldValue } = {
             courseId: review.courseId,
