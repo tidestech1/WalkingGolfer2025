@@ -17,10 +17,11 @@ import {
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
-import { Firestore as AdminFirestore } from 'firebase-admin/firestore';
+import { Firestore as AdminFirestore, FieldValue, Transaction, DocumentSnapshot as AdminDocumentSnapshot } from 'firebase-admin/firestore';
  
 import { getCachedCourse, setCachedCourse, getCachedCourseList, setCachedCourseList, generateQueryKey } from '@/lib/utils/courseCache';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
+import { CourseReview } from '@/types/review';
 
 // Client-side Firestore instance
 import { db } from './firebase'; 
@@ -155,9 +156,6 @@ function buildQueryConstraints(
   }
   if (filters.course_categories?.length > 0) {
     constraints.push(where('course_category', 'in', filters.course_categories));
-  }
-  if (filters.facilities_pushCarts) {
-    constraints.push(where('facilities_pushCarts', '==', true));
   }
 
   if (!firstOrderByField) {
@@ -498,4 +496,109 @@ export async function getCoursesInBounds(bounds: MapBounds): Promise<GolfCourse[
     console.error('Firestore query error:', error);
     throw error;
   }
-} 
+}
+
+/**
+ * Calculates the new average ensuring not to divide by zero.
+ */
+function calculateAverage(sum: number, count: number): number | null {
+    if (count === 0) {
+        return null;
+    }
+    return Math.round((sum / count) * 100) / 100;
+}
+
+// Define a specific type for the update payload to handle FieldValue for timestamps
+type CourseUpdatePayload = Omit<Partial<GolfCourse>, 'updatedAt' | 'lastRatingUpdate'> & {
+    updatedAt: FieldValue;
+    lastRatingUpdate: FieldValue;
+};
+
+/**
+ * Updates the average ratings for a golf course based on a new review using Admin SDK.
+ * This function MUST be called within a Firestore transaction.
+ *
+ * @param transaction The Firestore transaction object (Admin SDK type).
+ * @param courseId The ID of the course to update.
+ * @param newReviewData The data from the newly submitted and validated review.
+ */
+async function updateCourseRatingsFromReview(
+    transaction: Transaction, // Use Admin SDK Transaction type
+    courseId: string,
+    newReviewData: Pick<
+        CourseReview,
+        | 'overallRating'
+        | 'costRating'
+        | 'courseConditionRating'
+        | 'hillinessRating'
+        | 'distanceRating' 
+        | 'walkabilityRating'
+    >
+): Promise<void> {
+    // Ensure we use the admin DB instance within the transaction context
+    const adminDb = getAdminFirestore(); // Get the admin instance
+    const courseRef = adminDb.collection(COLLECTION_NAME).doc(courseId);
+
+    try {
+        const courseSnap: AdminDocumentSnapshot = await transaction.get(courseRef);
+
+        if (!courseSnap.exists) {
+            console.error(`[updateCourseRatingsFromReview] Course ${courseId} not found during transaction.`);
+            throw new Error(`Course ${courseId} not found.`);
+        }
+
+        const currentData = courseSnap.data() as GolfCourse;
+
+        const currentReviewCount = currentData.reviewCount || 0;
+        const currentOverallSum = currentData.overallRatingSum || 0;
+        const currentCostSum = currentData.costRatingSum || 0;
+        const currentConditionSum = currentData.conditionRatingSum || 0;
+        const currentHillinessSum = currentData.hillinessRatingSum || 0;
+        const currentDistanceSum = currentData.distanceRatingSum || 0;
+        const currentWeightedSum = currentData.calculatedWeightedRatingSum || 0;
+
+        const newReviewCount = currentReviewCount + 1;
+        const newOverallSum = currentOverallSum + newReviewData.overallRating;
+        const newCostSum = currentCostSum + newReviewData.costRating;
+        const newConditionSum = currentConditionSum + newReviewData.courseConditionRating;
+        const newHillinessSum = currentHillinessSum + newReviewData.hillinessRating;
+        const newDistanceSum = currentDistanceSum + newReviewData.distanceRating;
+        const newWeightedSum = currentWeightedSum + newReviewData.walkabilityRating;
+
+        const newOverallAvg = calculateAverage(newOverallSum, newReviewCount);
+        const newCostAvg = calculateAverage(newCostSum, newReviewCount);
+        const newConditionAvg = calculateAverage(newConditionSum, newReviewCount);
+        const newHillinessAvg = calculateAverage(newHillinessSum, newReviewCount);
+        const newDistanceAvg = calculateAverage(newDistanceSum, newReviewCount);
+        const newWeightedAvg = calculateAverage(newWeightedSum, newReviewCount);
+
+        const updatePayload: CourseUpdatePayload = {
+            reviewCount: newReviewCount,
+            overallRatingSum: newOverallSum,
+            costRatingSum: newCostSum,
+            conditionRatingSum: newConditionSum,
+            hillinessRatingSum: newHillinessSum,
+            distanceRatingSum: newDistanceSum,
+            calculatedWeightedRatingSum: newWeightedSum,
+            walkabilityRating_overall: newOverallAvg,
+            walkabilityRating_cost: newCostAvg,
+            walkabilityRating_courseCondition: newConditionAvg,
+            walkabilityRating_hilliness: newHillinessAvg,
+            walkabilityRating_holeDistance: newDistanceAvg,
+            walkabilityRating_weightedRating: newWeightedAvg,
+            lastRatingUpdate: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        transaction.update(courseRef, updatePayload);
+
+        console.log(`[updateCourseRatingsFromReview] Successfully prepared update for course ${courseId} in transaction.`);
+
+    } catch (error) {
+        console.error(`[updateCourseRatingsFromReview] Error processing course ${courseId}:`, error);
+        throw error;
+    }
+}
+
+// Export the function
+export { updateCourseRatingsFromReview }; 

@@ -4,11 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
-import { getUserProfile, createUserProfile, updateUserProfile, CreateUserProfileInput } from '@/lib/firebase/userUtils'; // Import new type
+import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
+import { CreateUserProfileInput } from '@/lib/firebase/userUtils';
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils';
-import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review';
+import { CourseReview } from '@/types/review';
 import { UserProfile } from '@/types/user';
-
+import { CourseRatingUpdateLog } from '@/types/log';
 
 const db = getAdminFirestore();
 const auth = getAdminAuth();
@@ -67,76 +68,121 @@ export async function POST(request: NextRequest) {
 
     // 3. Fetch and Validate Review
     const reviewRef = db.collection('reviews').doc(reviewId);
-    const reviewSnap = await reviewRef.get();
+    let review: CourseReview | null = null;
 
-    if (!reviewSnap.exists) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-    }
-    const review = reviewSnap.data() as CourseReview;
-
-    if (review.status !== 'pending') {
-      return NextResponse.json({ error: 'Review is not pending verification' }, { status: 400 });
-    }
-    if (review.submittedEmail !== userEmail) {
-      console.warn(`Verification attempt mismatch: User ${userId} (${userEmail}) tried to verify review ${reviewId} submitted by ${review.submittedEmail}`);
-      return NextResponse.json({ error: 'Email mismatch' }, { status: 403 }); // Forbidden
-    }
-
-    // 4. Fetch or Create User Profile
-    let userProfile = await getUserProfile(userId);
-    if (!userProfile) {
-      console.log(`User profile for ${userId} not found, creating one...`);
-      try {
-        const firebaseUser: UserRecord = await auth.getUser(userId);
-        
-        // Create the input object, converting undefined to null
-        const createProfileInput: CreateUserProfileInput = {
-           uid: firebaseUser.uid,
-           email: firebaseUser.email || null, // Convert undefined to null
-           displayName: firebaseUser.displayName || null, // Convert undefined to null
-           photoURL: firebaseUser.photoURL || null, // Convert undefined to null
-        };
-        
-        // Call createUserProfile 
-        await createUserProfile(createProfileInput); 
-
-        userProfile = await getUserProfile(userId);
-        if (!userProfile) {
-          throw new Error(`Failed to retrieve user profile for ${userId} immediately after creation.`);
-        }
-        console.log(`Successfully created and retrieved profile for ${userId}`);
-      } catch (creationError) {
-        console.error(`Failed during user profile creation flow for ${userId}:`, creationError);
-        throw new Error(`Could not ensure user profile exists for user ${userId}.`);
-      }
-    }
-
-    // 5. Prepare Review Update Data
-    const derivedName = deriveReviewerDisplayName(userProfile, review);
-    const reviewUpdateData: ReviewUpdateData = {
-      userId: userId,
-      userDisplayName: derivedName,
-      userPhotoUrl: userProfile.photoURL || null,
-      status: 'verified' as ReviewStatus, // Change to 'published' if reviews go live immediately
-      email_verified: true,
-      updatedAt: FieldValue.serverTimestamp(),
-      submittedEmail: FieldValue.delete(), 
-      submittedName: FieldValue.delete(),
-    };
-
-    // 6. Prepare User Profile Update Data
-    const userProfileUpdateData: UserProfileUpdateData = {
-      reviewDisplayNameType: userProfile.reviewDisplayNameType || review.display_name_type,
-      reviewCount: FieldValue.increment(1),
-      lastReviewDate: review.createdAt.toISOString(),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-
-    // 7. Perform updates in a transaction (optional but recommended for atomicity)
+    // Run transaction which includes fetching review first
     await db.runTransaction(async (transaction) => {
-        transaction.update(reviewRef, reviewUpdateData);
+        const reviewSnap = await transaction.get(reviewRef);
+
+        if (!reviewSnap.exists) {
+            // Throw error inside transaction to abort
+            throw new Error('Review not found');
+        }
+        // Store the review data for later use
+        review = reviewSnap.data() as CourseReview;
+
+        if (review.status !== 'pending') {
+            throw new Error('Review is not pending verification');
+        }
+        if (review.submittedEmail !== userEmail) {
+            console.warn(`Verification attempt mismatch: User ${userId} (${userEmail}) tried to verify review ${reviewId} submitted by ${review.submittedEmail}`);
+            throw new Error('Email mismatch');
+        }
+
+        // 4. Fetch or Create User Profile (within transaction)
         const userRef = db.collection('users').doc(userId);
+        let userProfileSnap = await transaction.get(userRef);
+        let userProfile: UserProfile | null = null;
+
+        if (!userProfileSnap.exists) {
+            console.log(`User profile for ${userId} not found, creating one...`);
+            try {
+                const firebaseUser: UserRecord = await auth.getUser(userId);
+                const createProfileInput: CreateUserProfileInput = {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || null,
+                    displayName: firebaseUser.displayName || null,
+                    photoURL: firebaseUser.photoURL || null,
+                };
+                // NOTE: createUserProfile likely doesn't operate within a transaction.
+                // It might be safer to just `transaction.set` the basic profile data here.
+                // Let's create the profile data directly in the transaction for atomicity.
+                const newProfileData: UserProfile = {
+                    id: userId,
+                    email: createProfileInput.email ?? '',
+                    displayName: createProfileInput.displayName ?? 'Anonymous User',
+                    photoURL: createProfileInput.photoURL ?? null,
+                    reviewDisplayNameType: review.display_name_type, // Use preference from review initially
+                    reviewCount: 0, // Start at 0 before incrementing
+                    createdAt: FieldValue.serverTimestamp() as any,
+                    updatedAt: FieldValue.serverTimestamp() as any,
+                    // Add other default fields from UserProfile if necessary
+                };
+                transaction.set(userRef, newProfileData);
+                userProfile = newProfileData; // Use the data we just set
+                console.log(`Prepared new profile for ${userId} in transaction.`);
+            } catch (creationError) {
+                console.error(`Failed during user profile creation setup for ${userId}:`, creationError);
+                throw new Error(`Could not ensure user profile exists for user ${userId}.`);
+            }
+        } else {
+            userProfile = userProfileSnap.data() as UserProfile;
+        }
+
+        // Ensure userProfile is not null before proceeding
+        if (!userProfile) {
+             throw new Error(`User profile could not be obtained or created for ${userId}.`);
+        }
+
+        // 5. Prepare Review Update Data
+        const derivedName = deriveReviewerDisplayName(userProfile, review);
+        const reviewUpdateData: ReviewUpdateData = {
+            userId: userId,
+            userDisplayName: derivedName,
+            userPhotoUrl: userProfile.photoURL || null,
+            status: 'published', // Changed to 'published' as review is now live
+            email_verified: true,
+            updatedAt: FieldValue.serverTimestamp(),
+            submittedEmail: FieldValue.delete(),
+            submittedName: FieldValue.delete(),
+        };
+
+        // 6. Prepare User Profile Update Data
+        const userProfileUpdateData: UserProfileUpdateData = {
+            reviewDisplayNameType: userProfile.reviewDisplayNameType || review.display_name_type,
+            reviewCount: FieldValue.increment(1),
+            // Ensure createdAt is treated as Date for comparison/conversion
+            lastReviewDate: (review.createdAt instanceof Timestamp ? review.createdAt.toDate() : new Date(review.createdAt)).toISOString(),
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        // 7. Perform updates (Review and User)
+        transaction.update(reviewRef, reviewUpdateData);
         transaction.update(userRef, userProfileUpdateData as Record<string, any>);
+
+        // 8. Update Course Ratings
+        if (!review) {
+            throw new Error('Review data is missing unexpectedly.');
+        }
+        await updateCourseRatingsFromReview(transaction, review.courseId, review);
+
+        // 9. Create Rating Update Log Entry
+        const logRef = db.collection('courseRatingUpdates').doc(); // Auto-generate ID
+        const logData: Omit<CourseRatingUpdateLog, 'id' | 'timestamp'> & { timestamp: FieldValue } = {
+            courseId: review.courseId,
+            triggeringReviewId: reviewId, // reviewId from the request validation
+            triggeringUserId: userId, // userId from token verification
+            timestamp: FieldValue.serverTimestamp(),
+            reviewRatings: {
+                overall: review.overallRating,
+                cost: review.costRating,
+                condition: review.courseConditionRating,
+                hilliness: review.hillinessRating,
+                distance: review.distanceRating,
+                weighted: review.walkabilityRating,
+            }
+        };
+        transaction.set(logRef, logData);
     });
 
     console.log(`Review ${reviewId} verified successfully for user ${userId}`);
@@ -144,6 +190,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Error verifying review:', error);
+    // Provide more specific error responses based on transaction errors
+    if (error.message === 'Review not found' || error.message === 'User profile could not be obtained or created for user ${userId}.' || error.message === 'Review data is missing unexpectedly.') {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error.message === 'Review is not pending verification') {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error.message === 'Email mismatch') {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     return NextResponse.json({ error: 'Failed to verify review', details: error.message || 'Unknown error' }, { status: 500 });
   }
 } 

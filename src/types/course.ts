@@ -82,6 +82,17 @@ export interface GolfCourse {
   pricing_rating: number | null;
   
   // Ratings (all nullable)
+  // --- NEW FIELDS FOR CALCULATING AVERAGES ---
+  reviewCount: number;
+  overallRatingSum: number;
+  costRatingSum: number;
+  conditionRatingSum: number;
+  hillinessRatingSum: number;
+  distanceRatingSum: number; // Sum for walkabilityRating_holeDistance
+  calculatedWeightedRatingSum: number; // Sum for walkabilityRating_weightedRating
+  // --- END NEW FIELDS ---
+  
+  // Calculated average ratings
   twgRating: string;
   reviewerNotes: string;
   walkabilityRating_courseCondition: number | null;
@@ -92,6 +103,7 @@ export interface GolfCourse {
   walkabilityRating_weightedRating: number | null;
   
   // Timestamps
+  lastRatingUpdate: Date | null; // Using Date for consistency, can be Firestore Timestamp on backend
   createdAt: Date;
   updatedAt: Date;
   

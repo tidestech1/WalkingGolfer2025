@@ -1,11 +1,13 @@
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
-import { getUserProfile, updateUserProfile } from '@/lib/firebase/userUtils';
-import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review';
+import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
+import { getUserProfile } from '@/lib/firebase/userUtils';
+import { CourseReview, ReviewStatus } from '@/types/review';
 import { UserProfile } from '@/types/user';
+import { CourseRatingUpdateLog } from '@/types/log';
 
 
 const db = getAdminFirestore();
@@ -138,10 +140,33 @@ export async function POST(request: NextRequest) {
     // 6. Perform Transaction
     const reviewCollection = db.collection('reviews');
     const userRef = db.collection('users').doc(userId);
+    const validatedReviewData = data; // Rename for clarity below
     const newReviewRef = await db.runTransaction(async (transaction) => {
-        const tempReviewRef = reviewCollection.doc(); 
+        const tempReviewRef = reviewCollection.doc();
         transaction.set(tempReviewRef, reviewData);
-        transaction.update(userRef, userProfileUpdateData as Record<string, any>); // Cast still needed for generic transaction update
+        transaction.update(userRef, userProfileUpdateData as Record<string, any>);
+
+        await updateCourseRatingsFromReview(transaction, validatedReviewData.courseId, validatedReviewData);
+
+        // --- Add Rating Update Log Entry --- 
+        const logRef = db.collection('courseRatingUpdates').doc();
+        const logData: Omit<CourseRatingUpdateLog, 'id' | 'timestamp'> & { timestamp: FieldValue } = {
+            courseId: validatedReviewData.courseId,
+            triggeringReviewId: tempReviewRef.id, // Use the ID of the review being created
+            triggeringUserId: userId, // userId from token verification
+            timestamp: FieldValue.serverTimestamp(),
+            reviewRatings: {
+                overall: validatedReviewData.overallRating,
+                cost: validatedReviewData.costRating,
+                condition: validatedReviewData.courseConditionRating,
+                hilliness: validatedReviewData.hillinessRating,
+                distance: validatedReviewData.distanceRating, // Added this field based on schema
+                weighted: validatedReviewData.walkabilityRating,
+            }
+        };
+        transaction.set(logRef, logData);
+        // --- End log entry creation ---
+
         return tempReviewRef;
     });
 
