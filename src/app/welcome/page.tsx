@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth'; // To personalize the welcome message
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { MapPin, Star } from 'lucide-react'; // Icons for actions
+import { MapPin, Star, User as UserIcon } from 'lucide-react'; // Icons for actions
 
 export default function WelcomePage() {
   const { user } = useAuth();
@@ -60,6 +60,26 @@ export default function WelcomePage() {
               <Button asChild size="lg" className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#7fe673] rounded-lg transition duration-150 ease-in-out py-2 px-4">
                 <Link href="/courses">
                   Find a Course to Review
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Card 3: View Profile & Reviews */}
+          <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-300 rounded-lg md:col-span-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357]">
+                <UserIcon className="w-5 h-5 mr-2" />
+                Your Profile & Reviews
+              </CardTitle>
+              <CardDescription className="text-gray-700 pt-1">
+                Manage your details and see your past contributions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild size="lg" className="w-full bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out py-2 px-4">
+                <Link href="/profile">
+                  View Profile
                 </Link>
               </Button>
             </CardContent>

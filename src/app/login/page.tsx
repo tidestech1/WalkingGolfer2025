@@ -28,7 +28,7 @@ const LoginContent = () => {
       if (returnUrl) {
         router.push(returnUrl);
       } else {
-        router.push('/map');
+        router.push('/welcome');
       }
     }
   }, [user, authLoading, router, returnUrl]);
