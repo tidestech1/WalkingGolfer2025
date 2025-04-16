@@ -100,10 +100,12 @@ return;
           setMessage('Review successfully verified and published!');
           setStatus('success');
           
-          // Redirect back to the course page after a short delay
+          // Extract courseId from searchParams (which came from the link)
+          const courseId = searchParams.get('courseId');
+          const redirectPath = courseId ? `/courses/${courseId}?verified=true` : '/'; // Fallback to home if courseId is missing
+
           setTimeout(() => {
-            router.push(`/courses/${searchParams.get('courseIdFromReview') || reviewId}?verified=true`); // Assuming courseId is somehow passed or derivable
-            // Or just redirect home if course context is lost: router.push('/');
+            router.push(redirectPath);
           }, 3000); // 3 second delay
 
         })
@@ -157,6 +159,12 @@ return;
 // Main page component wraps the content in Suspense
 export default function VerifyEmailPage() {
   return (
+    // Wrap VerifyEmailContent in Suspense as it uses useSearchParams
+    <Suspense fallback={<LoadingSpinner />}>
+       <VerifyEmailContent />
+    </Suspense>
+    
+    /* Remove the old static content:
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
         <h1 className="text-2xl font-bold text-[#0A3357] mb-4">Verify Your Email</h1>
@@ -176,5 +184,6 @@ export default function VerifyEmailPage() {
         </p>
       </div>
     </div>
-  )
+    */
+  );
 } 

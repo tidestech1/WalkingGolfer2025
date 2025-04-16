@@ -24,8 +24,8 @@ const submitReviewSchema = z.object({
   hillinessRating: z.number().min(1).max(5),
   distanceRating: z.number().min(1).max(5),
   costRating: z.number().min(1).max(5),
-  comment: z.string().min(10), // Example: require minimum length
-  walkingDate: z.string().datetime({ message: "Invalid datetime string. Must be UTC ISO 8601" }), // Expecting ISO string from client
+  comment: z.string().optional(),
+  walkingDate: z.string().datetime({ message: "Invalid datetime string. Must be UTC ISO 8601" }).optional(),
   pros: z.array(z.string()),
   cons: z.array(z.string()),
   imageUrls: z.array(z.string().url()).optional(),
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       distanceRating: data.distanceRating,
       costRating: data.costRating,
       comment: data.comment || '',
-      walkingDate: new Date(data.walkingDate),
+      walkingDate: data.walkingDate ? new Date(data.walkingDate) : null,
       pros: data.pros,
       cons: data.cons,
       createdAt: FieldValue.serverTimestamp() as any,
@@ -87,11 +87,11 @@ export async function POST(request: NextRequest) {
     // Add the pending review to Firestore using Admin SDK syntax
     const reviewRef = await db.collection('reviews').add(reviewToCreate);
     const pendingReviewId = reviewRef.id;
+    const courseId = data.courseId;
 
     // Generate the email verification/sign-in link
-    // Correct environment variable access
     const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-    const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}`;
+    const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}&courseId=${courseId}`;
     
     const actionCodeSettings = {
       url: continueUrl,

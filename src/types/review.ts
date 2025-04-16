@@ -31,7 +31,7 @@ export interface CourseReview {
   
   // Review content
   comment: string;
-  walkingDate: Date;
+  walkingDate: Date | null;
   pros: string[];
   cons: string[];
   imageUrls?: string[];

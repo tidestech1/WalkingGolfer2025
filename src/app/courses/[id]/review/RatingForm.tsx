@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent, ChangeEvent } from 'react'
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react'
 
 import { User } from 'firebase/auth' // Import User type
 import { getAuth, sendSignInLinkToEmail } from "firebase/auth"
@@ -73,6 +73,10 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pendingReviewData, setPendingReviewData] = useState<Record<string, any> | null>(null)
+  // --- Add state for verification message --- 
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState<string>(''); // Store email for the message
+  // --- End state add ---
 
   // Walkability toggle state - default to true
   const [isWalkable, setIsWalkable] = useState<boolean>(true)
@@ -105,6 +109,14 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
   // Add state for form errors
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+
+  // --- Add useEffect to clear message on user change --- 
+  useEffect(() => {
+    // If user logs in/out, clear the verification message
+    setShowVerificationMessage(false);
+    setSubmittedEmail('');
+  }, [user]);
+  // --- End useEffect ---
 
   // Handle walkability toggle
   const handleWalkabilityChange = (walkable: boolean) => {
@@ -207,6 +219,10 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         pros: pros.filter(pro => pro.trim()),
         cons: cons.filter(con => con.trim()),
     };
+
+    // Clear verification message if user re-submits form
+    setShowVerificationMessage(false);
+    setSubmittedEmail('');
 
     // --- Conditional Submission Logic --- 
     if (user) {
@@ -317,19 +333,28 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         
         // Correct env var access
         const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-        const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}`;
+        // --- Add course.id to the client-side continueUrl --- 
+        const continueUrl = `${frontendBaseUrl}/verify-email?reviewId=${pendingReviewId}&courseId=${course.id}`;
+        // --- End URL change ---
         const actionCodeSettings = {
             url: continueUrl,
             handleCodeInApp: true,
         };
         
+        // --- Add Logging Before Sending Email --- 
+        console.log('[sendSignInLinkToEmail] Preparing to send email.');
+        console.log('[sendSignInLinkToEmail] Email:', email);
+        console.log('[sendSignInLinkToEmail] Action Code Settings:', JSON.stringify(actionCodeSettings, null, 2));
+        // --- End Logging ---
+
         // Pass the checked firebaseClientAuth
         await sendSignInLinkToEmail(firebaseClientAuth, email, actionCodeSettings);
         
         // 4. Success
         setIsModalOpen(false);
-        toast.success(`Verification link sent to ${email}. Please check your inbox!`, { id: toastId, duration: 6000 }); 
-        router.push(`/courses/${course.id}?pending_review=true`);
+        toast.success(`Verification link sent to ${email}. Please check your inbox!`, { id: toastId, duration: 6000 });
+        setSubmittedEmail(email); // Store email to display in message
+        setShowVerificationMessage(true); // Set state to show the message
 
     } catch (error: any) {
         console.error('Error submitting pending review or sending email:', error);
@@ -410,6 +435,28 @@ export default function RatingForm({ course, user }: RatingFormProps) {
       </div>
     )
   }
+
+  // --- Conditionally render form or verification message --- 
+  if (showVerificationMessage) {
+    return (
+      <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-lg mx-auto my-12">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-green-500 mb-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h2 className="text-2xl font-semibold text-[#0A3357] mb-3">Check Your Email!</h2>
+        <p className="text-gray-700 mb-4">
+          We've sent a verification link to <span className="font-medium">{submittedEmail}</span>.
+        </p>
+        <p className="text-gray-700 mb-6">
+          Please click the link in the email to verify and publish your review.
+        </p>
+        <p className="text-sm text-gray-500">
+          (You can close this page now. Check your spam folder if you don't see the email.)
+        </p>
+      </div>
+    );
+  }
+  // --- End conditional rendering ---
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -783,15 +830,17 @@ export default function RatingForm({ course, user }: RatingFormProps) {
       </button>
 
       {/* Use the imported ReviewSubmitModal */}
-      <ReviewSubmitModal 
-         isOpen={isModalOpen}
-         onClose={() => {
-             setIsModalOpen(false);
-             setPendingReviewData(null); // Clear pending data on close
-         }}
-         onSubmit={handleModalSubmit}
-         reviewData={pendingReviewData || {}} // Pass pending data
-       />
+      {isModalOpen && pendingReviewData && (
+          <ReviewSubmitModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setPendingReviewData(null); // Clear data if modal is closed
+            }}
+            onSubmit={handleModalSubmit}
+            reviewData={pendingReviewData}
+          />
+        )}
     </form>
   )
 } 
