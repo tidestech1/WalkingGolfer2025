@@ -84,6 +84,7 @@ export interface GolfCourse {
   // Ratings (all nullable)
   twgRating: string;
   reviewerNotes: string;
+  walkabilityRating_courseCondition: number | null;
   walkabilityRating_cost: number | null;
   walkabilityRating_hilliness: number | null;
   walkabilityRating_holeDistance: number | null;

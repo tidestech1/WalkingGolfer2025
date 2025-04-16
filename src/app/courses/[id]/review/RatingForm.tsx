@@ -57,8 +57,7 @@ const ratingFormSchema = z.object({
   courseConditionRating: z.number().min(1, { message: "Condition rating is required." }).max(5),
   overallRating: z.number().min(1, { message: "Overall rating is required." }).max(5),
   hillinessRating: z.number().min(1, { message: "Terrain rating is required." }).max(5),
-  accessibilityRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
-  lengthRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
+  distanceRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
   costRating: z.number().min(1, { message: "Value rating is required." }).max(5),
   comment: z.string().optional(), // Made optional
   walkingDate: z.string().optional(), // Made optional
@@ -168,8 +167,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         courseConditionRating: courseConditionRating,
         overallRating: overallRating,
         hillinessRating: terrainRating,
-        accessibilityRating: distanceRating,
-        lengthRating: distanceRating, 
+        distanceRating: distanceRating,
         costRating: costRating,
         comment: commentElement?.value || undefined, // Use undefined for optional empty string
         walkingDate: walkingDateElement?.value || undefined, // Use undefined for optional empty string
@@ -553,7 +551,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 : 'Small footprints = short distance'
               }
             </p>
-            {formErrors['accessibilityRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['accessibilityRating']}</p>}
+            {formErrors['distanceRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['distanceRating']}</p>}
           </div>
 
           <div>

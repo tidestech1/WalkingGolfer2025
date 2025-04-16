@@ -12,7 +12,7 @@ export interface CourseReview {
 
   // Temporary fields for pre-verification storage
   submittedEmail?: string; 
-  submittedName?: string; 
+  submittedName?: string;
 
   // New status and verification fields
   status: ReviewStatus;
@@ -26,8 +26,7 @@ export interface CourseReview {
   
   // Detailed walkability ratings
   hillinessRating: number;
-  accessibilityRating: number;
-  lengthRating: number;
+  distanceRating: number;
   costRating: number;
   
   // Review content
@@ -83,8 +82,7 @@ export interface CreateReviewInput {
   courseConditionRating: number;
   overallRating: number;
   hillinessRating: number;
-  accessibilityRating: number;
-  lengthRating: number;
+  distanceRating: number;
   costRating: number;
   terrainRating?: number;
   comment: string;

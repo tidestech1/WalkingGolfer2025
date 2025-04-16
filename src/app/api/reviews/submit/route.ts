@@ -22,8 +22,7 @@ const submitReviewSchema = z.object({
   courseConditionRating: z.number().min(1).max(5),
   overallRating: z.number().min(1).max(5),
   hillinessRating: z.number().min(1).max(5),
-  accessibilityRating: z.number().min(1).max(5),
-  lengthRating: z.number().min(1).max(5),
+  distanceRating: z.number().min(1).max(5),
   costRating: z.number().min(1).max(5),
   comment: z.string().min(10), // Example: require minimum length
   walkingDate: z.string().datetime({ message: "Invalid datetime string. Must be UTC ISO 8601" }), // Expecting ISO string from client
@@ -66,10 +65,9 @@ export async function POST(request: NextRequest) {
       courseConditionRating: data.courseConditionRating,
       overallRating: data.overallRating,
       hillinessRating: data.hillinessRating,
-      accessibilityRating: data.accessibilityRating,
-      lengthRating: data.lengthRating,
+      distanceRating: data.distanceRating,
       costRating: data.costRating,
-      comment: data.comment,
+      comment: data.comment || '',
       walkingDate: new Date(data.walkingDate),
       pros: data.pros,
       cons: data.cons,
