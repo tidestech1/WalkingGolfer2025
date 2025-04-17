@@ -54,6 +54,7 @@ interface RatingFormProps {
 const ratingFormSchema = z.object({
   // courseId is not part of the form data, it comes from props
   walkabilityRating: z.number().min(0).max(5), // Use calculated value later
+  isWalkable: z.boolean(), // Explicitly track walkability choice
   courseConditionRating: z.number().min(1, { message: "Condition rating is required." }).max(5),
   overallRating: z.number().min(1, { message: "Overall rating is required." }).max(5),
   hillinessRating: z.number().min(1, { message: "Terrain rating is required." }).max(5),
@@ -176,6 +177,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
     const rawFormData = {
         walkabilityRating: calculateWeightedWalkabilityRating({ terrain: terrainRating, distance: distanceRating, cost: costRating }) ?? 0,
+        isWalkable: isWalkable,
         courseConditionRating: courseConditionRating,
         overallRating: overallRating,
         hillinessRating: terrainRating,

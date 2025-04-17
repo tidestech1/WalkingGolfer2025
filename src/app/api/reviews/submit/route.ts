@@ -19,6 +19,7 @@ const submitReviewSchema = z.object({
   // Fields from the review form (adjust based on the actual form component)
   courseId: z.string().min(1),
   walkabilityRating: z.number().min(1).max(5),
+  isWalkable: z.boolean(),
   courseConditionRating: z.number().min(1).max(5),
   overallRating: z.number().min(1).max(5),
   hillinessRating: z.number().min(1).max(5),
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       email_verified: false,
       display_name_type: data.display_name_type as DisplayNameType,
       walkabilityRating: data.walkabilityRating,
+      isWalkable: data.isWalkable,
       courseConditionRating: data.courseConditionRating,
       overallRating: data.overallRating,
       hillinessRating: data.hillinessRating,

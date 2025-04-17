@@ -1,9 +1,11 @@
 import { query, where, orderBy, collection, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
+import { getFirestoreDB } from './firebaseUtils';
+import { getAdminFirestore } from './firebaseAdmin';
+import type { Firestore as AdminFirestore, CollectionReference as AdminCollectionReference, Query as AdminQuery, DocumentData as AdminDocumentData } from 'firebase-admin/firestore';
 
 import type { CourseReview, ReviewStatus, DisplayNameType, CreateReviewInput } from '@/types/review';
 
 import { addDocument, getDocuments } from './firebaseUtils';
-import { getFirestoreDB } from './firebaseUtils';
 import { uploadImage } from './storageUtils';
 
 export async function uploadReviewImages(
@@ -52,21 +54,37 @@ export async function getUserReviewForCourse(
  */
 export async function getPublishedReviewsForCourse(courseId: string): Promise<CourseReview[]> {
   try {
-    const db = getFirestoreDB(); 
-    if (!db) {
-      throw new Error('Firestore database is not available.');
+    let querySnapshot;
+    // Define constraints separately for clarity
+    const courseIdConstraint = where('courseId', '==', courseId);
+    const statusConstraint = where('status', '==', 'published' as ReviewStatus);
+    const orderConstraint = orderBy('createdAt', 'desc');
+
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      console.log("Using Admin Firestore SDK (server-side) for getPublishedReviewsForCourse");
+      const adminDb: AdminFirestore = getAdminFirestore();
+      // Build query using Admin SDK methods
+      const adminQuery = adminDb.collection('reviews')
+                                .where('courseId', '==', courseId)
+                                .where('status', '==', 'published' as ReviewStatus)
+                                .orderBy('createdAt', 'desc');
+      querySnapshot = await adminQuery.get();
+    } else {
+      // Client-side: Use Client SDK
+      console.log("Using Client Firestore SDK (client-side) for getPublishedReviewsForCourse");
+      const db = getFirestoreDB();
+      if (!db) {
+        throw new Error('Client Firestore database is not available.');
+      }
+      const reviewsCollection = collection(db, 'reviews');
+      // Apply constraints using Client SDK function style
+      const q = query(reviewsCollection, courseIdConstraint, statusConstraint, orderConstraint);
+      querySnapshot = await getDocs(q);
     }
 
-    const reviewsCollection = collection(db, 'reviews');
-    const q = query(
-      reviewsCollection, 
-      where('courseId', '==', courseId),
-      where('status', '==', 'published' as ReviewStatus),
-      orderBy('createdAt', 'desc')
-    );
-
-    const querySnapshot = await getDocs(q);
     const reviews: CourseReview[] = [];
+    // Process snapshot (works for both Admin and Client SDK snapshot types)
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const review = {

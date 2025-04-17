@@ -8,6 +8,7 @@ import { getUserProfile } from '@/lib/firebase/userUtils';
 import { CourseReview, ReviewStatus } from '@/types/review';
 import { UserProfile } from '@/types/user';
 import { CourseRatingUpdateLog } from '@/types/log';
+import { GolfCourse } from '@/types/course';
 
 
 const db = getAdminFirestore();
@@ -17,6 +18,7 @@ const auth = getAdminAuth();
 const authenticatedSubmitSchema = z.object({
   courseId: z.string().min(1),
   walkabilityRating: z.number().min(1).max(5),
+  isWalkable: z.boolean(),
   courseConditionRating: z.number().min(1).max(5),
   overallRating: z.number().min(1).max(5),
   hillinessRating: z.number().min(1).max(5),
@@ -110,6 +112,7 @@ export async function POST(request: NextRequest) {
       status: 'published' as ReviewStatus,
       email_verified: true, 
       display_name_type: userProfile.reviewDisplayNameType || 'full',
+      isWalkable: data.isWalkable,
       walkabilityRating: data.walkabilityRating,
       courseConditionRating: data.courseConditionRating,
       overallRating: data.overallRating,
@@ -142,11 +145,20 @@ export async function POST(request: NextRequest) {
     const userRef = db.collection('users').doc(userId);
     const validatedReviewData = data; // Rename for clarity below
     const newReviewRef = await db.runTransaction(async (transaction) => {
+        // Get course data within transaction
+        const courseRef = db.collection('courses').doc(validatedReviewData.courseId);
+        const courseSnap = await transaction.get(courseRef);
+        if (!courseSnap.exists) {
+          throw new Error(`Course with ID ${validatedReviewData.courseId} not found.`);
+        }
+        const courseData = courseSnap.data() as GolfCourse;
+
         const tempReviewRef = reviewCollection.doc();
         transaction.set(tempReviewRef, reviewData);
         transaction.update(userRef, userProfileUpdateData as Record<string, any>);
 
-        await updateCourseRatingsFromReview(transaction, validatedReviewData.courseId, validatedReviewData);
+        // Pass fetched courseData as the 4th argument
+        await updateCourseRatingsFromReview(transaction, validatedReviewData.courseId, validatedReviewData, courseData);
 
         // --- Add Rating Update Log Entry --- 
         const logRef = db.collection('courseRatingUpdates').doc();

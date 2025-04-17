@@ -20,6 +20,7 @@ export interface CourseReview {
   display_name_type: DisplayNameType;
   
   // Ratings
+  isWalkable: boolean;
   walkabilityRating: number;
   courseConditionRating: number;
   overallRating: number;
@@ -48,7 +49,6 @@ export interface ReviewFilters {
   maxRating?: number;
   minWalkabilityRating?: number;
   maxWalkabilityRating?: number;
-  // REMOVED cart filters
   dateRange?: {
     start: Date;
     end: Date;
@@ -70,7 +70,6 @@ export interface ReviewStats {
   };
   mostCommonPros: string[];
   mostCommonCons: string[];
-  // REMOVED cart usage stats
   recentReviews: CourseReview[];
 }
 
