@@ -1,34 +1,8 @@
-// Enums for fields with specific options
-export enum CourseCategory {
-  PR = 'PR', // Private
-  PL = 'PL', // Private with Limited Guest Play
-  DF = 'DF', // Daily Fee
-  MU = 'MU'  // Municipal
-}
-
-export enum CourseType {
-  JG = 'JG', // Just Golf
-  RS = 'RS', // Resort
-  RD = 'RD', // Real Estate Development
-  RR = 'RR', // Resort & Real Estate Development
-  MI = 'MI', // Military
-  UN = 'UN', // University
-  PK = 'PK'  // Park
-}
-
-export enum NFGCategory {
-  A = 'A', // Premium facility (Over $70)
-  B = 'B', // Standard facility ($40-$70)
-  C = 'C', // Value facility ($1-$40)
-  P = 'P'  // Private facility
-}
-
 // Main interface
 export interface GolfCourse {
   // Basic Info
   id: string;
   courseName: string;
-  nfgFacilityID: string;
   imageUrl?: string;
   
   // Contact Info (flat)
@@ -38,14 +12,20 @@ export interface GolfCourse {
   contact_website: string;
   
   // Course Details (flat)
-  course_category: CourseCategory;
+  course_category: string;
   course_description: string;
   course_designer: string;
   course_holes: number;
   course_tees: number;
-  course_type: CourseType;
+  course_type: string;
   course_yearEstablished: number;
   course_isWalkable: boolean | null;
+  course_par: number;
+  course_guestPolicy: string;
+  
+  // Club Details (related to the overall club/facility)
+  club_totalHoles: number;
+  club_name: string;
   
   // Location (flat)
   location_address1: string;
@@ -54,16 +34,13 @@ export interface GolfCourse {
   location_coordinates_latitude: number;
   location_coordinates_longitude: number;
   location_country: string;
-  location_county: string;
   location_state: string;
   location_zip: string;
   
   // Facilities (all required with default false)
   // Main facilities
   facilities_proShop: boolean;
-  facilities_barRestaurant: boolean;
-  facilities_changingRoom: boolean;
-  facilities_lockers: boolean;
+  facilities_restaurant: boolean;
   
   // Practice areas
   facilities_drivingRange: boolean;
@@ -77,10 +54,10 @@ export interface GolfCourse {
   facilities_golfCarts: boolean;
   facilities_pushCarts: boolean;
   
-  // Pricing
-  pricing_fee: number;
-  pricing_nfgCategory: NFGCategory;
-  pricing_rating: number | null;
+  // Pricing (New structure based on course costs)
+  course_weekdayCost: number;
+  course_weekendCost: number;
+  course_twilightCost: number;
   
   // Ratings (all nullable)
   // --- NEW FIELDS FOR CALCULATING AVERAGES ---
@@ -96,6 +73,7 @@ export interface GolfCourse {
   // Calculated average ratings
   twgRating: string;
   reviewerNotes: string;
+  twgReviewerNotes: string;
   walkabilityRating_courseCondition: number | null;
   walkabilityRating_cost: number | null;
   walkabilityRating_hilliness: number | null;
