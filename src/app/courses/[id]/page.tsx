@@ -28,6 +28,7 @@ import type { CourseReview } from '@/types/review'
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
+import CourseFacilities from '@/app/components/CourseFacilities'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -176,6 +177,8 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Walkability Details</h2>
               <WalkabilityDetails course={course} />
             </div>
+
+            <CourseFacilities course={course} />
 
             <div className="bg-white rounded-lg shadow p-4">
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Contact Information</h2>

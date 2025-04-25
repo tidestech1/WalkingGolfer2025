@@ -534,6 +534,7 @@ async function updateCourseRatingsFromReview(
         | 'hillinessRating'
         | 'distanceRating' 
         | 'walkabilityRating'
+        | 'isWalkable'
     >,
     currentCourseData: GolfCourse
 ): Promise<void> {
@@ -580,6 +581,7 @@ async function updateCourseRatingsFromReview(
             walkabilityRating_weightedRating: newWeightedAvg,
             lastRatingUpdate: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
+            course_isWalkable: newReviewData.isWalkable,
         };
 
         transaction.update(courseRef, updatePayload);

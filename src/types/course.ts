@@ -45,6 +45,7 @@ export interface GolfCourse {
   course_tees: number;
   course_type: CourseType;
   course_yearEstablished: number;
+  course_isWalkable: boolean | null;
   
   // Location (flat)
   location_address1: string;
@@ -109,6 +110,7 @@ export interface GolfCourse {
   
   // Array of lowercase searchable terms
   searchableTerms: string[];
+  
 }
 
 /**
