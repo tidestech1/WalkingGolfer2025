@@ -24,7 +24,7 @@ import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 import { CourseReview } from '@/types/review';
 
 // Client-side Firestore instance
-import { db } from './firebase'; 
+import { db, isFirebaseAvailable } from './firebase'; 
 // Server-side Firestore instance (Admin SDK)
 import { getAdminFirestore } from './firebaseAdmin'; 
 
@@ -112,17 +112,14 @@ export async function getCourseById(id: string): Promise<GolfCourse | null> {
 /**
  * Build query constraints based on filters
  */
-function buildQueryConstraints(
-  filters: CourseFilters, 
-  lastVisible?: QueryDocumentSnapshot<DocumentData>
-): QueryConstraint[] {
+export function buildFilterSortConstraints(filters: CourseFilters): QueryConstraint[] {
+  console.log('[buildFilterSortConstraints LOG] Input Filters:', JSON.stringify(filters, null, 2)); 
   const constraints: QueryConstraint[] = [];
   let firstOrderByField: string | null = null;
-  const sortDirection = filters.sortOrder || 'desc';
+  // Default sort order if not specified in filters
+  const sortDirection = filters.sortOrder || 'desc'; 
 
-  // --- New Filter Logic --- 
-
-  // Boolean Filters (applied first)
+  // --- Add clauses for active boolean filters ---
   if (filters.filter_isWalkable === true) {
     constraints.push(where('course_isWalkable', '==', true));
   }
@@ -151,67 +148,69 @@ function buildQueryConstraints(
     constraints.push(where('facilities_practiceBunker', '==', true));
   }
   if (filters.filter_caddies === true) {
-    constraints.push(where('facilities_caddies', '==', true));
+    constraints.push(where('amenities_caddies', '==', true)); // Assuming schema uses amenities_
   }
   if (filters.filter_clubRental === true) {
-    constraints.push(where('facilities_clubRental', '==', true));
+    constraints.push(where('amenities_clubRental', '==', true)); // Assuming schema uses amenities_
   }
-  
-  // Walkability Rating Filter
-  if (filters.walkabilityRating_overall_min > 0) {
+  // Add other boolean filters similarly...
+
+  // --- Add clause for walkability rating ---
+  // Ensure min rating is a number and greater than 0
+  if (typeof filters.walkabilityRating_overall_min === 'number' && filters.walkabilityRating_overall_min > 0) {
     constraints.push(where('walkabilityRating_overall', '>=', filters.walkabilityRating_overall_min));
-    // If filtering by rating, it often makes sense to sort by it too
+    // Set default sort if filtering by rating and no other sort is primary yet
     if (!firstOrderByField) {
        firstOrderByField = 'walkabilityRating_overall';
-       constraints.push(orderBy(firstOrderByField, sortDirection));
     }
   }
   
-  // Search Term Filter
+  // --- Add clause for search query ---
   if (filters.searchQuery?.trim()) {
-    constraints.push(where('searchableTerms', 'array-contains', filters.searchQuery.trim().toLowerCase()));
-    // If searching, default sort might change (e.g., by relevance if available, or name)
+    const searchTerm = filters.searchQuery.trim().toLowerCase();
+    constraints.push(where('searchableTerms', 'array-contains', searchTerm));
+    // Adjust default sort if searching and no other sort is primary yet
     if (!firstOrderByField) {
-        firstOrderByField = 'courseName'; // Example: Sort by name when searching
-        constraints.push(orderBy(firstOrderByField, 'asc')); // Example: Ascending for name
+        firstOrderByField = 'courseName'; // Default sort for search is by name asc
     }
   }
 
-  // REMOVED OLD FILTERS: pricing_fee, course_types, course_categories
-  /*
-  else if (filters.pricing_fee_min > 0 || filters.pricing_fee_max < 9999) { ... }
-  if (filters.course_types?.length > 0) { ... }
-  if (filters.course_categories?.length > 0) { ... }
-  */
-
-  // Default Sort Order (if not already set by a filter)
-  if (!firstOrderByField) {
-    const sortField = filters.sortBy || 'walkabilityRating_overall'; // Default sort
-    constraints.push(orderBy(sortField, sortDirection));
-    firstOrderByField = sortField;
-  }
-
-  // Add secondary sort for stable pagination if primary sort isn't unique
-  // Using document ID (__name__) is a common Firestore pattern
-  if (firstOrderByField !== '__name__') {
-     constraints.push(orderBy('__name__', sortDirection)); // Use same direction as primary for consistency
-  }
+  // --- Apply default or explicit sorting ---
+  // Use the explicit sortBy from filters if available, otherwise use the determined firstOrderByField, 
+  // or fall back to 'walkabilityRating_overall'
+  const finalSortField = filters.sortBy || firstOrderByField || 'walkabilityRating_overall';
   
-  return addPaginationConstraints(constraints, lastVisible);
+  // Determine sort direction for the primary field
+  // If sorting by name (usually from search), default to ascending, otherwise use filter setting or default desc
+  const primarySortDirection = (finalSortField === 'courseName' && !filters.sortBy) ? 'asc' : sortDirection; 
+  
+  constraints.push(orderBy(finalSortField, primarySortDirection));
+  
+  // --- Add final sort for stable pagination/results ---
+  // Add __name__ sort unless it was already the primary sort field
+  if (finalSortField !== '__name__') {
+     constraints.push(orderBy('__name__', primarySortDirection)); 
+  }
+
+  console.log('[buildFilterSortConstraints LOG] Generated Constraints (without pagination):', constraints); 
+  return constraints; // Return constraints without pagination
 }
 
 /**
  * Add pagination constraints to the query
  */
-function addPaginationConstraints(
-  constraints: QueryConstraint[],
+export function addPaginationConstraints(
+  constraints: QueryConstraint[], 
   lastVisible?: QueryDocumentSnapshot<DocumentData>
 ): QueryConstraint[] {
-  if (lastVisible) {
-    constraints.push(startAfter(lastVisible));
-  }
-  constraints.push(limit(COURSES_PER_PAGE + 1));
-  return constraints;
+    const paginatedConstraints = [...constraints]; // Create a copy
+    // Apply limit (adjust as needed) - maybe make this configurable?
+    paginatedConstraints.push(limit(100)); // Example limit - Increased limit for map view
+
+    if (lastVisible) {
+        paginatedConstraints.push(startAfter(lastVisible));
+    }
+    return paginatedConstraints;
 }
 
 /**
@@ -220,94 +219,44 @@ function addPaginationConstraints(
 export async function getCourses(
   filters: CourseFilters,
   lastVisible?: QueryDocumentSnapshot<DocumentData>
-): Promise<CourseQueryResult> {
-  const queryKey = generateQueryKey({ ...filters, cursor: lastVisible?.id });
-  
-  // --- Server-Side Execution --- 
-  if (typeof window === 'undefined') {
-    console.log("Executing getCourses on Server (Simplified)");
-    try {
-      const adminDb = getAdminFirestore();
-      // Simplified query: Fetch first page ordered by walkability
-      const adminQuery = adminDb.collection(COLLECTION_NAME)
-                              .orderBy('walkabilityRating_overall', 'desc') // Example default sort
-                              .limit(COURSES_PER_PAGE); // Fetch fixed number
-      const snapshot = await adminQuery.get();
-      const resultCourses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GolfCourse[];
-      
-      // Server-side does not return pagination cursor or accurate hasMore for this simplified version
-      return {
-        courses: resultCourses,
-        lastVisible: null, 
-        hasMore: false, // Assume false for simplified server query
-        source: 'firebase'
-      };
-    } catch (error) {
-       console.error(`Server-side getCourses failed:`, error);
-       // Throw or return empty based on how you want to handle server errors
-       throw error; 
-    }
+): Promise<{ courses: GolfCourse[], lastDoc: QueryDocumentSnapshot<DocumentData> | null }> {
+  if (!isFirebaseAvailable() || !db) {
+    throw new Error('Firebase/DB not available in getCourses');
   }
 
-  // --- Client-Side Execution --- 
-  console.log("Executing getCourses on Client");
-  // Check cache first
-  if (!lastVisible) {
-    const cached = getCachedCourseList(queryKey);
-    if (cached) {
-      console.log(`Cache hit for query: ${queryKey}`);
-      return { courses: cached, lastVisible: null, hasMore: false, source: 'cache' };
+  try {
+    const filterSortConstraints = buildFilterSortConstraints(filters); // Get filter/sort constraints
+    // NOTE: Pagination is NOT added here by default anymore. 
+    // The caller (like a paginated list) should handle adding pagination if needed.
+    // For map view, we typically want all results matching filters (within bounds, handled later)
+    // const finalConstraints = addPaginationConstraints(filterSortConstraints, lastVisible); // Add pagination if needed
+
+    console.log('[getCourses LOG] Attempting Firestore query with constraints:', filterSortConstraints); 
+    const coursesRef = collection(db, COLLECTION_NAME);
+    // Use only filter/sort constraints for the base query
+    const q = query(coursesRef, ...filterSortConstraints); 
+    
+    const snapshot = await getDocs(q);
+    console.log('[getCourses LOG] Firestore query executed successfully. Docs fetched:', snapshot.docs.length); 
+    
+    const docs = snapshot.docs;
+    const courses = docs.map(doc => ({ id: doc.id, ...doc.data() } as GolfCourse));
+    
+    // Determine the last document for potential future pagination, even if not used now
+    const lastDocInArray = docs.length > 0 ? docs[docs.length - 1] : null;
+    const newLastVisible = lastDocInArray ?? null; // Explicitly handle potential undefined
+
+    return { courses, lastDoc: newLastVisible };
+
+  } catch (error) {
+    console.error("Error fetching courses in getCourses:", error);
+    // Check if it's a Firestore error indicating missing index
+    if (error instanceof Error && error.message.includes('requires an index')) {
+      console.error("Firestore index possibly missing. Check Firebase console logs for index creation link.");
+      // Potentially re-throw a more specific error or handle it
     }
-    console.log(`Cache miss for query: ${queryKey}, fetching from Firestore...`);
+    throw error; // Re-throw the error to be caught by the caller
   }
-
-  let resultCourses: GolfCourse[] = [];
-  let resultLastVisible: QueryDocumentSnapshot<DocumentData> | null = null;
-  let hasMore = false;
-  let attempts = 0;
-  let lastError: Error | null = null;
-
-  const clientConstraints = buildQueryConstraints(filters, lastVisible);
-
-  while (attempts < MAX_QUERY_ATTEMPTS) {
-    try {
-      if (!db) {
-throw new Error('Client Firestore DB not available');
-}
-      const coursesRef = collection(db, COLLECTION_NAME);
-      const q = query(coursesRef, ...clientConstraints); 
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs;
-
-      hasMore = docs.length > COURSES_PER_PAGE;
-      const courseDocs = hasMore ? docs.slice(0, -1) : docs;
-      resultCourses = courseDocs.map(doc => ({ id: doc.id, ...doc.data() })) as GolfCourse[];
-      resultLastVisible = courseDocs[courseDocs.length - 1] || null;
-      
-      // Client-side caching
-      if (!lastVisible) {
-        setCachedCourseList(queryKey, resultCourses);
-      }
-      resultCourses.forEach(course => setCachedCourse(course));
-
-      return {
-        courses: resultCourses,
-        lastVisible: resultLastVisible,
-        hasMore,
-        source: 'firebase'
-      };
-
-    } catch (error) {
-      console.error(`Client getCourses Query attempt ${attempts + 1} failed:`, error);
-      lastError = error as Error;
-      attempts++;
-      if (attempts < MAX_QUERY_ATTEMPTS) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-      }
-    }
-  }
-
-  throw lastError || new Error('Client: Failed to fetch courses after multiple attempts');
 }
 
 /**

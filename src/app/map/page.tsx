@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
+import { buildFilterSortConstraints } from '@/lib/firebase/courseUtils';
 import { cn } from '@/lib/utils';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
@@ -82,10 +83,9 @@ export default function MapPage(): JSX.Element {
     const currentZoom = mapRef.current?.getZoom(); 
     if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
         console.log(`loadCourses skipped: Current zoom (${currentZoom}) is below threshold (${MIN_ZOOM_FOR_MARKERS}).`);
-        // Ensure data is cleared if we skip loading due to zoom
         setFilteredCourses([]);
         setCoursesInBoundsCount(0);
-        return; // Do not proceed with fetching
+        return; 
     }
 
     if (!isFirebaseAvailable() || !db) {
@@ -94,61 +94,62 @@ export default function MapPage(): JSX.Element {
       return;
     }
 
-    // Don't fetch if bounds are missing (unless we add filter-only logic later)
+    // Keep the bounds check
     if (!bounds) {
       console.debug("loadCourses skipped: no bounds provided.")
-      // Optionally clear courses if bounds become null?
-      // setFilteredCourses([]); 
       return; 
     }
 
     setLoading(true);
     setError(null);
 
-    console.log(`[page.tsx LOG] loadCourses: Querying with bounds:`, JSON.stringify(bounds));
+    // Log both filters and bounds being used
+    console.log(`[page.tsx LOG] loadCourses: Querying with filters:`, JSON.stringify(filters));
+    console.log(`[page.tsx LOG] loadCourses: Client-side filtering with bounds:`, JSON.stringify(bounds));
 
     try {
       const coursesRef = collection(db, 'courses');
-      let q;
-
-      // === Query based on Bounds (Filter logic to be added later) ===
-      // Basic bounds query
-      q = query(
-        coursesRef,
-        where('location_coordinates_latitude', '>=', bounds.south),
-        where('location_coordinates_latitude', '<=', bounds.north),
-        orderBy('location_coordinates_latitude')
-        // Add orderBy for longitude if needed for more complex queries
-        // Potentially add limit here if needed for performance (e.g., limit(100))
-      );
-      // TODO: Add filter integration (where clauses for rating, type, category, facilities etc.)
+      
+      // === Build query based on FILTERS first ===
+      const filterConstraints = buildFilterSortConstraints(filters);
+      console.log('[page.tsx LOG] Generated filter constraints:', filterConstraints);
+      const q = query(coursesRef, ...filterConstraints); 
+      // Removed Firestore bounds query (where lat >= ... etc.)
 
       const snapshot = await getDocs(q);
-      let fetchedCourses = snapshot.docs // Rename to fetchedCourses
-        .map(doc => ({ id: doc.id, ...doc.data() } as GolfCourse))
-        // Secondary filter for longitude needed because Firestore can only range filter on one field
-        .filter((course: GolfCourse) =>
-            course.location_coordinates_longitude >= bounds.west &&
-            course.location_coordinates_longitude <= bounds.east
-        );
+      
+      // Fetch all courses matching the filters
+      const coursesMatchingFilters = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as GolfCourse));
+        
+      console.log(`Found ${coursesMatchingFilters.length} courses matching filters.`);
+      
+      // Store count *after* Firestore filtering but *before* client-side bounds filtering
+      setCoursesInBoundsCount(coursesMatchingFilters.length); 
 
-      // Set the state for courses within bounds BEFORE client-side filtering
-      setFilteredCourses(fetchedCourses);
+      // === Client-side Filtering by Bounds ===
+      const coursesInView = coursesMatchingFilters.filter((course: GolfCourse) =>
+        course.location_coordinates_latitude >= bounds.south &&
+        course.location_coordinates_latitude <= bounds.north &&
+        course.location_coordinates_longitude >= bounds.west &&
+        course.location_coordinates_longitude <= bounds.east
+      );
 
-      // Store count *before* client-side filters
-      const countBeforeFiltering = fetchedCourses.length;
-      setCoursesInBoundsCount(countBeforeFiltering);
-      console.log(`Found ${countBeforeFiltering} courses within bounds.`);
+      console.log(`Filtered down to ${coursesInView.length} courses within map bounds.`);
+      
+      // Set the state with courses that match filters AND are in bounds
+      setFilteredCourses(coursesInView);
+      // Removed redundant count calculation and logging here
 
     } catch (err) {
       console.error('Error loading courses:', err);
       setError('Error loading courses. Please try again.');
-      setFilteredCourses([]); // Clear on error
-      setCoursesInBoundsCount(0); // Clear count on error
+      setFilteredCourses([]); 
+      setCoursesInBoundsCount(0); 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]); 
 
   const debouncedLoadCourses = useMemo(
     () => debounce((bounds: MapBounds) => {
@@ -164,12 +165,14 @@ export default function MapPage(): JSX.Element {
   }, [debouncedLoadCourses]);
 
   useEffect(() => {
+    console.debug('[MapPage LOG] useEffect[mapLoaded, mapBounds, filters] TRIGGERED.'); // Log entry
     if (!mapLoaded || !mapBounds || !mapRef.current) {
+        console.debug('[MapPage LOG] useEffect[mapLoaded, mapBounds, filters]: Skipping load (map/bounds not ready).')
         return; 
     }
-    console.debug(`useEffect[mapLoaded, mapBounds, filters]: Calling debouncedLoadCourses`);
-    // Pass bounds, loadCourses will be triggered again by filter changes if needed
-    debouncedLoadCourses(mapBounds); // REMOVED filters argument
+    console.debug('[MapPage LOG] useEffect[mapLoaded, mapBounds, filters]: Filters changed, current filters:', filters);
+    console.debug(`[MapPage LOG] useEffect[mapLoaded, mapBounds, filters]: Calling debouncedLoadCourses`);
+    debouncedLoadCourses(mapBounds); 
 
   }, [mapLoaded, mapBounds, filters, debouncedLoadCourses]); // Keep filters dependency here
 
@@ -181,10 +184,12 @@ export default function MapPage(): JSX.Element {
   }, [filteredCourses]);
 
   const handleFilterChange = useCallback((newFilters: Partial<CourseFilters>) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters
-    }));
+    console.log('[MapPage LOG] handleFilterChange called with:', newFilters);
+    setFilters(prev => {
+      const updated = { ...prev, ...newFilters };
+      console.log('[MapPage LOG] Filters state updated to:', updated);
+      return updated;
+    });
   }, []);
 
   // Handle view changes from BottomNav
