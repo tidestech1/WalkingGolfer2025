@@ -17,7 +17,7 @@ import {
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
-import { Firestore as AdminFirestore, FieldValue, Transaction, DocumentSnapshot as AdminDocumentSnapshot } from 'firebase-admin/firestore';
+import { Firestore as AdminFirestore, FieldValue, Transaction } from 'firebase-admin/firestore';
  
 import { getCachedCourse, setCachedCourse, getCachedCourseList, setCachedCourseList, generateQueryKey } from '@/lib/utils/courseCache';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
@@ -118,54 +118,83 @@ function buildQueryConstraints(
 ): QueryConstraint[] {
   const constraints: QueryConstraint[] = [];
   let firstOrderByField: string | null = null;
-  let sortDirection = filters.sortOrder || 'desc';
+  const sortDirection = filters.sortOrder || 'desc';
 
-  if (filters.simpleSearch) {
-    if (filters.searchQuery?.trim()) {
-      constraints.push(where('searchableTerms', 'array-contains', filters.searchQuery.trim().toLowerCase()));
-      constraints.push(orderBy('courseName', 'asc'));
-    } else {
-      constraints.push(orderBy('courseName', 'asc'));
-    }
-    constraints.push(orderBy('__name__', 'desc'));
-    return addPaginationConstraints(constraints, lastVisible);
+  // --- New Filter Logic --- 
+
+  // Boolean Filters (applied first)
+  if (filters.filter_isWalkable === true) {
+    constraints.push(where('course_isWalkable', '==', true));
   }
-
+  if (filters.filter_drivingRange === true) {
+    constraints.push(where('facilities_drivingRange', '==', true));
+  }
+  if (filters.filter_golfCarts === true) {
+    constraints.push(where('facilities_golfCarts', '==', true));
+  }
+  if (filters.filter_pushCarts === true) {
+    constraints.push(where('facilities_pushCarts', '==', true));
+  }
+  if (filters.filter_restaurant === true) {
+    constraints.push(where('facilities_restaurant', '==', true));
+  }
+  if (filters.filter_proShop === true) {
+    constraints.push(where('facilities_proShop', '==', true));
+  }
+  if (filters.filter_puttingGreen === true) {
+    constraints.push(where('facilities_puttingGreen', '==', true));
+  }
+  if (filters.filter_chippingGreen === true) {
+    constraints.push(where('facilities_chippingGreen', '==', true));
+  }
+  if (filters.filter_practiceBunker === true) {
+    constraints.push(where('facilities_practiceBunker', '==', true));
+  }
+  if (filters.filter_caddies === true) {
+    constraints.push(where('facilities_caddies', '==', true));
+  }
+  if (filters.filter_clubRental === true) {
+    constraints.push(where('facilities_clubRental', '==', true));
+  }
+  
+  // Walkability Rating Filter
+  if (filters.walkabilityRating_overall_min > 0) {
+    constraints.push(where('walkabilityRating_overall', '>=', filters.walkabilityRating_overall_min));
+    // If filtering by rating, it often makes sense to sort by it too
+    if (!firstOrderByField) {
+       firstOrderByField = 'walkabilityRating_overall';
+       constraints.push(orderBy(firstOrderByField, sortDirection));
+    }
+  }
+  
+  // Search Term Filter
   if (filters.searchQuery?.trim()) {
     constraints.push(where('searchableTerms', 'array-contains', filters.searchQuery.trim().toLowerCase()));
-    firstOrderByField = filters.sortBy || 'walkabilityRating_overall';
-    constraints.push(orderBy(firstOrderByField, sortDirection));
-  } else if (filters.pricing_fee_min > 0 || filters.pricing_fee_max < 9999) {
-    if (filters.pricing_fee_min > 0) {
-      constraints.push(where('pricing_fee', '>=', filters.pricing_fee_min));
+    // If searching, default sort might change (e.g., by relevance if available, or name)
+    if (!firstOrderByField) {
+        firstOrderByField = 'courseName'; // Example: Sort by name when searching
+        constraints.push(orderBy(firstOrderByField, 'asc')); // Example: Ascending for name
     }
-    if (filters.pricing_fee_max < 9999) {
-      constraints.push(where('pricing_fee', '<=', filters.pricing_fee_max));
-    }
-    firstOrderByField = 'pricing_fee';
-    constraints.push(orderBy(firstOrderByField, 'asc'));
-    sortDirection = 'asc';
-  } else if (filters.walkabilityRating_overall_min > 0) {
-    constraints.push(where('walkabilityRating_overall', '>=', filters.walkabilityRating_overall_min));
-    firstOrderByField = 'walkabilityRating_overall';
-    constraints.push(orderBy(firstOrderByField, sortDirection));
   }
 
-  if (filters.course_types?.length > 0) {
-    constraints.push(where('course_type', 'in', filters.course_types));
-  }
-  if (filters.course_categories?.length > 0) {
-    constraints.push(where('course_category', 'in', filters.course_categories));
-  }
+  // REMOVED OLD FILTERS: pricing_fee, course_types, course_categories
+  /*
+  else if (filters.pricing_fee_min > 0 || filters.pricing_fee_max < 9999) { ... }
+  if (filters.course_types?.length > 0) { ... }
+  if (filters.course_categories?.length > 0) { ... }
+  */
 
+  // Default Sort Order (if not already set by a filter)
   if (!firstOrderByField) {
-    const sortField = filters.sortBy || 'walkabilityRating_overall';
+    const sortField = filters.sortBy || 'walkabilityRating_overall'; // Default sort
     constraints.push(orderBy(sortField, sortDirection));
     firstOrderByField = sortField;
   }
 
+  // Add secondary sort for stable pagination if primary sort isn't unique
+  // Using document ID (__name__) is a common Firestore pattern
   if (firstOrderByField !== '__name__') {
-     constraints.push(orderBy('__name__', 'desc'));
+     constraints.push(orderBy('__name__', sortDirection)); // Use same direction as primary for consistency
   }
   
   return addPaginationConstraints(constraints, lastVisible);
@@ -508,90 +537,87 @@ function calculateAverage(sum: number, count: number): number | null {
     return Math.round((sum / count) * 100) / 100;
 }
 
-// Define a specific type for the update payload to handle FieldValue for timestamps
-type CourseUpdatePayload = Omit<Partial<GolfCourse>, 'updatedAt' | 'lastRatingUpdate'> & {
+// Define the payload for updating course ratings
+// Uses new rating sum fields and FieldValue for increments/timestamps
+type CourseUpdatePayload = {
+    reviewCount: FieldValue;
+    overallRatingSum: FieldValue;
+    costRatingSum: FieldValue;
+    conditionRatingSum: FieldValue;
+    hillinessRatingSum: FieldValue;
+    distanceRatingSum: FieldValue;
+    calculatedWeightedRatingSum: FieldValue;
+    walkabilityRating_overall: number | null; // Recalculated average
+    walkabilityRating_cost: number | null;
+    walkabilityRating_courseCondition: number | null;
+    walkabilityRating_hilliness: number | null;
+    walkabilityRating_holeDistance: number | null;
+    walkabilityRating_weightedRating: number | null;
+    lastRatingUpdate: FieldValue; 
     updatedAt: FieldValue;
-    lastRatingUpdate: FieldValue;
 };
 
 /**
- * Updates the average ratings for a golf course based on a new review using Admin SDK.
- * This function MUST be called within a Firestore transaction.
- *
- * @param transaction The Firestore transaction object (Admin SDK type).
- * @param courseId The ID of the course to update.
- * @param newReviewData The data from the newly submitted and validated review.
- * @param currentCourseData The current course data fetched earlier in the transaction.
+ * Updates the average ratings and count on a course document based on a new review.
+ * Designed to be used within a Firestore transaction.
  */
 async function updateCourseRatingsFromReview(
     transaction: Transaction, 
     courseId: string,
+    // Include all individual ratings from the review needed for sums
     newReviewData: Pick<
         CourseReview,
-        | 'overallRating'
-        | 'costRating'
-        | 'courseConditionRating'
-        | 'hillinessRating'
-        | 'distanceRating' 
-        | 'walkabilityRating'
-        | 'isWalkable'
+        'overallRating' | 'costRating' | 'courseConditionRating' | 
+        'hillinessRating' | 'distanceRating' | 'walkabilityRating' // This is the weighted rating
     >,
-    currentCourseData: GolfCourse
+    currentCourseData: GolfCourse // Pass the existing course data
 ): Promise<void> {
-    try {
-        const currentData = currentCourseData;
-        const courseRef = getAdminFirestore().collection('courses').doc(courseId);
+    const courseRef = getAdminFirestore().collection(COLLECTION_NAME).doc(courseId);
 
-        const currentReviewCount = currentData.reviewCount || 0;
-        const currentOverallSum = currentData.overallRatingSum || 0;
-        const currentCostSum = currentData.costRatingSum || 0;
-        const currentConditionSum = currentData.conditionRatingSum || 0;
-        const currentHillinessSum = currentData.hillinessRatingSum || 0;
-        const currentDistanceSum = currentData.distanceRatingSum || 0;
-        const currentWeightedSum = currentData.calculatedWeightedRatingSum || 0;
+    // Calculate increments using FieldValue
+    const increments = {
+        reviewCount: FieldValue.increment(1),
+        overallRatingSum: FieldValue.increment(newReviewData.overallRating || 0),
+        costRatingSum: FieldValue.increment(newReviewData.costRating || 0),
+        conditionRatingSum: FieldValue.increment(newReviewData.courseConditionRating || 0),
+        hillinessRatingSum: FieldValue.increment(newReviewData.hillinessRating || 0),
+        distanceRatingSum: FieldValue.increment(newReviewData.distanceRating || 0),
+        calculatedWeightedRatingSum: FieldValue.increment(newReviewData.walkabilityRating || 0) // Increment sum for weighted rating
+    };
 
-        const newReviewCount = currentReviewCount + 1;
-        const newOverallSum = currentOverallSum + newReviewData.overallRating;
-        const newCostSum = currentCostSum + newReviewData.costRating;
-        const newConditionSum = currentConditionSum + newReviewData.courseConditionRating;
-        const newHillinessSum = currentHillinessSum + newReviewData.hillinessRating;
-        const newDistanceSum = currentDistanceSum + newReviewData.distanceRating;
-        const newWeightedSum = currentWeightedSum + newReviewData.walkabilityRating;
+    // Calculate new averages
+    const newReviewCount = (currentCourseData.reviewCount || 0) + 1;
+    const newOverallSum = (currentCourseData.overallRatingSum || 0) + (newReviewData.overallRating || 0);
+    const newCostSum = (currentCourseData.costRatingSum || 0) + (newReviewData.costRating || 0);
+    const newConditionSum = (currentCourseData.conditionRatingSum || 0) + (newReviewData.courseConditionRating || 0);
+    const newHillinessSum = (currentCourseData.hillinessRatingSum || 0) + (newReviewData.hillinessRating || 0);
+    const newDistanceSum = (currentCourseData.distanceRatingSum || 0) + (newReviewData.distanceRating || 0);
+    const newWeightedSum = (currentCourseData.calculatedWeightedRatingSum || 0) + (newReviewData.walkabilityRating || 0);
 
-        const newOverallAvg = calculateAverage(newOverallSum, newReviewCount);
-        const newCostAvg = calculateAverage(newCostSum, newReviewCount);
-        const newConditionAvg = calculateAverage(newConditionSum, newReviewCount);
-        const newHillinessAvg = calculateAverage(newHillinessSum, newReviewCount);
-        const newDistanceAvg = calculateAverage(newDistanceSum, newReviewCount);
-        const newWeightedAvg = calculateAverage(newWeightedSum, newReviewCount);
+    const newAverages = {
+        walkabilityRating_overall: calculateAverage(newOverallSum, newReviewCount),
+        walkabilityRating_cost: calculateAverage(newCostSum, newReviewCount),
+        walkabilityRating_courseCondition: calculateAverage(newConditionSum, newReviewCount),
+        walkabilityRating_hilliness: calculateAverage(newHillinessSum, newReviewCount),
+        walkabilityRating_holeDistance: calculateAverage(newDistanceSum, newReviewCount),
+        walkabilityRating_weightedRating: calculateAverage(newWeightedSum, newReviewCount)
+    };
 
-        const updatePayload: CourseUpdatePayload = {
-            reviewCount: newReviewCount,
-            overallRatingSum: newOverallSum,
-            costRatingSum: newCostSum,
-            conditionRatingSum: newConditionSum,
-            hillinessRatingSum: newHillinessSum,
-            distanceRatingSum: newDistanceSum,
-            calculatedWeightedRatingSum: newWeightedSum,
-            walkabilityRating_overall: newOverallAvg,
-            walkabilityRating_cost: newCostAvg,
-            walkabilityRating_courseCondition: newConditionAvg,
-            walkabilityRating_hilliness: newHillinessAvg,
-            walkabilityRating_holeDistance: newDistanceAvg,
-            walkabilityRating_weightedRating: newWeightedAvg,
-            lastRatingUpdate: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-            course_isWalkable: newReviewData.isWalkable,
-        };
+    // Prepare the update payload
+    const updateData: CourseUpdatePayload = {
+        ...increments,
+        ...newAverages,
+        lastRatingUpdate: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
 
-        transaction.update(courseRef, updatePayload);
+    console.log(`[updateCourseRatings] Updating course ${courseId} with:`, JSON.stringify({ 
+        newReviewCount, 
+        newAverages 
+    }));
 
-        console.log(`[updateCourseRatingsFromReview] Successfully prepared update for course ${courseId} in transaction.`);
-
-    } catch (error) {
-        console.error(`[updateCourseRatingsFromReview] Error processing course ${courseId}:`, error);
-        throw error;
-    }
+    // Perform the update within the transaction
+    transaction.update(courseRef, updateData);
 }
 
 export { updateCourseRatingsFromReview }; 

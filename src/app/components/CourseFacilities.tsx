@@ -40,9 +40,7 @@ const CourseFacilities: React.FC<CourseFacilitiesProps> = ({ course }) => {
   // Define the facilities to display, potentially grouped
   const mainFacilities = [
     { label: 'Pro Shop', status: course.facilities_proShop },
-    { label: 'Bar/Restaurant', status: course.facilities_barRestaurant },
-    { label: 'Changing Room', status: course.facilities_changingRoom },
-    { label: 'Lockers', status: course.facilities_lockers },
+    { label: 'Restaurant', status: course.facilities_restaurant },
   ];
 
   const practiceFacilities = [

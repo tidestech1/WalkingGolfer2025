@@ -1,70 +1,85 @@
-import { GolfCourse, CourseCategory, CourseType, NFGCategory } from '@/types/course';
+import { GolfCourse } from '@/types/course';
 
 export const FALLBACK_COURSES: GolfCourse[] = [
   {
     id: 'fallback-1',
-    courseName: 'Sample Golf Club',
-    nfgFacilityID: 'SAMPLE001',
+    courseName: 'Fallback Golf Course',
+    imageUrl: '/images/fallback-course.jpg',
     
     // Contact Info
-    contact_email: 'info@samplegolf.com',
-    contact_phone: '555-0123',
-    contact_tollFreePhone: '1-800-555-0123',
-    contact_website: 'https://www.samplegolf.com',
+    contact_email: 'info@fallbackgolf.com',
+    contact_phone: '555-FALLBACK',
+    contact_tollFreePhone: '1-800-FALLBACK',
+    contact_website: 'https://www.fallbackgolf.com',
     
     // Course Details
-    course_category: CourseCategory.DF,
-    course_description: 'A beautiful walking-friendly course with scenic views.',
-    course_designer: 'John Doe',
+    course_category: 'Municipal',
+    course_description: 'A reliable fallback course for display purposes.',
+    course_designer: 'Fallback Designer Inc.',
     course_holes: 18,
-    course_tees: 4,
-    course_type: CourseType.JG,
-    course_yearEstablished: 1990,
+    course_tees: 3,
+    course_type: 'Parkland',
+    course_yearEstablished: 1988,
+    course_isWalkable: true,
+    course_par: 71,
+    course_guestPolicy: 'Public course, guests welcome anytime.',
+
+    // Club Details
+    club_totalHoles: 18,
+    club_name: 'Fallback Municipal Golf',
     
     // Location
-    location_address1: '123 Golf Course Road',
+    location_address1: '1 Fallback Way',
     location_address2: '',
-    location_city: 'Sample City',
-    location_coordinates_latitude: 37.7749,
-    location_coordinates_longitude: -122.4194,
+    location_city: 'Fallback City',
+    location_coordinates_latitude: 40.7128,
+    location_coordinates_longitude: -74.0060,
     location_country: 'USA',
-    location_county: 'Sample County',
-    location_state: 'CA',
-    location_zip: '12345',
+    location_state: 'NY',
+    location_zip: '10001',
     
     // Facilities
     facilities_proShop: true,
-    facilities_barRestaurant: true,
-    facilities_changingRoom: true,
-    facilities_lockers: true,
+    facilities_restaurant: true,
     facilities_drivingRange: true,
     facilities_puttingGreen: true,
-    facilities_chippingGreen: true,
-    facilities_practiceBunker: true,
-    facilities_caddies: true,
+    facilities_chippingGreen: false,
+    facilities_practiceBunker: false,
+    facilities_caddies: false,
     facilities_clubRental: true,
     facilities_golfCarts: true,
     facilities_pushCarts: true,
     
     // Pricing
-    pricing_fee: 75,
-    pricing_nfgCategory: NFGCategory.B,
-    pricing_rating: 4,
+    course_weekdayCost: 50,
+    course_weekendCost: 65,
+    course_twilightCost: 35,
     
     // Ratings
-    twgRating: '4.5',
-    reviewerNotes: 'Great walking course with well-maintained facilities.',
-    walkabilityRating_cost: 4,
-    walkabilityRating_hilliness: 3,
-    walkabilityRating_holeDistance: 4,
-    walkabilityRating_overall: 4,
-    walkabilityRating_weightedRating: 3.75,
+    reviewCount: 5,
+    overallRatingSum: 18,
+    costRatingSum: 22,
+    conditionRatingSum: 17,
+    hillinessRatingSum: 15,
+    distanceRatingSum: 19,
+    calculatedWeightedRatingSum: 18,
+    
+    twgRating: '3.6',
+    reviewerNotes: 'Decent fallback course, playable condition.',
+    twgReviewerNotes: 'Used as placeholder when main data fails.',
+    walkabilityRating_courseCondition: 3.4,
+    walkabilityRating_cost: 4.4,
+    walkabilityRating_hilliness: 3.0,
+    walkabilityRating_holeDistance: 3.8,
+    walkabilityRating_overall: 3.6,
+    walkabilityRating_weightedRating: 3.5,
     
     // Timestamps
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    lastRatingUpdate: new Date('2023-05-01T00:00:00Z'),
+    createdAt: new Date('2023-01-01T00:00:00Z'),
+    updatedAt: new Date('2023-05-01T00:00:00Z'),
     
     // Search terms
-    searchableTerms: ['sample', 'golf', 'club', 'california', 'walking', 'friendly']
+    searchableTerms: ['fallback', 'golf', 'municipal', 'new york']
   }
 ]; 

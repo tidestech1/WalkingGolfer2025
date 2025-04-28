@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
 
@@ -17,9 +17,7 @@ import { LocationPrompt } from './components/LocationPrompt';
 import Sidebar from './components/Sidebar';
 
 // Constants
-const COURSES_PER_PAGE = 20;
 const LOCATION_PROMPT_SEEN_KEY = 'walkingGolfer_hasSeenLocationPrompt';
-const DEFAULT_ZOOM = 8;
 const MIN_ZOOM_FOR_MARKERS = 7.5;
 
 // Dynamically import the Map component with no SSR
@@ -28,15 +26,26 @@ const MapComponent = dynamic(
   { ssr: false }
 );
 
+// UPDATED Default Filters - Omit optional fields instead of using undefined
 const DEFAULT_FILTERS: CourseFilters = {
-  course_types: [],
-  course_categories: [],
-  pricing_fee_min: 0,
-  pricing_fee_max: 0,
-  walkabilityRating_overall_min: 0,
+  walkabilityRating_overall_min: 0, 
+  filter_isWalkable: false, 
+  filter_drivingRange: false,
+  filter_golfCarts: false,
+  filter_pushCarts: false,
+  filter_restaurant: false,
+  filter_proShop: false,
+  filter_puttingGreen: false,
+  filter_chippingGreen: false,
+  filter_practiceBunker: false,
+  filter_caddies: false,
+  filter_clubRental: false,
   sortBy: 'walkabilityRating_overall',
   sortOrder: 'desc',
-  searchQuery: ''
+  // searchQuery: undefined, // OMIT
+  // state: undefined, // OMIT
+  // mapBounds: undefined, // OMIT 
+  // simpleSearch: undefined, // OMIT
 };
 
 export default function MapPage(): JSX.Element {
@@ -46,11 +55,9 @@ export default function MapPage(): JSX.Element {
   const [selectedCourseIndex, setSelectedCourseIndex] = useState<number | null>(null);
   
   const [filteredCourses, setFilteredCourses] = useState<GolfCourse[]>([]);
-  const [coursesInBounds, setCoursesInBounds] = useState<GolfCourse[]>([]);
   const [coursesInBoundsCount, setCoursesInBoundsCount] = useState<number>(0);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [filters, setFilters] = useState<CourseFilters>(DEFAULT_FILTERS);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [activeMobileView, setActiveMobileView] = useState<'map' | 'list'>('map');
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
@@ -71,16 +78,12 @@ export default function MapPage(): JSX.Element {
   // Define mapRef here in MapPage
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const loadCourses = useCallback(async (bounds?: MapBounds, currentFilters?: CourseFilters) => {
-    // Get current zoom level directly from mapRef
+  const loadCourses = useCallback(async (bounds?: MapBounds) => {
     const currentZoom = mapRef.current?.getZoom(); 
-
-    // Guard: Check zoom level before proceeding
     if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
         console.log(`loadCourses skipped: Current zoom (${currentZoom}) is below threshold (${MIN_ZOOM_FOR_MARKERS}).`);
         // Ensure data is cleared if we skip loading due to zoom
         setFilteredCourses([]);
-        setCoursesInBounds([]);
         setCoursesInBoundsCount(0);
         return; // Do not proceed with fetching
     }
@@ -130,68 +133,12 @@ export default function MapPage(): JSX.Element {
         );
 
       // Set the state for courses within bounds BEFORE client-side filtering
-      setCoursesInBounds(fetchedCourses);
+      setFilteredCourses(fetchedCourses);
 
       // Store count *before* client-side filters
       const countBeforeFiltering = fetchedCourses.length;
       setCoursesInBoundsCount(countBeforeFiltering);
-      console.log(`Found ${countBeforeFiltering} courses within bounds before client filters.`);
-
-      // === Apply Client-Side Filtering ===
-      if (currentFilters) {
-        console.log("Applying client-side filters:", currentFilters);
-        fetchedCourses = fetchedCourses.filter((course: GolfCourse) => {
-          // Walkability
-          if (currentFilters.walkabilityRating_overall_min && 
-              (course.walkabilityRating_overall || 0) < currentFilters.walkabilityRating_overall_min) {
-            return false;
-          }
-          // Course Types (using 'in' requires separate queries or client-side filter)
-          if (currentFilters.course_types && 
-              currentFilters.course_types.length > 0 && 
-              !currentFilters.course_types.includes(course.course_type)) {
-            return false;
-          }
-          // Course Categories
-          if (currentFilters.course_categories && 
-              currentFilters.course_categories.length > 0 && 
-              !currentFilters.course_categories.includes(course.course_category)) {
-            return false;
-          }
-          
-          // Price Range Filter
-          if (currentFilters.pricing_fee_min && 
-              course.pricing_fee < currentFilters.pricing_fee_min) {
-            return false;
-          }
-          if (currentFilters.pricing_fee_max && 
-              currentFilters.pricing_fee_max > 0 && // Treat 0 as no upper limit
-              course.pricing_fee > currentFilters.pricing_fee_max) {
-            return false;
-          }
-          
-          // Add other filters (search query) here if needed
-          if (currentFilters.searchQuery) { // Example: Client-side search filter
-             const lowerSearch = currentFilters.searchQuery.toLowerCase();
-             const nameMatch = course.courseName?.toLowerCase().includes(lowerSearch);
-             const cityMatch = course.location_city?.toLowerCase().includes(lowerSearch);
-             // Add state match etc.
-             if (!nameMatch && !cityMatch) {
-return false;
-}
-          }
-
-          return true; // Course passes all filters
-        });
-        console.log(`Courses after client-side filtering: ${fetchedCourses.length}`);
-      } else {
-        console.log("No client-side filters to apply.");
-      }
-      // === End Client-Side Filtering ===
-
-      console.log(`Setting filteredCourses with ${fetchedCourses.length} courses.`);
-      // Set filteredCourses with the final list
-      setFilteredCourses(fetchedCourses);
+      console.log(`Found ${countBeforeFiltering} courses within bounds.`);
 
     } catch (err) {
       console.error('Error loading courses:', err);
@@ -204,31 +151,27 @@ return false;
   }, []);
 
   const debouncedLoadCourses = useMemo(
-    () => debounce((bounds: MapBounds, currentFilters?: CourseFilters) => {
-      loadCourses(bounds, currentFilters);
+    () => debounce((bounds: MapBounds) => {
+      loadCourses(bounds);
     }, 500),
     [loadCourses]
   );
 
   const handleBoundsChanged = useCallback((bounds: MapBounds) => {
     setMapBounds(bounds);
-    // Trigger fetch with new bounds and current filters
-    debouncedLoadCourses(bounds, filters); 
-  }, [debouncedLoadCourses, filters]);
+    // Trigger fetch with new bounds (filters are handled by useEffect watching filters state)
+    debouncedLoadCourses(bounds); // REMOVED filters argument
+  }, [debouncedLoadCourses]);
 
   useEffect(() => {
-    // Guard: Only proceed if map is loaded and bounds are available
     if (!mapLoaded || !mapBounds || !mapRef.current) {
         return; 
     }
-    
-    // Always call debouncedLoadCourses, passing the current zoom level.
-    // loadCourses itself will decide whether to proceed based on zoom.
     console.debug(`useEffect[mapLoaded, mapBounds, filters]: Calling debouncedLoadCourses`);
-    debouncedLoadCourses(mapBounds, filters);
+    // Pass bounds, loadCourses will be triggered again by filter changes if needed
+    debouncedLoadCourses(mapBounds); // REMOVED filters argument
 
-  // Watch mapLoaded, mapBounds, filters. LoadCourses handles zoom check.
-  }, [mapLoaded, mapBounds, filters, debouncedLoadCourses]);
+  }, [mapLoaded, mapBounds, filters, debouncedLoadCourses]); // Keep filters dependency here
 
   const handleCourseSelect = useCallback((course: GolfCourse) => {
     setSelectedCourseId(course.id);
@@ -396,7 +339,6 @@ return false;
           onClose={() => setFilterSheetOpen(false)}
           filters={filters}
           onFilterChange={handleFilterChange}
-          allCourses={coursesInBounds}
         />
 
         {/* Bottom Navigation */}

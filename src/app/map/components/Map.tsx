@@ -4,15 +4,12 @@ import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 
 import { MarkerClusterer as GoogleMarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import { GoogleMap, useLoadScript, Libraries, InfoWindow } from '@react-google-maps/api';
-import { debounce } from 'lodash';
 import { Star } from 'lucide-react';
 import Link from 'next/link';
 
-import { Button } from '@/components/ui/button';
 import { GolfCourse, MapBounds } from '@/types/course';
 
 import { LoadingIndicator } from './LoadingIndicator';
-import { LocationPrompt } from './LocationPrompt';
 import { SearchBox } from './SearchBox';
 import { useProgressiveLoading } from '../hooks/useProgressiveLoading';
 import {} from '@/lib/utils';
@@ -82,7 +79,7 @@ export default function Map({
   onZoomStatusChange,
 }: MapProps): JSX.Element | React.ReactNode {
   const [showZoomMessage, setShowZoomMessage] = useState<boolean>(false);
-  const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
+  const [currentBounds] = useState<MapBounds | null>(null);
   const [currentMapZoom, setCurrentMapZoom] = useState<number>(DEFAULT_ZOOM);
   const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -449,10 +446,10 @@ export default function Map({
   );
 }
 
-// Function to determine if a course is walkable based on rating
+// Helper function to determine if a course is walkable based on the new field
 const isWalkable = (course: GolfCourse): boolean => {
-  return typeof course.walkabilityRating_overall === 'number' && 
-         course.walkabilityRating_overall >= 2.5;
+  // Check the explicit boolean field, treat null as false
+  return course.course_isWalkable === true;
 };
 
 const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {

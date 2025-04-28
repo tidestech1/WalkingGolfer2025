@@ -136,36 +136,45 @@ return
   )
 }
 
-function createMarkerContent(course: GolfCourse, isSelected: boolean): HTMLElement {
+function createMarkerContent(course: GolfCourse, _isSelected: boolean): HTMLElement {
   const div = document.createElement('div')
-  div.className = `marker ${isSelected ? 'selected' : ''}`
+  // Add selected class if needed, similar to the other map component
+  // div.className = `marker ${isSelected ? 'selected' : ''}`; 
+  // For simplicity, let's omit direct selected styling here, assuming click focuses/zooms.
+
+  // Determine color based on the explicit walkable field
+  const isCourseWalkable = course.course_isWalkable === true;
+  const markerColor = isCourseWalkable ? '#059669' : '#1E40AF'; // Green-600 vs Blue-800
+  const markerText = isCourseWalkable ? 'W' : 'G'; // Text for Walkable/Golf
+
+  // Basic marker style - adjust as needed
+  div.style.width = '28px';
+  div.style.height = '28px';
+  div.style.borderRadius = '50%';
+  div.style.backgroundColor = markerColor;
+  div.style.color = 'white';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.justifyContent = 'center';
+  div.style.fontSize = '14px';
+  div.style.fontWeight = 'bold';
+  div.style.border = '2px solid white';
+  div.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+  div.textContent = markerText;
   
-  // Create marker content based on walking-friendliness
-  const walkabilityRating = course.walkabilityRating_overall || 0
-  const color = getWalkabilityColor(walkabilityRating)
+  // REMOVED old innerHTML logic based on rating
+  /*
+  const walkabilityRating = course.walkabilityRating_overall || 0;
+  const color = getWalkabilityColor(walkabilityRating);
+  div.innerHTML = `...
+  */
   
-  div.innerHTML = `
-    <div class="marker-content" style="background-color: ${color}">
-      <div class="marker-rating">${Math.round(walkabilityRating)}</div>
-      <div class="marker-icon">🏌️</div>
-    </div>
-  `
-  
-  return div
+  return div;
 }
 
+// REMOVE unused getWalkabilityColor function
+/*
 function getWalkabilityColor(rating: number): string {
-  if (rating >= 4.5) {
-return '#059669'
-} // Green-600
-  if (rating >= 4) {
-return '#22C55E'
-}   // Green-500
-  if (rating >= 3) {
-return '#F59E0B'
-}   // Amber-500
-  if (rating >= 2) {
-return '#EF4444'
-}   // Red-500
-  return '#6B7280'                    // Gray-500
-} 
+  // ... old logic ...
+}
+*/ 

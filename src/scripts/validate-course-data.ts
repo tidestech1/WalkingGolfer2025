@@ -1,19 +1,15 @@
 import { collection, getDocs } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/firebase';
-import { CourseCategory, CourseType, NFGCategory } from '@/types/course';
 
 interface ValidationStats {
   totalRecords: number;
   invalidTypes: Record<string, number>;
-  invalidEnums: {
-    course_category: Record<string, number>;
-    course_type: Record<string, number>;
-    pricing_nfgCategory: Record<string, number>;
-  };
   invalidCoordinates: number;
   invalidStateCodes: Record<string, number>;
   invalidFacilities: Record<string, number>;
+  missingRequiredStrings?: Record<string, number>;
+  invalidCosts?: Record<string, number>;
   dataQuality: {
     hasCoordinates: number;
     hasState: number;
@@ -42,9 +38,7 @@ const VALID_STATE_CODES = [
 // Facility fields to check
 const FACILITY_FIELDS = [
   'facilities_proShop',
-  'facilities_barRestaurant',
-  'facilities_changingRoom',
-  'facilities_lockers',
+  'facilities_restaurant',
   'facilities_drivingRange',
   'facilities_puttingGreen',
   'facilities_chippingGreen',
@@ -66,14 +60,11 @@ async function validateCourseData() {
   const stats: ValidationStats = {
     totalRecords: 0,
     invalidTypes: {},
-    invalidEnums: {
-      course_category: {},
-      course_type: {},
-      pricing_nfgCategory: {}
-    },
     invalidCoordinates: 0,
     invalidStateCodes: {},
     invalidFacilities: {},
+    missingRequiredStrings: {},
+    invalidCosts: {},
     dataQuality: {
       hasCoordinates: 0,
       hasState: 0,
@@ -88,11 +79,6 @@ async function validateCourseData() {
     
     console.log(`Found ${snapshot.size} records to validate`);
     stats.totalRecords = snapshot.size;
-
-    // Get all enum values for validation
-    const validCategories = Object.values(CourseCategory);
-    const validTypes = Object.values(CourseType);
-    const validNFGCategories = Object.values(NFGCategory);
 
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -109,22 +95,6 @@ async function validateCourseData() {
       }
       if (data['contact_email'] || data['contact_phone']) {
         stats.dataQuality.hasContactInfo++;
-      }
-
-      // Validate enums (only if present)
-      if (data['course_category'] && !validCategories.includes(data['course_category'])) {
-        stats.invalidEnums.course_category[data['course_category']] = 
-          (stats.invalidEnums.course_category[data['course_category']] || 0) + 1;
-      }
-
-      if (data['course_type'] && !validTypes.includes(data['course_type'])) {
-        stats.invalidEnums.course_type[data['course_type']] = 
-          (stats.invalidEnums.course_type[data['course_type']] || 0) + 1;
-      }
-
-      if (data['pricing_nfgCategory'] && !validNFGCategories.includes(data['pricing_nfgCategory'])) {
-        stats.invalidEnums.pricing_nfgCategory[data['pricing_nfgCategory']] = 
-          (stats.invalidEnums.pricing_nfgCategory[data['pricing_nfgCategory']] || 0) + 1;
       }
 
       // Validate coordinates are within USA bounds (only if present)
@@ -160,16 +130,6 @@ async function validateCourseData() {
     console.log(`  Records with state: ${stats.dataQuality.hasState} (${((stats.dataQuality.hasState/stats.totalRecords)*100).toFixed(2)}%)`);
     console.log(`  Records with facilities: ${stats.dataQuality.hasFacilities} (${((stats.dataQuality.hasFacilities/stats.totalRecords)*100).toFixed(2)}%)`);
     console.log(`  Records with contact info: ${stats.dataQuality.hasContactInfo} (${((stats.dataQuality.hasContactInfo/stats.totalRecords)*100).toFixed(2)}%)`);
-
-    console.log('\nInvalid Enum Values:');
-    Object.entries(stats.invalidEnums).forEach(([field, values]) => {
-      if (Object.keys(values).length > 0) {
-        console.log(`  ${field}:`);
-        Object.entries(values).forEach(([value, count]) => {
-          console.log(`    ${value}: ${count} records`);
-        });
-      }
-    });
 
     console.log('\nInvalid Coordinates:');
     console.log(`  ${stats.invalidCoordinates} records outside USA bounds (${((stats.invalidCoordinates/stats.totalRecords)*100).toFixed(2)}%)`);

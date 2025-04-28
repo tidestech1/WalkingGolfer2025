@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { StarRating } from '@/components/ui/star-rating';
 import { cn } from '@/lib/utils';
-import { GolfCourse, CourseFilters, CourseType, CourseCategory } from '@/types/course';
+import { GolfCourse, CourseFilters } from '@/types/course';
 
 interface SidebarProps {
   courses: GolfCourse[];
@@ -54,15 +54,23 @@ export default function Sidebar({
     }
   }, [selectedCourseIndex]);
 
-  const [showAllFilters, setShowAllFilters] = useState(false);
+  const [showAllFacilities, setShowAllFacilities] = useState(false);
 
   if (filtersOnly) {
     // Calculate active filter count (matching mobile logic)
     const activeFilterCount = [
         filters.walkabilityRating_overall_min > 0,
-        (filters.course_types && filters.course_types.length > 0),
-        (filters.course_categories && filters.course_categories.length > 0),
-        filters.pricing_fee_min > 0 || filters.pricing_fee_max > 0
+        filters.filter_isWalkable === true,
+        filters.filter_drivingRange === true,
+        filters.filter_golfCarts === true,
+        filters.filter_pushCarts === true,
+        filters.filter_restaurant === true,
+        filters.filter_proShop === true,
+        filters.filter_puttingGreen === true,
+        filters.filter_chippingGreen === true,
+        filters.filter_practiceBunker === true,
+        filters.filter_caddies === true,
+        filters.filter_clubRental === true,
     ].filter(Boolean).length;
 
     // Use activeFilterCount to determine if any filters are active
@@ -84,10 +92,17 @@ export default function Sidebar({
               <button
                 onClick={() => onFilterChange({
                   walkabilityRating_overall_min: 0,
-                  course_types: [],
-                  course_categories: [],
-                  pricing_fee_min: 0,
-                  pricing_fee_max: 0
+                  filter_isWalkable: false, 
+                  filter_drivingRange: false,
+                  filter_golfCarts: false,
+                  filter_pushCarts: false,
+                  filter_restaurant: false,
+                  filter_proShop: false,
+                  filter_puttingGreen: false,
+                  filter_chippingGreen: false,
+                  filter_practiceBunker: false,
+                  filter_caddies: false,
+                  filter_clubRental: false,
                 })}
                 className="text-sm text-blue-600"
               >
@@ -110,10 +125,17 @@ export default function Sidebar({
               <button
                 onClick={() => onFilterChange({
                   walkabilityRating_overall_min: 0,
-                  course_types: [],
-                  course_categories: [],
-                  pricing_fee_min: 0,
-                  pricing_fee_max: 0
+                  filter_isWalkable: false, 
+                  filter_drivingRange: false,
+                  filter_golfCarts: false,
+                  filter_pushCarts: false,
+                  filter_restaurant: false,
+                  filter_proShop: false,
+                  filter_puttingGreen: false,
+                  filter_chippingGreen: false,
+                  filter_practiceBunker: false,
+                  filter_caddies: false,
+                  filter_clubRental: false,
                 })}
                 className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
@@ -156,129 +178,50 @@ export default function Sidebar({
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium">Course Types</label>
-              {filters.course_types.length > 0 && (
-                <button
-                  onClick={() => updateFilters({ course_types: [] })}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              {Object.values(CourseType).map((type) => (
-                <div key={type} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={type}
-                    checked={filters.course_types?.includes(type) || false}
-                    onCheckedChange={(checked) => {
-                      const currentTypes = filters.course_types || [];
-                      updateFilters({ 
-                        course_types: checked 
-                          ? [...currentTypes, type]
-                          : currentTypes.filter(t => t !== type)
-                      });
-                    }}
-                    className="h-3.5 w-3.5"
-                  />
-                  <label htmlFor={type} className="text-xs">
-                    {type === CourseType.JG ? 'Just Golf' :
-                     type === CourseType.RS ? 'Resort' :
-                     type === CourseType.RD ? 'Real Estate Development' :
-                     type === CourseType.RR ? 'Resort & Real Estate' :
-                     type === CourseType.MI ? 'Military' :
-                     type === CourseType.UN ? 'University' :
-                     type === CourseType.PK ? 'Park' : type}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium">Course Categories</label>
-              {filters.course_categories.length > 0 && (
-                <button
-                  onClick={() => updateFilters({ course_categories: [] })}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              {Object.values(CourseCategory).map((category) => (
-                <div key={category} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={category}
-                    checked={filters.course_categories?.includes(category) || false}
-                    onCheckedChange={(checked) => {
-                      const currentCategories = filters.course_categories || [];
-                      updateFilters({ 
-                        course_categories: checked 
-                          ? [...currentCategories, category]
-                          : currentCategories.filter(c => c !== category)
-                      });
-                    }}
-                    className="h-3.5 w-3.5"
-                  />
-                  <label htmlFor={category} className="text-xs">
-                    {category === CourseCategory.PR ? 'Private' :
-                     category === CourseCategory.PL ? 'Private Limited' :
-                     category === CourseCategory.DF ? 'Daily Fee' :
-                     category === CourseCategory.MU ? 'Municipal' : category}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium">Price Range ($)</label>
-              {(filters.pricing_fee_min > 0 || filters.pricing_fee_max > 0) && (
-                <button
-                  onClick={() => updateFilters({ pricing_fee_min: 0, pricing_fee_max: 0 })}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+          <div className="pb-3 border-b lg:border-b-0 lg:pb-0">
             <div className="flex items-center space-x-2">
-              <Input
-                id="minPrice"
-                type="number"
-                placeholder="Min"
-                min="0"
-                value={filters.pricing_fee_min > 0 ? filters.pricing_fee_min : ''}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                  if (!isNaN(value)) {
-                    updateFilters({ pricing_fee_min: Math.max(0, value) });
-                  }
+              <Checkbox
+                id="isWalkableFilter"
+                checked={filters.filter_isWalkable === true} 
+                onCheckedChange={(checked) => {
+                  updateFilters({ filter_isWalkable: !!checked }); 
                 }}
-                className="h-8 text-xs w-1/2"
+                className="h-3.5 w-3.5"
               />
-              <span className="text-gray-500">-</span>
-              <Input
-                id="maxPrice"
-                type="number"
-                placeholder="Max"
-                min="0"
-                value={filters.pricing_fee_max > 0 ? filters.pricing_fee_max : ''}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                   if (!isNaN(value)) {
-                    updateFilters({ pricing_fee_max: Math.max(0, value) });
-                  }
-                }}
-                className="h-8 text-xs w-1/2"
-              />
+              <label htmlFor="isWalkableFilter" className="text-xs font-medium">
+                Walkable Courses Only
+              </label>
+            </div>
+          </div>
+
+          <div className="pt-3 lg:pt-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium">Facilities</label>
+            </div>
+            
+            <div className="space-y-1.5">
+              <FacilityCheckbox label="Driving Range" filterKey="filter_drivingRange" filters={filters} updateFilters={updateFilters} />
+              <FacilityCheckbox label="Golf Cart Rental" filterKey="filter_golfCarts" filters={filters} updateFilters={updateFilters} />
+              <FacilityCheckbox label="Push Cart Rental" filterKey="filter_pushCarts" filters={filters} updateFilters={updateFilters} />
+              <FacilityCheckbox label="Restaurant" filterKey="filter_restaurant" filters={filters} updateFilters={updateFilters} />
+
+              {showAllFacilities && (
+                <>
+                  <FacilityCheckbox label="Pro Shop" filterKey="filter_proShop" filters={filters} updateFilters={updateFilters} />
+                  <FacilityCheckbox label="Putting Green" filterKey="filter_puttingGreen" filters={filters} updateFilters={updateFilters} />
+                  <FacilityCheckbox label="Chipping Green" filterKey="filter_chippingGreen" filters={filters} updateFilters={updateFilters} />
+                  <FacilityCheckbox label="Practice Bunker" filterKey="filter_practiceBunker" filters={filters} updateFilters={updateFilters} />
+                  <FacilityCheckbox label="Caddies" filterKey="filter_caddies" filters={filters} updateFilters={updateFilters} />
+                  <FacilityCheckbox label="Golf Club Rental" filterKey="filter_clubRental" filters={filters} updateFilters={updateFilters} />
+                </>
+              )}
+              
+              <button 
+                onClick={() => setShowAllFacilities(!showAllFacilities)}
+                className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+              >
+                {showAllFacilities ? 'Show Less' : 'Show More'}
+              </button>
             </div>
           </div>
 
@@ -320,7 +263,7 @@ export default function Sidebar({
             ref={virtuosoRef}
             style={{ height: '100%' }}
             data={courses}
-            itemContent={(index, course) => (
+            itemContent={(_index, course) => (
               <CourseCard
                 key={course.id}
                 course={course}
@@ -378,3 +321,31 @@ function CourseCard({ course, isSelected, onSelect }: {
     </div>
   );
 }
+
+// Helper component for Facility Checkboxes to reduce repetition
+const FacilityCheckbox: React.FC<{
+  label: string;
+  filterKey: keyof Pick<CourseFilters, 
+    'filter_drivingRange' | 'filter_golfCarts' | 'filter_pushCarts' | 'filter_restaurant' | 
+    'filter_proShop' | 'filter_puttingGreen' | 'filter_chippingGreen' | 'filter_practiceBunker' | 
+    'filter_caddies' | 'filter_clubRental'
+  >;
+  filters: CourseFilters;
+  updateFilters: (updates: Partial<CourseFilters>) => void;
+}> = ({ label, filterKey, filters, updateFilters }) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id={filterKey}
+        checked={filters[filterKey] === true}
+        onCheckedChange={(checked) => {
+          updateFilters({ [filterKey]: !!checked });
+        }}
+        className="h-3.5 w-3.5"
+      />
+      <label htmlFor={filterKey} className="text-xs">
+        {label}
+      </label>
+    </div>
+  );
+};

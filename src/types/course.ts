@@ -117,11 +117,6 @@ export interface CourseReview {
  * Matches the new flat schema structure
  */
 export interface CourseFilters {
-  // Required fields with defaults
-  course_types: string[];
-  course_categories: string[];
-  pricing_fee_min: number;
-  pricing_fee_max: number;
   walkabilityRating_overall_min: number;
 
   // Optional fields
@@ -130,8 +125,20 @@ export interface CourseFilters {
   searchQuery?: string;
   state?: string | undefined;
   mapBounds?: MapBounds;
-  isWalkable?: boolean;
-  simpleSearch?: boolean; // When true, only use basic search without complex filters
+  simpleSearch?: boolean;
+  
+  // ADDED: New boolean filters (optional, default handled by consumer)
+  filter_isWalkable?: boolean;
+  filter_drivingRange?: boolean;
+  filter_golfCarts?: boolean;
+  filter_pushCarts?: boolean;
+  filter_restaurant?: boolean;
+  filter_proShop?: boolean;
+  filter_puttingGreen?: boolean;
+  filter_chippingGreen?: boolean;
+  filter_practiceBunker?: boolean;
+  filter_caddies?: boolean;
+  filter_clubRental?: boolean;
 }
 
 export interface MapBounds {

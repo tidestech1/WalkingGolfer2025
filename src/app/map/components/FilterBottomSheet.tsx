@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { X } from 'lucide-react';
 
@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { StarRating } from '@/components/ui/star-rating';
-import { CourseFilters, CourseType, CourseCategory, GolfCourse } from '@/types/course';
+import { CourseFilters, GolfCourse } from '@/types/course';
 
 import { BottomSheet } from './BottomSheet';
 
@@ -17,7 +17,6 @@ interface FilterBottomSheetProps {
   onClose: () => void;
   filters: CourseFilters;
   onFilterChange: (filters: CourseFilters) => void;
-  allCourses: GolfCourse[];
 }
 
 export function FilterBottomSheet({
@@ -25,65 +24,58 @@ export function FilterBottomSheet({
   onClose,
   filters,
   onFilterChange,
-  allCourses
 }: FilterBottomSheetProps): JSX.Element {
   // Track local filter state
-  const [localFilters, setLocalFilters] = useState<CourseFilters>({
-    walkabilityRating_overall_min: filters.walkabilityRating_overall_min,
-    course_types: filters.course_types || [],
-    course_categories: filters.course_categories || [],
-    pricing_fee_min: filters.pricing_fee_min,
-    pricing_fee_max: filters.pricing_fee_max
-  });
+  const [localFilters, setLocalFilters] = useState<CourseFilters>(() => ({
+    // Initialize with valid defaults, respecting incoming props if available
+    walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
+    filter_isWalkable: filters.filter_isWalkable ?? false, 
+    filter_drivingRange: filters.filter_drivingRange ?? false,
+    filter_golfCarts: filters.filter_golfCarts ?? false,
+    filter_pushCarts: filters.filter_pushCarts ?? false,
+    filter_restaurant: filters.filter_restaurant ?? false,
+    filter_proShop: filters.filter_proShop ?? false,
+    filter_puttingGreen: filters.filter_puttingGreen ?? false,
+    filter_chippingGreen: filters.filter_chippingGreen ?? false,
+    filter_practiceBunker: filters.filter_practiceBunker ?? false,
+    filter_caddies: filters.filter_caddies ?? false,
+    filter_clubRental: filters.filter_clubRental ?? false,
+    // Handle optional fields carefully
+    ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
+    ...(filters.state && { state: filters.state }),
+    ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
+    ...(filters.sortBy && { sortBy: filters.sortBy }),
+    ...(filters.sortOrder && { sortOrder: filters.sortOrder }),
+    ...(filters.simpleSearch !== undefined && { simpleSearch: filters.simpleSearch }),
+  }));
 
-  // Calculate matching courses based on current local filters
-  const matchingCoursesCount = useMemo(() => {
-    return allCourses.filter(course => {
-      // Walkability Rating
-      if (localFilters.walkabilityRating_overall_min > 0 && 
-          (!course.walkabilityRating_overall || 
-           course.walkabilityRating_overall < localFilters.walkabilityRating_overall_min)) {
-        return false;
-      }
-
-      // Course Types
-      if (localFilters.course_types.length > 0 && 
-          !localFilters.course_types.includes(course.course_type)) {
-        return false;
-      }
-
-      // Course Categories
-      if (localFilters.course_categories.length > 0 && 
-          !localFilters.course_categories.includes(course.course_category)) {
-        return false;
-      }
-
-      // Price Range
-      if (localFilters.pricing_fee_min > 0 && typeof course.pricing_fee === 'number' && course.pricing_fee < localFilters.pricing_fee_min) {
-        return false;
-      }
-      if (localFilters.pricing_fee_max > 0 && typeof course.pricing_fee === 'number' && course.pricing_fee > localFilters.pricing_fee_max) {
-        return false;
-      }
-
-      return true;
-    }).length;
-  }, [localFilters, allCourses]);
-
-  // Update local filters only when the sheet opens
+  // Update local filters: This sync logic needs to be more robust
   useEffect(() => {
-    // Only sync from props to local state when the sheet becomes visible
-    if (isOpen) { 
-      setLocalFilters({
-        walkabilityRating_overall_min: filters.walkabilityRating_overall_min,
-        course_types: filters.course_types || [],
-        course_categories: filters.course_categories || [],
-        pricing_fee_min: filters.pricing_fee_min,
-        pricing_fee_max: filters.pricing_fee_max
-      });
+    if (isOpen) {
+      // Create a new state object based on incoming filters
+      const newState: CourseFilters = {
+        walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
+        filter_isWalkable: filters.filter_isWalkable ?? false,
+        filter_drivingRange: filters.filter_drivingRange ?? false,
+        filter_golfCarts: filters.filter_golfCarts ?? false,
+        filter_pushCarts: filters.filter_pushCarts ?? false,
+        filter_restaurant: filters.filter_restaurant ?? false,
+        filter_proShop: filters.filter_proShop ?? false,
+        filter_puttingGreen: filters.filter_puttingGreen ?? false,
+        filter_chippingGreen: filters.filter_chippingGreen ?? false,
+        filter_practiceBunker: filters.filter_practiceBunker ?? false,
+        filter_caddies: filters.filter_caddies ?? false,
+        filter_clubRental: filters.filter_clubRental ?? false,
+        // Only include optional fields if they exist in the incoming filters
+        ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
+        ...(filters.state && { state: filters.state }),
+        ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
+        ...(filters.sortBy && { sortBy: filters.sortBy }),
+        ...(filters.sortOrder && { sortOrder: filters.sortOrder }),
+        ...(filters.simpleSearch !== undefined && { simpleSearch: filters.simpleSearch }),
+      };
+      setLocalFilters(newState);
     }
-    // Depend on isOpen to trigger sync when sheet opens.
-    // Also depend on filters object identity in case parent filters change while closed.
   }, [isOpen, filters]);
 
   const updateLocalFilters = (updates: Partial<CourseFilters>): void => {
@@ -96,21 +88,51 @@ export function FilterBottomSheet({
     onClose();
   };
 
-  // Check if any filters are active
+  // Check if any NEW filters are active
   const hasActiveFilters = 
     localFilters.walkabilityRating_overall_min > 0 ||
-    (localFilters.course_types && localFilters.course_types.length > 0) ||
-    (localFilters.course_categories && localFilters.course_categories.length > 0) ||
-    localFilters.pricing_fee_min > 0 ||
-    localFilters.pricing_fee_max > 0;
+    localFilters.filter_isWalkable === true ||
+    localFilters.filter_drivingRange === true ||
+    localFilters.filter_golfCarts === true ||
+    localFilters.filter_pushCarts === true ||
+    localFilters.filter_restaurant === true ||
+    localFilters.filter_proShop === true ||
+    localFilters.filter_puttingGreen === true ||
+    localFilters.filter_chippingGreen === true ||
+    localFilters.filter_practiceBunker === true ||
+    localFilters.filter_caddies === true ||
+    localFilters.filter_clubRental === true ||
+    !!localFilters.searchQuery ||
+    !!localFilters.state ||
+    !!localFilters.mapBounds ||
+    !!localFilters.sortBy ||
+    !!localFilters.sortOrder ||
+    localFilters.simpleSearch === true;
 
-  // Count active filters
+  // Count active NEW filters
   const activeFilterCount = [
     localFilters.walkabilityRating_overall_min > 0,
-    (localFilters.course_types && localFilters.course_types.length > 0),
-    (localFilters.course_categories && localFilters.course_categories.length > 0),
-    localFilters.pricing_fee_min > 0 || localFilters.pricing_fee_max > 0
+    localFilters.filter_isWalkable === true,
+    localFilters.filter_drivingRange === true,
+    localFilters.filter_golfCarts === true,
+    localFilters.filter_pushCarts === true,
+    localFilters.filter_restaurant === true,
+    localFilters.filter_proShop === true,
+    localFilters.filter_puttingGreen === true,
+    localFilters.filter_chippingGreen === true,
+    localFilters.filter_practiceBunker === true,
+    localFilters.filter_caddies === true,
+    localFilters.filter_clubRental === true,
+    !!localFilters.searchQuery,
+    !!localFilters.state,
+    !!localFilters.mapBounds,
+    !!localFilters.sortBy,
+    !!localFilters.sortOrder,
+    localFilters.simpleSearch === true,
   ].filter(Boolean).length;
+
+  // ADD state for facility filters visibility
+  const [showAllFacilities, setShowAllFacilities] = useState(false);
 
   return (
     <BottomSheet
@@ -136,11 +158,26 @@ export function FilterBottomSheet({
               {hasActiveFilters && (
                 <button
                   onClick={() => setLocalFilters({
+                    // Reset: Only specify fields being reset to defaults
+                    // Omit optional fields entirely when resetting
                     walkabilityRating_overall_min: 0,
-                    course_types: [],
-                    course_categories: [],
-                    pricing_fee_min: 0,
-                    pricing_fee_max: 0
+                    filter_isWalkable: false, 
+                    filter_drivingRange: false,
+                    filter_golfCarts: false,
+                    filter_pushCarts: false,
+                    filter_restaurant: false,
+                    filter_proShop: false,
+                    filter_puttingGreen: false,
+                    filter_chippingGreen: false,
+                    filter_practiceBunker: false,
+                    filter_caddies: false,
+                    filter_clubRental: false,
+                    // searchQuery: undefined, // OMIT
+                    // state: undefined, // OMIT
+                    // mapBounds: undefined, // OMIT
+                    // sortBy: undefined, // OMIT
+                    // sortOrder: undefined, // OMIT
+                    // simpleSearch: undefined, // OMIT
                   })}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
@@ -192,143 +229,84 @@ export function FilterBottomSheet({
                 </div>
               </div>
 
-              {/* Course Types */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Course Types</label>
-                  {localFilters.course_types.length > 0 && (
-                    <button
-                      onClick={() => updateLocalFilters({ course_types: [] })}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.values(CourseType).map((type) => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`type-${type}`}
-                        checked={localFilters.course_types?.includes(type) || false}
-                        onCheckedChange={(checked) => {
-                          const currentTypes = localFilters.course_types || [];
-                          const updatedTypes = checked
-                              ? [...currentTypes, type]
-                              : currentTypes.filter(t => t !== type);
-                          updateLocalFilters({ course_types: updatedTypes });
-                        }}
-                      />
-                      <label htmlFor={`type-${type}`} className="text-sm">
-                        {type === CourseType.JG ? 'Just Golf' :
-                         type === CourseType.RS ? 'Resort' :
-                         type === CourseType.RD ? 'Real Estate Development' :
-                         type === CourseType.RR ? 'Resort & Real Estate' :
-                         type === CourseType.MI ? 'Military' :
-                         type === CourseType.UN ? 'University' :
-                         type === CourseType.PK ? 'Park' : type}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Course Categories */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Course Categories</label>
-                  {localFilters.course_categories.length > 0 && (
-                    <button
-                      onClick={() => updateLocalFilters({ course_categories: [] })}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.values(CourseCategory).map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`category-${category}`}
-                        checked={localFilters.course_categories?.includes(category) || false}
-                        onCheckedChange={(checked) => {
-                          const currentCategories = localFilters.course_categories || [];
-                          const updatedCategories = checked
-                              ? [...currentCategories, category]
-                              : currentCategories.filter(c => c !== category);
-                          updateLocalFilters({ course_categories: updatedCategories });
-                        }}
-                      />
-                      <label htmlFor={`category-${category}`} className="text-sm">
-                        {category === CourseCategory.PR ? 'Private' :
-                         category === CourseCategory.PL ? 'Private Limited' :
-                         category === CourseCategory.DF ? 'Daily Fee' :
-                         category === CourseCategory.MU ? 'Municipal' : category}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price Range */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Price Range ($)</label>
-                  {(localFilters.pricing_fee_min > 0 || localFilters.pricing_fee_max > 0) && (
-                    <button
-                      onClick={() => updateLocalFilters({ pricing_fee_min: 0, pricing_fee_max: 0 })}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+              {/* === NEW FILTER UI SECTION START === */} 
+              {/* Replace old Course Types/Categories/Price sections */}
+              <div className="space-y-3 border-t pt-4">
+                
+                {/* Walkable Checkbox */} 
                 <div className="flex items-center space-x-2">
-                  <Input
-                    id="mobileMinPrice"
-                    type="number"
-                    placeholder="Min"
-                    min="0"
-                    value={localFilters.pricing_fee_min > 0 ? localFilters.pricing_fee_min : ''}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                      if (!isNaN(value)) {
-                        updateLocalFilters({ pricing_fee_min: Math.max(0, value) });
-                      }
+                  <Checkbox
+                    id="filter_isWalkable_bottomsheet"
+                    checked={localFilters.filter_isWalkable ?? false}
+                    onCheckedChange={(checked) => {
+                      updateLocalFilters({ filter_isWalkable: !!checked }); 
                     }}
-                    className="h-10 text-sm w-1/2"
                   />
-                  <span className="text-gray-500">-</span>
-                  <Input
-                    id="mobileMaxPrice"
-                    type="number"
-                    placeholder="Max"
-                    min="0"
-                    value={localFilters.pricing_fee_max > 0 ? localFilters.pricing_fee_max : ''}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                      if (!isNaN(value)) {
-                        updateLocalFilters({ pricing_fee_max: Math.max(0, value) });
-                      }
-                    }}
-                    className="h-10 text-sm w-1/2"
-                  />
+                  <label htmlFor="filter_isWalkable_bottomsheet" className="text-sm font-medium">
+                    Walkable Courses Only
+                  </label>
+                </div>
+                
+                {/* Facilities Section */} 
+                <div className="pt-2">
+                  <label className="block text-sm font-medium mb-1.5">Facilities</label>
+                  <div className="space-y-1.5">
+                    {/* Always Shown Facilities */}
+                    <FacilityCheckbox label="Driving Range" filterKey="filter_drivingRange" filters={localFilters} updateFilters={updateLocalFilters} />
+                    <FacilityCheckbox label="Golf Cart Rental" filterKey="filter_golfCarts" filters={localFilters} updateFilters={updateLocalFilters} />
+                    <FacilityCheckbox label="Push Cart Rental" filterKey="filter_pushCarts" filters={localFilters} updateFilters={updateLocalFilters} />
+                    <FacilityCheckbox label="Restaurant" filterKey="filter_restaurant" filters={localFilters} updateFilters={updateLocalFilters} />
+
+                    {/* Conditionally Render Hidden Facilities */} 
+                    {showAllFacilities && (
+                      <>
+                        <FacilityCheckbox label="Pro Shop" filterKey="filter_proShop" filters={localFilters} updateFilters={updateLocalFilters} />
+                        <FacilityCheckbox label="Putting Green" filterKey="filter_puttingGreen" filters={localFilters} updateFilters={updateLocalFilters} />
+                        <FacilityCheckbox label="Chipping Green" filterKey="filter_chippingGreen" filters={localFilters} updateFilters={updateLocalFilters} />
+                        <FacilityCheckbox label="Practice Bunker" filterKey="filter_practiceBunker" filters={localFilters} updateFilters={updateLocalFilters} />
+                        <FacilityCheckbox label="Caddies" filterKey="filter_caddies" filters={localFilters} updateFilters={updateLocalFilters} />
+                        <FacilityCheckbox label="Golf Club Rental" filterKey="filter_clubRental" filters={localFilters} updateFilters={updateLocalFilters} />
+                      </>
+                    )}
+                    
+                    {/* Toggle Button */}
+                    <button 
+                      onClick={() => setShowAllFacilities(!showAllFacilities)}
+                      className="text-xs text-blue-600 hover:text-blue-800 pt-1"
+                    >
+                      {showAllFacilities ? 'Show Less' : 'Show More'}
+                    </button>
+                  </div>
                 </div>
               </div>
+              {/* === NEW FILTER UI SECTION END === */} 
+
+              {/* Keep other filter inputs like Search Query, State, etc. below */}
+              {/* Search Query */} 
+              {/* ... existing Input ... */}
+              {/* State */} 
+              {/* ... existing Input ... */}
+              {/* Map Bounds */} 
+              {/* ... existing Input ... */}
+              {/* Sort By */} 
+              {/* ... existing Input ... */}
+              {/* Sort Order */} 
+              {/* ... existing Input ... */}
+              {/* Simple Search */} 
+              {/* ... existing Checkbox ... */}
+              
             </div>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer */} 
         <div className="flex-shrink-0 border-t bg-white px-4 pt-2 pb-4">
-          <div className="text-sm text-gray-600 text-center mb-2">
-            {matchingCoursesCount} course{matchingCoursesCount !== 1 ? 's' : ''} match filters
-          </div>
+          {/* REMOVED matchingCoursesCount display */}
+          {/* <div className="text-sm text-gray-600 text-center mb-2"> ... </div> */}
           
           <button
             onClick={handleApply}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 mt-2" // Added mt-2 for spacing
           >
             Apply Filters
           </button>
@@ -337,3 +315,34 @@ export function FilterBottomSheet({
     </BottomSheet>
   );
 } 
+
+// Copied Helper component for Facility Checkboxes
+const FacilityCheckbox: React.FC<{
+  label: string;
+  filterKey: keyof Pick<CourseFilters, 
+    'filter_drivingRange' | 'filter_golfCarts' | 'filter_pushCarts' | 'filter_restaurant' | 
+    'filter_proShop' | 'filter_puttingGreen' | 'filter_chippingGreen' | 'filter_practiceBunker' | 
+    'filter_caddies' | 'filter_clubRental'
+  >;
+  filters: CourseFilters;
+  updateFilters: (updates: Partial<CourseFilters>) => void;
+}> = ({ label, filterKey, filters, updateFilters }) => {
+  // Use unique IDs for bottom sheet context
+  const id = `${filterKey}_bottomsheet`; 
+  return (
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id={id}
+        // Provide default for checked state
+        checked={filters[filterKey] === true} 
+        onCheckedChange={(checked) => {
+          // Ensure boolean type for update
+          updateFilters({ [filterKey]: !!checked }); 
+        }}
+      />
+      <label htmlFor={id} className="text-sm">
+        {label}
+      </label>
+    </div>
+  );
+};
