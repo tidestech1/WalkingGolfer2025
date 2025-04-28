@@ -13,8 +13,8 @@ import {
   signOut as firebaseSignOut
 } from "firebase/auth";
 
-import { getUserProfile, updateUserProfile } from '../firebase/userUtils';
 import { formatAuthError } from '../firebase/authUtils';
+import { getUserProfile, updateUserProfile } from '../firebase/userUtils';
 
 // Export the interface
 export interface AuthContextType {
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
                    console.log(`onAuthStateChanged: Syncing emailVerified status to Firestore for user ${authUser.uid}`);
                    await updateUserProfile(authUser.uid, { emailVerified: true });
                    console.log(`onAuthStateChanged: Firestore emailVerified status updated successfully for user ${authUser.uid}`);
-                 } else if (profile && profile.emailVerified) {
+                 } else if (profile?.emailVerified) {
                     console.log(`onAuthStateChanged: Firestore emailVerified status already synced for user ${authUser.uid}`);
                  } else if (!profile) {
                     console.warn(`onAuthStateChanged: Cannot sync emailVerified status for ${authUser.uid}, Firestore profile not found.`);

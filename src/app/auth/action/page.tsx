@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
+
 import { getAuth, applyActionCode, checkActionCode, Auth, signInWithEmailLink, ActionCodeInfo } from 'firebase/auth';
-
-import { updateUserProfile, getUserProfile } from '@/lib/firebase/userUtils';
-import { app as firebaseApp } from '@/lib/firebase/firebase'; // Import the exported app instance
-
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
+import { app as firebaseApp } from '@/lib/firebase/firebase'; // Import the exported app instance
+import { updateUserProfile, getUserProfile } from '@/lib/firebase/userUtils';
 
 // Define possible statuses for the action handler
 type ActionStatus = 'loading' | 'success' | 'error' | 'invalid' | 'signing_in' | 'calling_backend';
@@ -87,7 +87,7 @@ function ActionHandler() {
                 if (profile && !profile.emailVerified) {
                   await updateUserProfile(currentUser.uid, { emailVerified: true });
                   console.log('Auth Action Handler: Firestore emailVerified updated successfully.');
-                } else if (profile && profile.emailVerified) {
+                } else if (profile?.emailVerified) {
                   console.log('Auth Action Handler: Firestore emailVerified already true.');
                 } else {
                    console.warn(`Auth Action Handler: Profile not found for user ${currentUser.uid} when trying to update Firestore.`);
@@ -138,7 +138,7 @@ function ActionHandler() {
             } else {
                 // Fallback: Try to extract from actionLink (less reliable)
                 const match = actionLink.match(/[?&]continueUrl=([^&]+)/);
-                if (match && match[1]) {
+                if (match?.[1]) {
                     originalContinueUrl = decodeURIComponent(match[1]);
                 } else {
                     console.error('[Auth Action] Could not find original continueUrl in action link.');

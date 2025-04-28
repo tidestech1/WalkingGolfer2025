@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+
 import { getAuth, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAuth } from '@/lib/hooks/useAuth';
 import { auth as firebaseClientAuth } from '@/lib/firebase/firebase';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 // Define possible statuses
 type VerificationStatus = 
@@ -33,8 +35,12 @@ function VerifyEmailInner() {
   useEffect(() => {
     // Only run this effect once auth is loaded and status is idle
     if (authLoading || !auth || status !== 'idle') {
-        if (authLoading) console.log('[VerifyEmail] Waiting for auth to load...');
-        if (!auth) console.log('[VerifyEmail] Auth instance not available yet.');
+        if (authLoading) {
+console.log('[VerifyEmail] Waiting for auth to load...');
+}
+        if (!auth) {
+console.log('[VerifyEmail] Auth instance not available yet.');
+}
         return;
     }
 
@@ -45,7 +51,7 @@ function VerifyEmailInner() {
 
     if (isSignInWithEmailLink(auth, link)) {
         console.log('[VerifyEmail] Link is a valid sign-in link.');
-        let storedEmail = window.localStorage.getItem('emailForSignIn');
+        const storedEmail = window.localStorage.getItem('emailForSignIn');
         
         if (!storedEmail) {
             console.warn('[VerifyEmail] Email not found in local storage.');

@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import CourseActions from '@/app/components/CourseActions'
+import CourseFacilities from '@/app/components/CourseFacilities'
 import CourseRatings from '@/app/components/CourseRatings'
 import WalkabilityDetails from '@/app/components/WalkabilityDetails'
 import { IMAGES } from '@/lib/constants/images'
@@ -28,7 +29,6 @@ import type { CourseReview } from '@/types/review'
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
-import CourseFacilities from '@/app/components/CourseFacilities'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {

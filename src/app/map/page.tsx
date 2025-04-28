@@ -7,8 +7,8 @@ import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
 
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
 import { buildFilterSortConstraints } from '@/lib/firebase/courseUtils';
+import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
 import { cn } from '@/lib/utils';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
@@ -49,6 +49,9 @@ const DEFAULT_FILTERS: CourseFilters = {
   // simpleSearch: undefined, // OMIT
 };
 
+// Import Firebase Functions SDK
+import { getFunctions, httpsCallable } from "firebase/functions"; 
+
 export default function MapPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,18 +82,38 @@ export default function MapPage(): JSX.Element {
   // Define mapRef here in MapPage
   const mapRef = useRef<google.maps.Map | null>(null);
 
+  // Get a reference to the Cloud Function
+  const getCoursesForMapFn = useMemo(() => {
+    if (typeof window !== 'undefined') { // Ensure runs client-side
+      const functions = getFunctions(); // Use default region
+      return httpsCallable<{ filters: CourseFilters; bounds: MapBounds }, { courses: GolfCourse[] }>(
+        functions, 
+        'getCoursesForMap'
+      );
+    } 
+    return null; // Return null during SSR or if functions not ready
+  }, []);
+
   const loadCourses = useCallback(async (bounds?: MapBounds) => {
     const currentZoom = mapRef.current?.getZoom(); 
     if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
         console.log(`loadCourses skipped: Current zoom (${currentZoom}) is below threshold (${MIN_ZOOM_FOR_MARKERS}).`);
         setFilteredCourses([]);
-        setCoursesInBoundsCount(0);
+        setCoursesInBoundsCount(0); 
         return; 
     }
 
-    if (!isFirebaseAvailable() || !db) {
-      console.error('Firebase not initialized or DB is null');
+    // Keep the Firebase availability check
+    if (!isFirebaseAvailable()) {
+      console.error('Firebase not initialized.');
       setError('Unable to connect to the course database');
+      return;
+    }
+    
+    // Check if function reference is ready
+    if (!getCoursesForMapFn) {
+      console.error('getCoursesForMap Cloud Function reference not available.');
+      setError('Course loading service is unavailable.');
       return;
     }
 
@@ -103,53 +126,45 @@ export default function MapPage(): JSX.Element {
     setLoading(true);
     setError(null);
 
-    // Log both filters and bounds being used
-    console.log(`[page.tsx LOG] loadCourses: Querying with filters:`, JSON.stringify(filters));
-    console.log(`[page.tsx LOG] loadCourses: Client-side filtering with bounds:`, JSON.stringify(bounds));
+    console.log(`[page.tsx LOG] Calling getCoursesForMap Cloud Function`);
+    console.log(`[page.tsx LOG] Filters:`, JSON.stringify(filters));
+    console.log(`[page.tsx LOG] Bounds:`, JSON.stringify(bounds));
 
     try {
-      const coursesRef = collection(db, 'courses');
+      // === Call the Cloud Function ===
+      const result = await getCoursesForMapFn({ filters, bounds });
+      const coursesInView = result.data.courses;
       
-      // === Build query based on FILTERS first ===
-      const filterConstraints = buildFilterSortConstraints(filters);
-      console.log('[page.tsx LOG] Generated filter constraints:', filterConstraints);
-      const q = query(coursesRef, ...filterConstraints); 
-      // Removed Firestore bounds query (where lat >= ... etc.)
-
-      const snapshot = await getDocs(q);
-      
-      // Fetch all courses matching the filters
-      const coursesMatchingFilters = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as GolfCourse));
-        
-      console.log(`Found ${coursesMatchingFilters.length} courses matching filters.`);
-      
-      // Store count *after* Firestore filtering but *before* client-side bounds filtering
-      setCoursesInBoundsCount(coursesMatchingFilters.length); 
-
-      // === Client-side Filtering by Bounds ===
-      const coursesInView = coursesMatchingFilters.filter((course: GolfCourse) =>
-        course.location_coordinates_latitude >= bounds.south &&
-        course.location_coordinates_latitude <= bounds.north &&
-        course.location_coordinates_longitude >= bounds.west &&
-        course.location_coordinates_longitude <= bounds.east
-      );
-
-      console.log(`Filtered down to ${coursesInView.length} courses within map bounds.`);
-      
-      // Set the state with courses that match filters AND are in bounds
+      // Update state with results from the Cloud Function
       setFilteredCourses(coursesInView);
-      // Removed redundant count calculation and logging here
+      setCoursesInBoundsCount(coursesInView.length); // Count is now accurate server-side
+      console.log(`Received ${coursesInView.length} courses from Cloud Function.`);
+      
+      // --- Remove direct Firestore query logic --- 
+      // const coursesRef = collection(db, 'courses');
+      // const filterConstraints = buildFilterSortConstraints(filters);
+      // const q = query(coursesRef, ...filterConstraints); 
+      // const snapshot = await getDocs(q);
+      // const coursesMatchingFilters = snapshot.docs.map(...);
+      // setCoursesInBoundsCount(coursesMatchingFilters.length); 
+      // const coursesInView = coursesMatchingFilters.filter(...);
+      // --- End of removed logic --- 
 
-    } catch (err) {
-      console.error('Error loading courses:', err);
-      setError('Error loading courses. Please try again.');
+    } catch (err: any) { // Use any or specific FirebaseError type
+      console.error('Error calling getCoursesForMap Cloud Function:', err);
+      // Handle HTTPS callable errors (e.g., permissions, invalid args)
+      if (err.code && err.message) {
+        setError(`Error loading courses: ${err.message} (code: ${err.code})`);
+      } else {
+        setError('An unexpected error occurred while loading courses.');
+      }
       setFilteredCourses([]); 
       setCoursesInBoundsCount(0); 
     } finally {
       setLoading(false);
     }
-  }, [filters]); 
+  // Dependencies: Reload when filters, bounds (via debounced call), or function ref changes
+  }, [filters, getCoursesForMapFn]); // bounds trigger is handled by debouncedLoadCourses
 
   const debouncedLoadCourses = useMemo(
     () => debounce((bounds: MapBounds) => {

@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+
+import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { signUpWithEmail, formatAuthError } from '@/lib/firebase/authUtils'
-import { useAuth } from '@/lib/hooks/useAuth'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input' // Assuming Input is used, if not remove
 import { Label } from '@/components/ui/label' // Assuming Label is used, if not remove
-import { Loader2 } from 'lucide-react'
+import { signUpWithEmail, formatAuthError } from '@/lib/firebase/authUtils'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -25,7 +26,9 @@ export default function SignUpPage() {
 
   const handleEmailSignUp = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading || authLoading) return;
+    if (loading || authLoading) {
+return;
+}
 
     setError('');
     setLoading(true);
@@ -50,7 +53,9 @@ export default function SignUpPage() {
   }, [email, password, name, loading, authLoading]);
 
   const handleGoogleSignUp = useCallback(async () => {
-    if (loading || authLoading) return;
+    if (loading || authLoading) {
+return;
+}
     setError('');
     setLoading(true);
     setShowVerificationMessage(false);

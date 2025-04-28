@@ -180,17 +180,17 @@ export default function Sidebar({
 
           <div className="pb-3 border-b lg:border-b-0 lg:pb-0">
             <div className="flex items-center space-x-2">
-              <Checkbox
+                  <Checkbox
                 id="isWalkableFilter"
                 checked={filters.filter_isWalkable === true} 
-                onCheckedChange={(checked) => {
+                    onCheckedChange={(checked) => {
                   updateFilters({ filter_isWalkable: !!checked }); 
-                }}
-                className="h-3.5 w-3.5"
-              />
+                    }}
+                    className="h-3.5 w-3.5"
+                  />
               <label htmlFor="isWalkableFilter" className="text-xs font-medium">
                 Walkable Courses Only
-              </label>
+                  </label>
             </div>
           </div>
 
@@ -216,12 +216,12 @@ export default function Sidebar({
                 </>
               )}
               
-              <button 
+                <button
                 onClick={() => setShowAllFacilities(!showAllFacilities)}
                 className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-              >
+                >
                 {showAllFacilities ? 'Show Less' : 'Show More'}
-              </button>
+                </button>
             </div>
           </div>
 

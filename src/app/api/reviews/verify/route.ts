@@ -3,14 +3,14 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
+import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { CreateUserProfileInput } from '@/lib/firebase/userUtils';
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils';
+import { GolfCourse } from '@/types/course';
+import { CourseRatingUpdateLog } from '@/types/log';
 import { CourseReview } from '@/types/review';
 import { UserProfile } from '@/types/user';
-import { CourseRatingUpdateLog } from '@/types/log';
-import { GolfCourse } from '@/types/course';
 
 const db = getAdminFirestore();
 const auth = getAdminAuth();
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
         // 4. Fetch or Create User Profile (within transaction)
         const userRef = db.collection('users').doc(userId);
-        let userProfileSnap = await transaction.get(userRef);
+        const userProfileSnap = await transaction.get(userRef);
         let userProfile: UserProfile | null = null;
 
         // 5. Read Course Document EARLY

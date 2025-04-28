@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Check, X, HelpCircle } from 'lucide-react'; // Icons for status
 
 import { type GolfCourse } from '@/types/course';

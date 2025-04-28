@@ -2,13 +2,13 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
+import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { getUserProfile } from '@/lib/firebase/userUtils';
+import { GolfCourse } from '@/types/course';
+import { CourseRatingUpdateLog } from '@/types/log';
 import { CourseReview, ReviewStatus } from '@/types/review';
 import { UserProfile } from '@/types/user';
-import { CourseRatingUpdateLog } from '@/types/log';
-import { GolfCourse } from '@/types/course';
 
 
 const db = getAdminFirestore();

@@ -1,10 +1,11 @@
 "use client";
 
+import { MapPin, Star, User as UserIcon } from 'lucide-react'; // Icons for actions
 import Link from 'next/link';
-import { useAuth } from '@/lib/hooks/useAuth'; // To personalize the welcome message
+
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { MapPin, Star, User as UserIcon } from 'lucide-react'; // Icons for actions
+import { useAuth } from '@/lib/hooks/useAuth'; // To personalize the welcome message
 
 export default function WelcomePage() {
   const { user } = useAuth();

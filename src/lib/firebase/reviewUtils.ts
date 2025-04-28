@@ -1,10 +1,10 @@
 import { query, where, orderBy, collection, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
-import { getFirestoreDB } from './firebaseUtils';
-import { getAdminFirestore } from './firebaseAdmin';
 import type { Firestore as AdminFirestore, CollectionReference as AdminCollectionReference, Query as AdminQuery, DocumentData as AdminDocumentData } from 'firebase-admin/firestore';
 
 import type { CourseReview, ReviewStatus, DisplayNameType, CreateReviewInput } from '@/types/review';
 
+import { getAdminFirestore } from './firebaseAdmin';
+import { getFirestoreDB } from './firebaseUtils';
 import { addDocument, getDocuments } from './firebaseUtils';
 import { uploadImage } from './storageUtils';
 

@@ -51,7 +51,7 @@ export function FilterBottomSheet({
 
   // Update local filters: This sync logic needs to be more robust
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen) { 
       // Create a new state object based on incoming filters
       const newState: CourseFilters = {
         walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
@@ -235,18 +235,18 @@ export function FilterBottomSheet({
                 
                 {/* Walkable Checkbox */} 
                 <div className="flex items-center space-x-2">
-                  <Checkbox
+                      <Checkbox
                     id="filter_isWalkable_bottomsheet"
                     checked={localFilters.filter_isWalkable ?? false}
-                    onCheckedChange={(checked) => {
+                        onCheckedChange={(checked) => {
                       updateLocalFilters({ filter_isWalkable: !!checked }); 
-                    }}
-                  />
+                        }}
+                      />
                   <label htmlFor="filter_isWalkable_bottomsheet" className="text-sm font-medium">
                     Walkable Courses Only
-                  </label>
-                </div>
-                
+                      </label>
+              </div>
+
                 {/* Facilities Section */} 
                 <div className="pt-2">
                   <label className="block text-sm font-medium mb-1.5">Facilities</label>
@@ -270,13 +270,13 @@ export function FilterBottomSheet({
                     )}
                     
                     {/* Toggle Button */}
-                    <button 
+                    <button
                       onClick={() => setShowAllFacilities(!showAllFacilities)}
                       className="text-xs text-blue-600 hover:text-blue-800 pt-1"
                     >
                       {showAllFacilities ? 'Show Less' : 'Show More'}
                     </button>
-                  </div>
+                </div>
                 </div>
               </div>
               {/* === NEW FILTER UI SECTION END === */} 
@@ -299,7 +299,7 @@ export function FilterBottomSheet({
           </div>
         </div>
 
-        {/* Footer */} 
+        {/* Footer */}
         <div className="flex-shrink-0 border-t bg-white px-4 pt-2 pb-4">
           {/* REMOVED matchingCoursesCount display */}
           {/* <div className="text-sm text-gray-600 text-center mb-2"> ... </div> */}
