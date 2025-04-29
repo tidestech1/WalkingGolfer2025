@@ -19,6 +19,7 @@ import {
   getFirestore,
   FieldValue,
   QueryDocumentSnapshot,
+  Timestamp,
 } from "firebase-admin/firestore";
 import {Change} from "firebase-functions";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
@@ -185,6 +186,7 @@ export const getCoursesForMap = onCall(
         coursesRef.withConverter<GolfCourse>({
           fromFirestore: (snapshot): GolfCourse => {
             const data = snapshot.data();
+            // Combine snapshot id with data
             return {id: snapshot.id, ...data} as GolfCourse;
           },
           toFirestore: (
@@ -208,15 +210,19 @@ export const getCoursesForMap = onCall(
         }
       });
 
-      // Execute the constructed query
-      const snapshot = await q.get();
+      // === ADD LIMIT HERE ===
+      const queryWithLimit = q.limit(1000); // Limit initial fetch 
+
+      // Execute the constructed query (with the limit)
+      const snapshot = await queryWithLimit.get(); 
       const coursesMatchingFilters = snapshot.docs.map((doc) => doc.data());
       logger.info(
-        `Found ${coursesMatchingFilters.length} courses ` +
+        // Update log message to reflect the limit
+        `Fetched ${coursesMatchingFilters.length} courses (limit 1000) ` + 
           "matching filters server-side."
       );
 
-      // 3. Server-side Filtering by Bounds
+      // 3. Server-side Filtering by Bounds (now on a smaller dataset)
       const coursesInView = coursesMatchingFilters.filter(
         (course: GolfCourse) => {
           // Ensure coordinates exist before filtering
@@ -244,9 +250,52 @@ export const getCoursesForMap = onCall(
         "courses within map bounds server-side."
       );
 
-      // Return only the courses matching filters AND bounds
-      return {courses: coursesInView};
-    } catch (error: unknown) { // Use unknown instead of any
+      // --- Sanitize Data Before Returning ---
+      // Recursive function to replace NaN with null and convert Timestamps
+      const sanitizeData = (obj: unknown): unknown => {
+        // Handle primitive types and null
+        if (
+          obj === null ||
+          typeof obj !== "object"
+        ) {
+          return typeof obj === "number" && isNaN(obj) ? null : obj;
+        }
+
+        // Handle Firestore Timestamps -> Convert to ISO string
+        if (obj instanceof Timestamp) {
+          try {
+            return obj.toDate().toISOString();
+          } catch (tsError) {
+            logger.warn("Failed to convert Timestamp:", tsError, obj);
+            return null; // Return null if Timestamp is invalid
+          }
+        }
+
+        // Handle Arrays
+        if (Array.isArray(obj)) {
+          return obj.map(sanitizeData);
+        }
+
+        // Handle Objects (including GeoPoints which should serialize ok)
+        const sanitizedObj: {[key: string]: unknown} = {};
+        for (const key in obj) {
+          // Ensure we are iterating over own properties
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            // Cast obj to access properties safely
+            const value = (obj as Record<string, unknown>)[key];
+            sanitizedObj[key] = sanitizeData(value);
+          }
+        }
+        return sanitizedObj;
+      };
+
+      // Apply the sanitizer (renamed from sanitizeNaN to sanitizeData)
+      const coursesToSend = coursesInView.map(sanitizeData);
+      // --- End Sanitization ---
+
+      // Return the SANITIZED courses
+      return {courses: coursesToSend as GolfCourse[]};
+    } catch (error: unknown) {
       logger.error("Error fetching courses in getCoursesForMap:", error);
 
       // Determine error message safely
