@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from "firebase/functions"; 
 import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
 
@@ -50,7 +51,6 @@ const DEFAULT_FILTERS: CourseFilters = {
 };
 
 // Import Firebase Functions SDK
-import { getFunctions, httpsCallable } from "firebase/functions"; 
 
 export default function MapPage(): JSX.Element {
   const [loading, setLoading] = useState(false);

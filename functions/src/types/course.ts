@@ -89,6 +89,9 @@ export interface GolfCourse {
   // Array of lowercase searchable terms
   searchableTerms: string[];
 
+  // NEW: Geohash for location querying
+  geohash?: string; // Make optional initially if migration is ongoing
+
 }
 
 /**
