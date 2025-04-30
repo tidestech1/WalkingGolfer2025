@@ -39,7 +39,7 @@ export default function MiniHeader(): JSX.Element {
             {/* Desktop Nav Links + Login (Grouped) */}
             <div className="hidden md:flex items-center space-x-6 text-sm">
               <Link href="/about" className="hover:text-[#00FFFF]">About Us</Link>
-              <Link href="/map" className="hover:text-[#00FFFF]">Course Finder</Link>
+              <Link href="/coursefinder" className="hover:text-[#00FFFF]">Course Finder</Link>
               <Link href="/news" className="hover:text-[#00FFFF]">News</Link>
               <Link href="/shop" className="hover:text-[#00FFFF]">Shop</Link>
               {/* Login/Profile for desktop - styled as plain link */}
@@ -100,7 +100,7 @@ export default function MiniHeader(): JSX.Element {
               About Us
             </Link>
             <Link
-              href="/map"
+              href="/coursefinder"
               className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
               onClick={() => toggleMenu()}
             >

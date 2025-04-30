@@ -181,10 +181,10 @@ export default function ProfilePage() {
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">You haven&apos;t written any reviews yet.</p>
               <Link
-                href="/map"
+                href="/coursefinder"
                 className="text-green-600 hover:text-green-700 font-medium"
               >
-                Find courses to review
+                Find a Course to Review
               </Link>
             </div>
           )}

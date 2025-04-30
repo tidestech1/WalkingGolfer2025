@@ -1,4 +1,4 @@
-import { Heart, Leaf, DollarSign, Star } from 'lucide-react'
+import { Heart, Leaf, DollarSign, Star, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -33,7 +33,7 @@ export default function Home() {
               asChild
               className="w-full sm:flex-1 h-12 px-10 text-lg bg-[#00FFFF] text-[#0A3357] hover:bg-[#00FFFF]/60 transition-colors duration-150 ease-in-out"
             >
-              <Link href="/map" className="flex items-center justify-center">
+              <Link href="/coursefinder" className="flex items-center justify-center">
                 FIND A COURSE
               </Link>
             </Button>
@@ -50,7 +50,7 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute z-10 bottom-8 right-8 md:bottom-12 md:right-12 lg:bottom-16 lg:right-16 hidden md:block">
-          <Link href="/map" className="block group">
+          <Link href="/coursefinder" className="block group">
             <Image
               src="/icons/mini-map.png"
               alt="Mini map illustration"

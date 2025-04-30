@@ -39,8 +39,8 @@ export default function WelcomePage() {
             </CardHeader>
             <CardContent>
               <Button asChild size="lg" className="w-full bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out py-2 px-4">
-                <Link href="/map">
-                  Go to Map
+                <Link href="/coursefinder">
+                  Go to Course Finder
                 </Link>
               </Button>
             </CardContent>

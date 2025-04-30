@@ -87,6 +87,11 @@ export default function Footer(): JSX.Element {
                 </Link>
               </li>
               <li>
+                <Link href="/coursefinder" className="text-gray-300 hover:text-[#00FFFF]">
+                  Find a Course
+                </Link>
+              </li>
+              <li>
                 <Link href="/contact" className="text-gray-300 hover:text-[#00FFFF]">
                   Contact
                 </Link>
