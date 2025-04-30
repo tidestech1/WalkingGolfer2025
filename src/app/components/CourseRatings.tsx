@@ -29,6 +29,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
   const hilliness = course.walkabilityRating_hilliness || 0
   const holeDistance = course.walkabilityRating_holeDistance || 0
   const cost = course.walkabilityRating_cost || 0
+  const condition = course.walkabilityRating_courseCondition || 0
 
   // Helper function to get hilliness description (higher is better/flatter)
   const getHillinessDescription = (rating: number): string => {
@@ -61,6 +62,15 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
       return 'Reasonably priced'
     }
     return 'Premium pricing'
+  }
+
+  // Helper function to get condition description
+  const getConditionDescription = (rating: number): string => {
+    if (rating >= 4.5) return 'Excellent condition'
+    if (rating >= 3.5) return 'Good condition'
+    if (rating >= 2.5) return 'Fair condition'
+    if (rating >= 1.5) return 'Poor condition'
+    return 'Condition not rated'
   }
 
   return (
@@ -136,23 +146,24 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
             {getCostDescription(cost)}
           </p>
         </div>
-      </div>
-      
-      {/* Cart Information */}
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Course Cart & Equipment Options</h3>
-        <ul className="text-sm text-gray-600">
-          {course.facilities_pushCarts && (
-            <li className="flex items-center">
-              <span className="mr-2">✓</span> Push/pull carts available
-            </li>
-          )}
-          {course.facilities_golfCarts && (
-            <li className="flex items-center">
-              <span className="mr-2">✓</span> Golf carts available
-            </li>
-          )}
-        </ul>
+        
+        {/* Course Condition - NEW */}
+        <div>
+          <div className="flex items-center justify-between text-sm mb-1">
+            <span className="text-gray-700">Course Condition</span>
+            <span className="font-medium">{formatRating(condition)}/5</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div 
+              className="bg-blue-600 h-1.5 rounded-full" 
+              // TODO: Consider a different color scale for condition (e.g., greens?)
+              style={{ width: `${(condition / 5) * 100}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {getConditionDescription(condition)}
+          </p>
+        </div>
       </div>
     </div>
   )

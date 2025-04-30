@@ -31,14 +31,16 @@ export default function CourseClientMap({ coordinates, name }: CourseClientMapPr
     );
   }
   
-  // Create static map URL
-  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${validCoordinates.lat},${validCoordinates.lng}&zoom=14&size=600x400&maptype=roadmap&markers=color:red%7C${validCoordinates.lat},${validCoordinates.lng}&key=${mapApiKey}`;
+  // Create static map URL - Zoom 10, size 640x400, scale=2, maptype=hybrid
+  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${validCoordinates.lat},${validCoordinates.lng}&zoom=10&size=640x400&scale=2&maptype=hybrid&markers=color:red%7C${validCoordinates.lat},${validCoordinates.lng}&key=${mapApiKey}`;
   
   // Create a Google Maps link for when users click on the image
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${validCoordinates.lat},${validCoordinates.lng}`;
   
+  // Updated wrapper div height to match potential image aspect ratio better if needed, or rely on parent
+  // Removed fixed height h-64, let parent container control height primarily
   return (
-    <div className="h-64 rounded-lg overflow-hidden relative shadow-md">
+    <div className="w-full h-full relative shadow-md"> {/* Removed h-64 */} 
       <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open location of ${name} in Google Maps`} className="block w-full h-full">
         <Image 
           src={mapUrl}
@@ -48,16 +50,15 @@ export default function CourseClientMap({ coordinates, name }: CourseClientMapPr
           unoptimized
           priority
         />
-        {/* Overlay with course name and icon */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent p-3 text-white">
+        {/* REMOVED Internal Map Overlay with course name and icon */}
+        {/* <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent p-3 text-white">
           <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg ...>
+              ...
             </svg>
             <span className="font-medium text-sm truncate">{name}</span>
           </div>
-        </div>
+        </div> */}
       </a>
     </div>
   );
