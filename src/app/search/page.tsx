@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { SlidersHorizontal } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,6 +78,7 @@ export default function CourseSearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const performSearch = useCallback(async () => {
     const query = searchTerm;
@@ -204,83 +206,100 @@ export default function CourseSearchPage() {
       <h1 className="text-3xl font-bold mb-6">Search Golf Courses</h1>
       
       <div className="mb-8 p-4 border rounded-lg bg-card">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4 mb-4 items-end">
-          <div className="flex flex-col space-y-1.5">
-            <Label htmlFor="courseSearchInput" className="text-sm font-medium">Search Term</Label>
-            <Input 
-              id="courseSearchInput"
-              type="search"
-              placeholder="Name, city, state... (min 2 chars)"
-              value={searchTerm}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-
-          <div className="flex flex-col space-y-1.5">
-            <Label className="text-sm font-medium">Min Walkability</Label>
-            <StarRating 
-              rating={minRating}
-              interactive={true}
-              onRatingChange={handleRatingChange} 
-              className="mt-1"
-              starClassName="w-6 h-6"
-            />
-          </div>
-
-          <div className="flex flex-col space-y-1.5">
-            <Label className="text-sm font-medium invisible">Walkable Filter</Label>
-            <div className="flex items-center space-x-2 h-[40px]">
-              <Checkbox 
-                id="walkableFilter"
-                checked={walkableOnly}
-                onCheckedChange={handleWalkableChange}
-              />
-              <Label htmlFor="walkableFilter" className="text-sm font-medium cursor-pointer pb-1">
-                  Walkable Only
-              </Label>
-            </div>
-          </div>
+        <div className="mb-4">
+          <Label htmlFor="courseSearchInput" className="text-sm font-medium">Search Term</Label>
+          <Input 
+            id="courseSearchInput"
+            type="search"
+            placeholder="Name, city, state... (min 2 chars)"
+            value={searchTerm}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            className="mt-1"
+          />
         </div>
 
-        <div className="border-t pt-4">
-            <Label className="text-sm font-medium mb-2 block">
-              Facilities & Amenities 
-              <span className="text-xs text-red-600 font-normal ml-1">
-                (NB: Filters below don't function yet!)
-              </span>
-            </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
-              {alwaysVisibleFacilities.map(key => (
-                 <FacilityCheckbox 
-                   key={key} 
-                   label={key.replace('filter_', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                   filterKey={key} 
-                   filters={facilityFilters} 
-                   onChange={handleFacilityChange} 
-                 />
-              ))}
+        <Button 
+          variant="outline"
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="mb-4 w-full sm:w-auto"
+        >
+          <SlidersHorizontal className="w-4 h-4 mr-2" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
 
-              {showAllFacilities && hiddenFacilities.map(key => (
-                 <FacilityCheckbox 
-                   key={key} 
-                   label={key.replace('filter_', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                   filterKey={key} 
-                   filters={facilityFilters} 
-                   onChange={handleFacilityChange} 
-                 />
-              ))}
-            </div>
-            <Button 
-              variant="link" 
-              size="sm" 
-              onClick={() => setShowAllFacilities(!showAllFacilities)} 
-              className="text-blue-600 hover:text-blue-800 px-0 mt-2 h-auto"
-            >
-              {showAllFacilities ? 'Show Less' : 'Show More Amenities'}
-            </Button>
-        </div>
+        {/* Collapsible Filters Section */}
+        {showFilters && (
+          <div className="animate-in fade-in-0 slide-in-from-top-2 duration-300">
+             {/* Walkability Filters - Stacked Vertically */}
+             <div className="mb-4 space-y-3"> {/* Container with spacing */}
+                {/* Line 1: Walkable Only Checkbox */}
+                <div className="flex items-center space-x-2">
+                   <Checkbox 
+                     id="walkableFilter"
+                     checked={walkableOnly}
+                     onCheckedChange={handleWalkableChange}
+                     className="shrink-0"
+                   />
+                   <Label htmlFor="walkableFilter" className="text-sm font-medium cursor-pointer">
+                      Walkable Only
+                   </Label>
+                </div>
+                
+                {/* Line 2: Min Walkability Label + Stars */}
+                <div className="flex items-center space-x-3"> {/* Use space-x for label/stars gap */} 
+                   <Label className="text-sm font-medium shrink-0">Min Walkability</Label> 
+                   <StarRating 
+                     rating={minRating}
+                     interactive={true}
+                     onRatingChange={handleRatingChange} 
+                     starClassName="w-6 h-6"
+                   />
+                </div>
+             </div> 
+             
+             {/* Row 2: Facility Filters */}
+             <div className="border-t pt-4">
+                <Label className="text-sm font-medium mb-2 block">
+                  Facilities
+                  <span className="text-xs text-red-600 font-normal ml-1">
+                    (NB: Filters below don't function yet!)
+                  </span>
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
+                  {alwaysVisibleFacilities.map(key => (
+                     <FacilityCheckbox 
+                       key={key} 
+                       label={key.replace('filter_', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                       filterKey={key} 
+                       filters={facilityFilters} 
+                       onChange={handleFacilityChange} 
+                     />
+                  ))}
 
+                  {showAllFacilities && hiddenFacilities.map(key => (
+                     <FacilityCheckbox 
+                       key={key} 
+                       label={key.replace('filter_', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                       filterKey={key} 
+                       filters={facilityFilters} 
+                       onChange={handleFacilityChange} 
+                     />
+                  ))}
+                </div>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  onClick={() => setShowAllFacilities(!showAllFacilities)} 
+                  className="text-blue-600 hover:text-blue-800 px-0 mt-2 h-auto"
+                >
+                  {showAllFacilities ? 'Show Less' : 'Show More Facilities'}
+                </Button>
+             </div>
+          </div>
+        )}
+        
         <div className="mt-4 flex justify-between items-center border-t pt-4">
           <div>
              {hasActiveFilters && (

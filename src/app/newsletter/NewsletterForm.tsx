@@ -10,7 +10,7 @@ export default function NewsletterForm() {
   const [loading, setLoading] = useState(false)
   const [preferences, setPreferences] = useState({
     courseUpdates: true,
-    communityStories: true,
+    newsArticles: true,
     tips: true,
     offers: false
   })
@@ -37,7 +37,7 @@ export default function NewsletterForm() {
         setEmail('')
         setPreferences({
           courseUpdates: true,
-          communityStories: true,
+          newsArticles: true,
           tips: true,
           offers: false
         })
@@ -90,14 +90,14 @@ export default function NewsletterForm() {
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={preferences.communityStories}
+              checked={preferences.newsArticles}
               onChange={(e) => setPreferences(prev => ({
                 ...prev,
-                communityStories: e.target.checked
+                newsArticles: e.target.checked
               }))}
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
-            <span className="text-gray-700">Community Stories</span>
+            <span className="text-gray-700">News Articles</span>
           </label>
 
           <label className="flex items-center space-x-3">

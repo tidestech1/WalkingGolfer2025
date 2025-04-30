@@ -15,7 +15,7 @@ export default function NewsletterPage() {
           Stay Connected with The Walking Golfer
         </h1>
         <p className="text-xl text-gray-600 mb-8">
-          Get the latest updates about walking-friendly courses, community news,
+          Get the latest updates about walking-friendly courses, news articles,
           and exclusive content delivered to your inbox.
         </p>
 
@@ -36,11 +36,10 @@ export default function NewsletterPage() {
 
           <div className="bg-blue-50 rounded-lg p-6">
             <h3 className="font-semibold text-[#0A3357] mb-2">
-              Community Stories
+              News Articles
             </h3>
             <p className="text-gray-600">
-              Read inspiring stories from fellow walking golfers and stay
-              connected with the community.
+              Read the latest news articles and insights about the world of walking golf.
             </p>
           </div>
 

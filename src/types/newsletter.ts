@@ -3,7 +3,7 @@ export interface NewsletterSubscription {
   email: string;
   preferences: {
     courseUpdates: boolean;
-    communityStories: boolean;
+    newsArticles: boolean;
     tips: boolean;
     offers: boolean;
   };

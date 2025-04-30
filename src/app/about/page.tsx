@@ -25,7 +25,7 @@ export default function AboutPage(): JSX.Element {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
           <div className="bg-white rounded-xl shadow-md p-8">
             <h2 className="text-3xl font-bold text-[#0A3357] mb-6">Our Story</h2>
-            <div className="prose prose-lg">
+            <div className="prose prose-lg space-y-6">
               <p className="text-gray-600">
                 The Walking Golfer was founded by <span className="font-semibold">Rob Rigg</span>, 
                 an avid golfer with a vision to celebrate the traditional walking 

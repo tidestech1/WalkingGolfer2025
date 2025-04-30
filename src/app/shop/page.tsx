@@ -1,6 +1,6 @@
 export default function ShopPage() {
   return (
-    <main className="min-h-screen bg-[#F7FAFC] py-8">
+    <main className="flex flex-col items-center justify-center grow bg-[#F7FAFC] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl font-bold text-[#0A3357] mb-6">Shop Coming Soon</h1>
         <p className="text-xl text-[#1A202C] mb-8">
