@@ -75,7 +75,6 @@ export default function StarRating({
     </div>
   )
 }
-
 // Smaller version for use in compact displays
 export function CompactStarRating({
   rating,
