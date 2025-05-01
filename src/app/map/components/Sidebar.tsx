@@ -311,7 +311,14 @@ function CourseCard({ course, isSelected, onSelect }: {
     >
       {/* Line 1: Course Name and Hole Count */}
       <h3 className="font-semibold text-sm mb-1">
-        {courseName} {holeText}
+        {/* Wrap course name */}
+        <span>{courseName}</span>
+        {/* Wrap hole text and apply smaller style */}
+        {holeText && (
+          <span className="ml-1.5 text-xs font-normal text-gray-500">
+            {holeText}
+          </span>
+        )}
       </h3>
 
       {/* Line 2: Club Name (De-emphasized) */}
@@ -327,15 +334,26 @@ function CourseCard({ course, isSelected, onSelect }: {
         <span>{location_city}, {location_state}</span> {/* Wrapped text in span */}
       </div>
 
-      {/* Line 4: Walkability Rating */}
+      {/* Line 4: Walkability Rating - Consistent Structure */}
       <div className="flex items-center text-xs mb-2">
         <StarRating
           rating={walkabilityRating_overall || 0}
-          showDecimal={true}
+          // Disable built-in decimal display as we handle it manually
+          showDecimal={false} 
           className="text-xs"
           starClassName="w-3.5 h-3.5"
         />
-        <span className="ml-1">Walkability</span>
+        {/* Consistent structure: "Walkability: (Rating)" or "Walkability: Not rated" */}
+        <span className="ml-1">
+          Walkability:
+          {(walkabilityRating_overall && walkabilityRating_overall > 0) ? (
+            <span className="ml-1 font-medium text-gray-800">
+              {`(${walkabilityRating_overall.toFixed(1)})`}
+            </span>
+          ) : (
+            <span className="ml-1 text-gray-500">Not rated</span>
+          )}
+        </span>
       </div>
 
       {/* Line 5: Details Link */}
