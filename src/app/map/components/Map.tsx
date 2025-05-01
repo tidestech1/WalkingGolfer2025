@@ -420,26 +420,32 @@ export default function Map({
               setSelectedInfoWindowCourse(null);
             }}
             options={{
-              pixelOffset: new google.maps.Size(0, -35), 
+              pixelOffset: new google.maps.Size(0, -35),
               disableAutoPan: true,
               zIndex: 100
             }}
           >
-            <div className="p-1 font-sans text-sm">
-              <h3 className="text-base font-semibold mb-1 text-gray-800">
+            <div className="p-1 font-sans w-48">
+              <h3 className="text-base font-semibold mb-0.5 text-gray-800 leading-tight">
                 {selectedInfoWindowCourse.courseName}
+                {selectedInfoWindowCourse.course_holes ? ` (${selectedInfoWindowCourse.course_holes} holes)` : ''}
               </h3>
+              {selectedInfoWindowCourse.club_name && (
+                <p className="text-xs mb-1 text-gray-600 leading-tight">
+                  {selectedInfoWindowCourse.club_name}
+                </p>
+              )}
               {(selectedInfoWindowCourse.location_city || selectedInfoWindowCourse.location_state) && (
-                <p className="mb-1 text-gray-600">
+                <p className="text-xs mb-1 text-gray-600 leading-tight">
                   {selectedInfoWindowCourse.location_city}{selectedInfoWindowCourse.location_city && selectedInfoWindowCourse.location_state ? ', ' : ''}{selectedInfoWindowCourse.location_state}
                 </p>
               )}
-              <div className="flex items-center text-xs mb-2 text-gray-600">
-                <Star className="w-3.5 h-3.5 mr-1 fill-amber-400 text-amber-500" />
-                <span>
+              <div className="flex items-center text-xs mb-1.5 text-gray-600">
+                <Star className="w-3.5 h-3.5 mr-1 fill-amber-400 text-amber-500 flex-shrink-0" />
+                <span className="leading-tight">
                   {typeof selectedInfoWindowCourse.walkabilityRating_overall === 'number' ?
                     `${selectedInfoWindowCourse.walkabilityRating_overall.toFixed(1)}/5 Walkability` :
-                    'Walkability: Not rated yet'}
+                    'Walkability: Not rated'}
                 </span>
               </div>
               <Link

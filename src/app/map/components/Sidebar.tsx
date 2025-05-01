@@ -283,11 +283,23 @@ function CourseCard({ course, isSelected, onSelect }: {
   isSelected: boolean;
   onSelect: (course: GolfCourse) => void;
 }): JSX.Element {
-  const { courseName, location_city, location_state, walkabilityRating_overall } = course;
-  
+  // Destructure necessary fields, including club_name and course_holes
+  const {
+    id,
+    club_name,
+    courseName,
+    course_holes, // Added field
+    location_city,
+    location_state,
+    walkabilityRating_overall
+  } = course;
+
   const handleClick = useCallback(() => {
     onSelect(course);
   }, [course, onSelect]);
+
+  // Helper to format the hole count string
+  const holeText = course_holes ? `(${course_holes} holes)` : '';
 
   return (
     <div
@@ -297,22 +309,38 @@ function CourseCard({ course, isSelected, onSelect }: {
       )}
       onClick={handleClick}
     >
-      <h3 className="font-semibold text-sm mb-1.5">{courseName}</h3>
+      {/* Line 1: Course Name and Hole Count */}
+      <h3 className="font-semibold text-sm mb-1">
+        {courseName} {holeText}
+      </h3>
+
+      {/* Line 2: Club Name (De-emphasized) */}
+      {club_name && (
+        <p className="text-xs text-gray-600 mb-1.5">
+          Part of {club_name}
+        </p>
+      )}
+
+      {/* Line 3: Location */}
       <div className="flex items-center text-xs text-gray-600 mb-1.5">
-        <MapPin className="w-3.5 h-3.5 mr-1" />
-        {location_city}, {location_state}
+        <MapPin className="w-3.5 h-3.5 mr-1 flex-shrink-0" /> {/* Added flex-shrink-0 */}
+        <span>{location_city}, {location_state}</span> {/* Wrapped text in span */}
       </div>
+
+      {/* Line 4: Walkability Rating */}
       <div className="flex items-center text-xs mb-2">
-        <StarRating 
-          rating={walkabilityRating_overall || 0} 
+        <StarRating
+          rating={walkabilityRating_overall || 0}
           showDecimal={true}
           className="text-xs"
           starClassName="w-3.5 h-3.5"
         />
         <span className="ml-1">Walkability</span>
       </div>
-      <Link 
-        href={`/courses/${course.id}`}
+
+      {/* Line 5: Details Link */}
+      <Link
+        href={`/courses/${id}`} // Use id directly
         className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
         onClick={(e) => e.stopPropagation()}
       >
