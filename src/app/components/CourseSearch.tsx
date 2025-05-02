@@ -56,10 +56,6 @@ export default function CourseSearch({ onSelect, selectedCourse }: CourseSearchP
     try {
       const results = await searchCourses({
         searchQuery,
-        course_types: [],
-        course_categories: [],
-        pricing_fee_min: 0,
-        pricing_fee_max: 0,
         walkabilityRating_overall_min: 0,
         sortBy: 'courseName',
         simpleSearch: true
@@ -149,14 +145,18 @@ export default function CourseSearch({ onSelect, selectedCourse }: CourseSearchP
                         <div className="flex items-center justify-between">
                           <span className={`block truncate font-medium ${selected ? 'font-semibold' : ''}`}>
                             {course.courseName}
+                            {course.course_holes ? ` (${course.course_holes} holes)` : ''} 
                           </span>
                           {selected && (
                             <CheckIcon className="h-5 w-5 text-blue-600" aria-hidden="true" />
                           )}
                         </div>
-                        <span className={`block truncate text-sm text-left ${
-                          active ? 'text-blue-700' : 'text-gray-500'
-                        }`}>
+                        {course.club_name && (
+                           <span className={`block truncate text-sm text-left ${active ? 'text-blue-700' : 'text-gray-500'}`}>
+                                Part of {course.club_name}
+                           </span>
+                        )}
+                        <span className={`block truncate text-xs text-left ${active ? 'text-blue-600' : 'text-gray-400'}${course.club_name ? ' mt-0.5' : ' mt-1'}`}>
                           {course.location_address1 ? `${course.location_address1}, ` : ''}{course.location_city}, {course.location_state}
                         </span>
                       </div>

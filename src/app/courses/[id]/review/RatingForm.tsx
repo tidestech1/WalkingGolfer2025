@@ -4,7 +4,7 @@ import { useState, FormEvent, ChangeEvent, useEffect } from 'react'
 
 import { User } from 'firebase/auth' // Import User type
 import { getAuth, sendSignInLinkToEmail } from "firebase/auth"
-import { Star, Upload, PlusCircle, MinusCircle, X } from 'lucide-react'
+import { Star, Upload, PlusCircle, MinusCircle, X, MapPin } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toast } from "sonner"; // Import toast
@@ -465,18 +465,26 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   // --- End conditional rendering ---
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* ADDED Confirming Course Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-2">
-          <h2 className="text-xl font-semibold text-[#0A3357]">Confirming Course</h2>
-          <p className="font-medium text-gray-800">
-            {course.courseName}
-          </p>
-          <p className="text-sm text-gray-600">
-            {/* Access course prop directly */}
-            {course.location_address1}, {course.location_city}, {course.location_state}
-          </p>
+    <form onSubmit={handleSubmit} className="p-6 space-y-8">
+      {/* --- Update Confirming Course Section Styling --- */}
+      {/* Use same container style as other sections for alignment */}
+      <div className="bg-white p-6 rounded-lg shadow-sm space-y-2"> 
+        <h2 className="text-xl font-semibold text-[#0A3357] mb-3">Confirming Course</h2>
+        <p className="text-gray-800 font-medium pt-1"> {/* Added small top padding */}
+            <span className="font-semibold">Course:</span> {course.courseName}
+            {course.course_holes ? ` (${course.course_holes} Holes)` : ''}
+        </p>
+        {course.club_name && (
+            <p className="text-gray-700 mt-1">
+                 <span className="font-semibold">Club:</span> {course.club_name}
+            </p>
+        )}
+        <p className="text-gray-600 mt-1 flex items-center">
+             <MapPin className="h-4 w-4 mr-1.5 text-gray-400 flex-shrink-0" aria-hidden="true" />
+             {course.location_address1 ? `${course.location_address1}, ` : ''}{course.location_city}, {course.location_state}
+        </p>
       </div>
+      {/* --- End Confirming Course Section --- */}
 
       {/* Section 2: Overall Walkability Experience */}
       <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">

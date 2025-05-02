@@ -97,10 +97,19 @@ export default function ReviewCoursePage() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           {/* Update title to reference the specific course */}
-          <h1 className="text-3xl font-bold text-[#0A3357] mb-2">Rate: {course.courseName}</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-[#0A3357] mb-2">
+            Rate: {course.courseName}
+            {course.course_holes ? ` (${course.course_holes} holes)` : ''}
+          </h1>
+           {/* Add Club Name (if exists) */}
+           {course.club_name && (
+             <p className="text-md text-gray-500 mt-1">Part of {course.club_name}</p>
+           )}
+           {/* Location */}
+          <p className="text-gray-600 mt-1">
             {course.location_city}, {course.location_state}
           </p>
+          {/* Remove previous combined club/holes line */} 
           <p className="text-gray-600 mt-2">
             Share your experience and help other golfers.
           </p>
