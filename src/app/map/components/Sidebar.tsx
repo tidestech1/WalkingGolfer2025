@@ -156,6 +156,14 @@ export default function Sidebar({
               <label className="block text-xs font-medium">
                 Minimum Walkability Rating
               </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <StarRating
+                rating={filters.walkabilityRating_overall_min}
+                interactive={true}
+                onRatingChange={(rating) => updateFilters({ walkabilityRating_overall_min: rating })}
+                starClassName="w-6 h-6"
+              />
               {filters.walkabilityRating_overall_min > 0 && (
                 <button
                   onClick={() => updateFilters({ walkabilityRating_overall_min: 0 })}
@@ -165,17 +173,12 @@ export default function Sidebar({
                 </button>
               )}
             </div>
-            <StarRating
-              rating={filters.walkabilityRating_overall_min}
-              interactive={true}
-              onRatingChange={(rating) => updateFilters({ walkabilityRating_overall_min: rating })}
-              label={filters.walkabilityRating_overall_min ? 
-                `Show courses rated ${filters.walkabilityRating_overall_min} stars or higher` : 
+            <p className="text-xs text-gray-600 mt-1">
+              {filters.walkabilityRating_overall_min > 0 ? 
+                `Courses rated ${filters.walkabilityRating_overall_min} stars or higher` : 
                 'Select minimum rating'
               }
-              className="mt-1"
-              starClassName="w-6 h-6"
-            />
+            </p>
           </div>
 
           <div className="pb-3 border-b lg:border-b-0 lg:pb-0">
@@ -231,7 +234,7 @@ export default function Sidebar({
   }
 
   return (
-    <div className={cn("bg-white h-full flex flex-col", filtersOnly ? "w-full" : "w-full lg:w-[360px]")}>
+    <div className={cn("bg-white h-full flex flex-col", filtersOnly ? "w-full" : "w-full lg:w-[300px]")}>
       {/* Header */}
       {!filtersOnly && (
         <div className="p-4 border-b sticky top-0 bg-white z-10">
@@ -241,13 +244,13 @@ export default function Sidebar({
               <p className="text-sm text-gray-600">Zoom in or search to find courses</p>
             ) : (
               <p className="text-sm text-gray-600">
-                Showing {courses.length} of {totalInBounds ?? courses.length} courses found
+                Showing {courses.length} within the map bounds
               </p>
             )}
           </div>
           <Input 
             type="text"
-            placeholder="Type to filter courses by name"
+            placeholder="Type to filter results by name or city"
             value={filters.searchQuery || ''}
             onChange={(e) => updateFilters({ searchQuery: e.target.value })}
             className="w-full"

@@ -372,7 +372,7 @@ export default function MapPage(): JSX.Element {
       {/* Desktop Layout */}
       <div className="hidden lg:flex h-full">
         {/* Left Column - Filters */}
-        <div className="w-60 border-r">
+        <div className="w-56 border-r">
           <div className="p-4 border-b">
             <h2 className="text-lg font-semibold">Filters</h2>
           </div>
@@ -387,7 +387,7 @@ export default function MapPage(): JSX.Element {
         </div>
 
         {/* Middle Column - Course Listings */}
-        <div className="w-[360px] border-r">
+        <div className="w-[300px] border-r">
           {/* Conditionally render sidebar based on zoom */}
           {!isZoomedOut ? (
             <Sidebar
