@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, MapPin } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,7 @@ interface SearchResultCourse {
   location_city: string;
   location_state: string;
   walkabilityRating_overall: number | null;
+  course_holes: number;
 }
 
 // Define keys for facility filters
@@ -203,7 +204,10 @@ export default function CourseSearchPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <h1 className="text-3xl font-bold mb-6">Search Golf Courses</h1>
+      <h1 className="text-3xl font-bold mb-4">Search Golf Courses</h1>
+      <p className="text-lg text-muted-foreground mb-8 max-w-3xl">
+         Enter a course name, city, or state above, or use the filters to find walking-friendly courses. Click 'Search Courses' to begin.
+      </p>
       
       <div className="mb-8 p-4 border rounded-lg bg-card">
         <div className="mb-4">
@@ -325,14 +329,15 @@ export default function CourseSearchPage() {
 
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
+          {[...Array(4)].map((_, i) => (
+            <Card key={`loading-${i}`}>
               <CardHeader>
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-1/2 mt-1" />
+                <Skeleton className="h-4 w-1/3 mt-1" />
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-5 w-1/4" />
+                <Skeleton className="h-5 w-1/4 mt-3" />
               </CardContent>
             </Card>
           ))}
@@ -350,6 +355,23 @@ export default function CourseSearchPage() {
         </Card>
       )}
 
+      {!isLoading && !error && !hasSearched && (
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(2)].map((_, i) => (
+               <Card key={`placeholder-${i}`}>
+                 <CardHeader>
+                   <Skeleton className="h-6 w-[85%]" />
+                   <Skeleton className="h-4 w-[60%] mt-1" />
+                   <Skeleton className="h-4 w-[40%] mt-1" />
+                 </CardHeader>
+                 <CardContent>
+                   <Skeleton className="h-5 w-[30%] mt-3" />
+                 </CardContent>
+               </Card>
+            ))}
+         </div>
+      )}
+
       {!isLoading && !error && hasSearched && results.length === 0 && (
         <p>No courses found matching your search criteria.</p>
       )}
@@ -362,24 +384,37 @@ export default function CourseSearchPage() {
               key={course.id} 
               className={cn(
                 "block rounded-lg border bg-card text-card-foreground shadow-sm",
-                "transition-all duration-150 ease-in-out",
-                "hover:shadow-md hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                "transition-colors duration-150 ease-in-out",
+                "hover:bg-gray-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               )}
               passHref
             >
-              <div className="flex flex-col h-full">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg mb-1">{course.course_name} Course</CardTitle>
-                  <p className="text-sm text-muted-foreground mb-1">{course.club_name}</p>
-                  <p className="text-sm text-muted-foreground">{course.location_city}, {course.location_state}</p>
-                </CardHeader>
-                <CardContent className="pt-0 flex-grow flex flex-col justify-end">
-                  <div className="flex items-center gap-2 mt-auto pt-3 border-t">
-                    <span className="text-sm font-medium">Walkability:</span>
+              <div className="p-4 flex flex-col h-full">
+                  <h3 className="text-lg font-semibold mb-0.5">
+                    {course.course_name}
+                    {course.course_holes && (
+                      <span className="text-sm text-muted-foreground font-normal ml-1.5">
+                        ({course.course_holes} holes)
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">Part of {course.club_name}</p>
+                  
+                  <div className="flex items-center text-sm text-muted-foreground mb-3">
+                    <MapPin className="w-4 h-4 mr-1.5 shrink-0" />
+                    {course.location_city}, {course.location_state}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-auto pt-3 border-t"> 
                     {course.walkabilityRating_overall && course.walkabilityRating_overall > 0 ? (
                       <>
-                        <StarRating rating={course.walkabilityRating_overall} />
-                        <span className="text-sm text-muted-foreground">({course.walkabilityRating_overall.toFixed(1)} / 5)</span>
+                        <StarRating 
+                          rating={course.walkabilityRating_overall} 
+                          starClassName="w-5 h-5"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          Walkability: ({course.walkabilityRating_overall.toFixed(1)})
+                        </span>
                       </>
                     ) : (
                       <div className="text-sm text-muted-foreground">
@@ -398,7 +433,6 @@ export default function CourseSearchPage() {
                       </div>
                     )}
                   </div>
-                </CardContent>
               </div>
             </Link>
           ))}

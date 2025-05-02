@@ -371,8 +371,8 @@ export default function MapPage(): JSX.Element {
 
       {/* Desktop Layout */}
       <div className="hidden lg:flex h-full">
-        {/* Left Column - Filters */}
-        <div className="w-56 border-r">
+        {/* Left Column - Filters & Key - Add overflow-y-auto */}
+        <div className="w-60 border-r overflow-y-auto">
           <div className="p-4 border-b">
             <h2 className="text-lg font-semibold">Filters</h2>
           </div>
@@ -384,6 +384,29 @@ export default function MapPage(): JSX.Element {
             selectedCourseId={null}
             filtersOnly={true}
           />
+          
+          {/* --- START: Marker Key Section --- */}
+          <div className="p-4 mt-4 border-t">
+            <h4 className="font-semibold text-sm mb-2">Marker Key</h4>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                {/* Approximate green marker color */}
+                <div className="w-3 h-3 rounded-sm bg-emerald-600"></div> 
+                <span className="text-xs">Walkable Course</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Approximate blue marker color */}
+                <div className="w-3 h-3 rounded-sm bg-blue-800"></div> 
+                <span className="text-xs">Other Course</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Yellow border for selected */}
+                <div className="w-3 h-3 rounded-sm border-2 border-amber-500 bg-gray-200"></div>
+                <span className="text-xs">Selected Course</span>
+              </div>
+            </div>
+          </div>
+          {/* --- END: Marker Key Section --- */}
         </div>
 
         {/* Middle Column - Course Listings */}

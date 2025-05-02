@@ -77,7 +77,7 @@ export default function Sidebar({
     const hasActiveFilters = activeFilterCount > 0;
 
     return (
-      <div className="h-full flex flex-col">
+      <div className="flex flex-col">
         <div className="lg:hidden sticky top-0 bg-white border-b z-10">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center">
@@ -147,7 +147,7 @@ export default function Sidebar({
         </div>
         
         <div className={cn(
-          "flex-1 overflow-y-auto",
+          "overflow-y-auto",
           "lg:px-3 lg:space-y-3",
           "px-4 space-y-6 lg:space-y-3"
         )}>

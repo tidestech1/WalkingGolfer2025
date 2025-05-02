@@ -78,11 +78,11 @@ export async function GET(request: NextRequest) {
         return {
           id: doc.id, // Include id for potential linking
           club_name: data.club_name,
-          course_name: data.courseName, // Corrected field name
+          course_name: data.courseName,
           location_city: data.location_city,
           location_state: data.location_state,
           walkabilityRating_overall: data.walkabilityRating_overall,
-          // searchableTerms: data.searchableTerms // DEBUG: Uncomment to check terms if needed
+          course_holes: data.course_holes,
         };
       });
       
