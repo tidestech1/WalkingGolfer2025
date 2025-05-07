@@ -317,8 +317,8 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         if (!response.ok) {
             throw new Error(result.error || `HTTP error! status: ${response.status}`);
         }
-        const { pendingReviewId, emailLink } = result;
-        if (!pendingReviewId || !emailLink) {
+        const { pendingReviewId } = result;
+        if (!pendingReviewId) {
           throw new Error('Backend did not return necessary verification data.');
         }
         console.log('Pending review saved, sending email...');
@@ -327,34 +327,24 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         // 2. Save email locally
         window.localStorage.setItem('emailForSignIn', email);
 
-        // 3. Send email (Client SDK)
-        // Check if firebaseClientAuth is available
-        if (!firebaseClientAuth) {
-          throw new Error('Firebase authentication is not available. Cannot send verification email.');
-        }
-        
-        // Correct env var access
-        const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-        // --- Point continueUrl to the main action handler, embedding review/course IDs --- 
-        const paramsForAction = new URLSearchParams({
-           reviewId: pendingReviewId, // pendingReviewId comes from the backend response
-           courseId: course.id // course.id comes from the component props
-        });
-        const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
-        // --- End URL change ---
-        const actionCodeSettings = {
-            url: continueUrl, // This URL now includes reviewId and courseId
-            handleCodeInApp: true,
-        };
-        
-        // --- Add Logging Before Sending Email --- 
-        console.log('[sendSignInLinkToEmail] Preparing to send email.');
-        console.log('[sendSignInLinkToEmail] Email:', email);
-        console.log('[sendSignInLinkToEmail] Action Code Settings:', JSON.stringify(actionCodeSettings, null, 2));
-        // --- End Logging ---
-
-        // Pass the checked firebaseClientAuth
-        await sendSignInLinkToEmail(firebaseClientAuth, email, actionCodeSettings);
+        // 3. Send email (Client SDK) - REMOVED: Backend now sends email via Klaviyo
+        // if (!firebaseClientAuth) {
+        //   throw new Error('Firebase authentication is not available. Cannot send verification email.');
+        // }
+        // const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000';
+        // const paramsForAction = new URLSearchParams({
+        //    reviewId: pendingReviewId,
+        //    courseId: course.id
+        // });
+        // const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
+        // const actionCodeSettings = {
+        //     url: continueUrl,
+        //     handleCodeInApp: true,
+        // };
+        // console.log('[sendSignInLinkToEmail] Preparing to send email.');
+        // console.log('[sendSignInLinkToEmail] Email:', email);
+        // console.log('[sendSignInLinkToEmail] Action Code Settings:', JSON.stringify(actionCodeSettings, null, 2));
+        // await sendSignInLinkToEmail(firebaseClientAuth, email, actionCodeSettings);
         
         // 4. Success
         setIsModalOpen(false);

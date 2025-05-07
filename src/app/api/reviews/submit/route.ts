@@ -8,6 +8,8 @@ import { z } from 'zod'; // Assuming Zod is installed
 
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase/firebaseAdmin'; 
 import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review'; // Removed CreateReviewInput as we use Zod type now
+import crypto from 'crypto';
+import { getKlaviyoClient, KlaviyoEvents } from '@/lib/klaviyo';
 
 // Get Firestore and Auth instances using the getter functions
 // This also handles initialization internally
@@ -91,37 +93,44 @@ export async function POST(request: NextRequest) {
     const pendingReviewId = reviewRef.id;
     const courseId = data.courseId;
 
-    // Generate the email verification/sign-in link
-    const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000'; 
-    const paramsForAction = new URLSearchParams({
-       reviewId: pendingReviewId,
-       courseId: courseId
+    // --- NEW: Generate secure token and expiry ---
+    const rawToken = crypto.randomUUID();
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Store the hashed token and expiry in the review document
+    await reviewRef.update({
+      verificationTokenHash: hashedToken,
+      verificationTokenExpiresAt: expiresAt,
+      status: 'pending',
+      email_verified: false,
+      updatedAt: FieldValue.serverTimestamp(),
     });
-    const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
-    
-    const actionCodeSettings = {
-      url: continueUrl,
-      handleCodeInApp: true,
-    };
 
-    const emailLink = await auth.generateSignInWithEmailLink(data.submittedEmail, actionCodeSettings);
+    // Construct the verification link
+    const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000';
+    const verificationUrl = `${frontendBaseUrl}/verify-review?token=${rawToken}`;
 
-    // --- IMPORTANT --- 
-    // The Firebase Admin SDK (backend) *generates* the link, but does NOT send the email.
-    // You MUST trigger sending this link from your frontend using the Firebase Client SDK's 
-    // `sendSignInLinkToEmail` function OR use a separate backend email service (e.g., SendGrid, Mailgun) 
-    // triggered from this API route, passing the generated 'emailLink'.
-    // This API route currently ONLY saves the pending review and generates the link.
-    // The frontend MUST handle the email sending step after calling this API.
-    // Logging the link here is only for debugging during development.
-    console.log(`[API INFO] Generated email link for ${data.submittedEmail} (Review ID: ${pendingReviewId}).`);
+    // --- Send Klaviyo event for verification email ---
+    try {
+      const klaviyo = getKlaviyoClient();
+      await klaviyo.trackEvent(KlaviyoEvents.REVIEW_SUBMITTED, data.submittedEmail, {
+        name: data.submittedName || '',
+        reviewId: pendingReviewId,
+        courseId,
+        verificationUrl,
+      });
+    } catch (err) {
+      console.error('Error sending Klaviyo event:', err);
+      // Optionally: delete the review or mark as error
+      return NextResponse.json({ error: 'Failed to send verification email.' }, { status: 500 });
+    }
 
-    // Return success, indicating the client should proceed with email sending/user notification
+    // Return success, do not return the token or link
     return NextResponse.json({ 
         success: true, 
         message: 'Review submitted pending verification. Please check your email.',
-        pendingReviewId: pendingReviewId,
-        emailLink: emailLink
+        pendingReviewId: pendingReviewId
      }, { status: 201 });
 
   } catch (error: any) {
