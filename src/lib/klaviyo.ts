@@ -61,17 +61,27 @@ class KlaviyoClient {
       data: {
         type: "event",
         attributes: {
-          properties: properties || {},
-          metric: {
-            name: eventName
-          },
           profile: {
-            email: email
-          }
+            data: {
+              type: "profile",
+              attributes: {
+                email: email
+              }
+            }
+          },
+          metric: {
+            data: {
+              type: "metric",
+              attributes: {
+                name: eventName
+              }
+            }
+          },
+          properties: properties || {}
         }
       }
     };
-    const response = await fetch('https://a.klaviyo.com/api/v2/events', {
+    const response = await fetch('https://a.klaviyo.com/api/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
