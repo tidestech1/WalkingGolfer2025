@@ -61,23 +61,13 @@ class KlaviyoClient {
       data: {
         type: "event",
         attributes: {
-          profile: {
-            data: {
-              type: "profile",
-              attributes: {
-                email: email
-              }
-            }
-          },
+          properties: properties || {},
           metric: {
-            data: {
-              type: "metric",
-              attributes: {
-                name: eventName
-              }
-            }
+            name: eventName
           },
-          properties: properties || {}
+          profile: {
+            email: email
+          }
         }
       }
     };
