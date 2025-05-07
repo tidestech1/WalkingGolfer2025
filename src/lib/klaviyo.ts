@@ -52,29 +52,48 @@ class KlaviyoClient {
     }
   }
 
-  // Track an event using the /track endpoint (public key)
+  // Track an event using the v2 API
   async trackEvent(eventName: string, email: string, properties?: Record<string, any>): Promise<void> {
-    const publicKey = process.env['KLAVIYO_PUBLIC_KEY'];
-    if (!publicKey) {
-      throw new Error('Klaviyo public key not found in Replit Secrets');
+    if (!this.apiKey) {
+      throw new Error('Klaviyo API key not found in Replit Secrets');
     }
     const payload = {
-      token: publicKey,
-      event: eventName,
-      customer_properties: {
-        $email: email,
-      },
-      properties: properties || {},
+      data: {
+        type: "event",
+        attributes: {
+          profile: {
+            data: {
+              type: "profile",
+              attributes: {
+                email: email
+              }
+            }
+          },
+          metric: {
+            data: {
+              type: "metric",
+              attributes: {
+                name: eventName
+              }
+            }
+          },
+          properties: properties || {}
+        }
+      }
     };
-    const response = await fetch('https://a.klaviyo.com/api/track', {
+    const response = await fetch('https://a.klaviyo.com/api/v2/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'revision': '2023-12-15',
+        'Authorization': `Klaviyo-API-Key ${this.apiKey}`
       },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      throw new Error(`Klaviyo /track error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Klaviyo API error:', errorText);
+      throw new Error(`Klaviyo API error! status: ${response.status}, message: ${errorText}`);
     }
   }
 
