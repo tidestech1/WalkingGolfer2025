@@ -10,6 +10,7 @@
 import {
   onDocumentUpdated,
   FirestoreEvent, // Import FirestoreEvent here
+  onDocumentCreated, // Add onDocumentCreated here
 } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 // Use modular imports for firebase-admin
@@ -33,6 +34,9 @@ import {
 } from "./types/course.js";
 // Import geofire-common
 import * as geofire from "geofire-common";
+// Use path alias to import from root src/types
+import {CourseReview} from "@/types/review";
+import {UserProfile} from "@/types/user";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -454,4 +458,194 @@ export const getCoursesForMap = onCall(
   }
 );
 
-// You can add other Cloud Functions here if needed.
+// === NEW CLOUD FUNCTION for Review Published ===
+
+/**
+ * Firestore trigger that runs when a review document is updated.
+ * If the review status changes from 'pending' to 'published',
+ * it attempts to find a matching user by the review's submittedEmail
+ * and updates both the review (with userId) and the user (reviewCount).
+ */
+export const onReviewPublishedUpdateUser = onDocumentUpdated(
+  "reviews/{reviewId}",
+  async (event: FirestoreEvent<Change<QueryDocumentSnapshot> | undefined, { reviewId: string }>): Promise<void> => {
+    const reviewId = event.params.reviewId;
+    logger.log(`Starting onReviewPublishedUpdateUser for review: ${reviewId}`);
+
+    const change = event.data;
+    if (!change) {
+      logger.warn(`Event data missing for review ${reviewId}. Exiting.`);
+      return;
+    }
+
+    const beforeData = change.before.data() as CourseReview | undefined;
+    const afterData = change.after.data() as CourseReview | undefined;
+
+    // Check for invalid data states
+    if (!beforeData || !afterData) {
+      logger.warn(`Missing before or after data for review ${reviewId}. Exiting.`);
+      return;
+    }
+
+    // Check if the status changed to 'published' from 'pending'
+    const statusChanged = beforeData.status === "pending" && afterData.status === "published";
+    const needsLinking = afterData.userId === null; // Check if userId needs to be set
+    const submittedEmail = afterData.submittedEmail; // Email to search for
+
+    if (statusChanged && needsLinking && submittedEmail) {
+      logger.info(`Review ${reviewId} published and needs user linking. Email: ${submittedEmail}`);
+
+      try {
+        // Find user by email
+        const usersRef = db.collection("users");
+        const userQuery = usersRef.where("email", "==", submittedEmail).limit(1);
+        const userSnapshot = await userQuery.get();
+
+        if (userSnapshot.empty) {
+          logger.warn(`No user found with email ${submittedEmail} for review ${reviewId}. Cannot link user.`);
+          return; // Exit if no matching user found
+        }
+
+        if (userSnapshot.size > 1) {
+          logger.error(`Multiple users found with email ${submittedEmail} for review ${reviewId}. Aborting linking.`);
+          return; // Safety check for multiple users
+        }
+
+        const userDoc = userSnapshot.docs[0];
+        const userId = userDoc.id;
+        const userData = userDoc.data() as UserProfile;
+        logger.info(`Found user ${userId} for review ${reviewId}.`);
+
+        // Prepare updates
+        const userRef = userDoc.ref;
+        const reviewRef = change.after.ref; // Reference to the updated review document
+
+        // Calculate derived display name based on user preferences and review submission
+        // We need a way to get the display_name_type from the review
+        // Let's assume deriveReviewerDisplayName can handle profile + review context
+        // We need to import or define this function or similar logic here
+        // For now, let's just use the user's profile display name
+        const userDisplayName = userData.displayName || "Anonymous User";
+
+        const userUpdate = {
+          reviewCount: FieldValue.increment(1),
+          lastReviewDate: (afterData.createdAt instanceof Timestamp ? afterData.createdAt.toDate() : new Date(afterData.createdAt)).toISOString(),
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        const reviewUpdate = {
+          userId: userId,
+          userDisplayName: userDisplayName, // Use calculated name
+          userPhotoUrl: userData.photoURL || null,
+          // Note: submittedEmail is kept for reference, but the review is now linked
+        };
+
+        // Perform updates (can be done separately or batched, transaction might be overkill)
+        await Promise.all([
+          userRef.update(userUpdate),
+          reviewRef.update(reviewUpdate),
+        ]);
+
+        logger.info(`Successfully linked review ${reviewId} to user ${userId} and updated user stats.`);
+      } catch (error) {
+        logger.error(`Error processing review ${reviewId} for user linking:`, error);
+        // Decide if you want to rethrow or just log
+      }
+    } else {
+      logger.log(`Review ${reviewId} update did not meet criteria for user linking (statusChanged=${statusChanged}, needsLinking=${needsLinking}, hasEmail=${!!submittedEmail}).`);
+    }
+  }
+);
+
+// === NEW CLOUD FUNCTION for User Creation ===
+
+/**
+ * Firestore trigger that runs when a new user document is created.
+ * Checks for existing published reviews matching the user's email that
+ * haven't been linked to a user yet (userId is null).
+ * If found, updates the reviews with the new userId and updates the
+ * user's initial review count.
+ */
+export const onUserCreatedLinkReviews = onDocumentCreated(
+  "users/{userId}",
+  async (event: FirestoreEvent<QueryDocumentSnapshot | undefined, { userId: string }>): Promise<void> => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      logger.log("No data associated with the user creation event.");
+      return;
+    }
+    const userId = event.params.userId;
+    const userData = snapshot.data() as UserProfile;
+    const userEmail = userData.email;
+
+    if (!userEmail) {
+      logger.warn(`New user ${userId} created without an email. Cannot link reviews.`);
+      return;
+    }
+
+    logger.info(`New user ${userId} created with email ${userEmail}. Checking for unlinked reviews.`);
+
+    try {
+      // Find published reviews matching the email with userId == null
+      const reviewsRef = db.collection("reviews");
+      const reviewQuery = reviewsRef
+        .where("submittedEmail", "==", userEmail)
+        .where("status", "==", "published")
+        .where("userId", "==", null);
+
+      const reviewSnapshot = await reviewQuery.get();
+
+      if (reviewSnapshot.empty) {
+        logger.info(`No unlinked reviews found for user ${userId} (${userEmail}).`);
+        return; // Nothing to link
+      }
+
+      logger.info(`Found ${reviewSnapshot.size} unlinked reviews for user ${userId}. Linking now...`);
+
+      // Use a batch write for atomic updates
+      const batch = db.batch();
+      let linkedReviewCount = 0;
+      let latestReviewDate: Date | null = null;
+
+      reviewSnapshot.forEach((doc) => {
+        const reviewRef = doc.ref;
+        const reviewData = doc.data() as CourseReview;
+        linkedReviewCount++;
+
+        // Update latestReviewDate
+        const reviewCreatedAt = (reviewData.createdAt instanceof Timestamp ? reviewData.createdAt.toDate() : new Date(reviewData.createdAt));
+        if (!latestReviewDate || reviewCreatedAt > latestReviewDate) {
+          latestReviewDate = reviewCreatedAt;
+        }
+
+        // Prepare review update
+        // Potentially derive display name again based on user profile if needed
+        const reviewUpdate = {
+          userId: userId,
+          userDisplayName: userData.displayName || "Anonymous User",
+          userPhotoUrl: userData.photoURL || null,
+        };
+        batch.update(reviewRef, reviewUpdate);
+      });
+
+      // Prepare user profile update
+      const userRef = snapshot.ref;
+      const userUpdate = {
+        reviewCount: linkedReviewCount, // Set initial count
+        // Explicitly cast to Date before calling toISOString
+        lastReviewDate: latestReviewDate ? (latestReviewDate as Date).toISOString() : null,
+        updatedAt: FieldValue.serverTimestamp(), // Also update timestamp
+      };
+      batch.update(userRef, userUpdate);
+
+      // Commit the batch
+      await batch.commit();
+
+      logger.info(`Successfully linked ${linkedReviewCount} reviews to new user ${userId} and set initial review count.`);
+    } catch (error) {
+      logger.error(`Error linking reviews for new user ${userId}:`, error);
+    }
+  }
+);
+
+// Ensure other functions remain below...

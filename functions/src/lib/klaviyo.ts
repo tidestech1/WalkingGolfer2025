@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+// import * as functions from 'firebase-functions'; // Remove unused import
 
 // Types for Klaviyo API
 interface KlaviyoProfile {
@@ -6,24 +6,24 @@ interface KlaviyoProfile {
   first_name?: string | undefined;
   last_name?: string | undefined;
   phone_number?: string | undefined;
-  properties?: Record<string, any> | undefined;
+  properties?: Record<string, unknown> | undefined;
 }
 
 interface KlaviyoEvent {
   profile: {
     email: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   metric: {
     name: string;
   };
-  properties?: Record<string, any> | undefined;
+  properties?: Record<string, unknown> | undefined;
 }
 
 // Klaviyo API client class
 class KlaviyoClient {
   private readonly apiKey: string;
-  private readonly baseUrl = 'https://a.klaviyo.com/api/v2';
+  private readonly baseUrl = "https://a.klaviyo.com/api/v2";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -35,13 +35,13 @@ class KlaviyoClient {
       const response = await fetch(
         `${this.baseUrl}/profiles`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'revision': '2023-12-15'
+            "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
+            "Content-Type": "application/json",
+            "revision": "2023-12-15",
           },
-          body: JSON.stringify(profile)
+          body: JSON.stringify(profile),
         }
       );
 
@@ -49,7 +49,7 @@ class KlaviyoClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error creating Klaviyo profile:', error);
+      console.error("Error creating Klaviyo profile:", error);
       throw error;
     }
   }
@@ -60,13 +60,13 @@ class KlaviyoClient {
       const response = await fetch(
         `${this.baseUrl}/track`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'revision': '2023-12-15'
+            "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
+            "Content-Type": "application/json",
+            "revision": "2023-12-15",
           },
-          body: JSON.stringify(event)
+          body: JSON.stringify(event),
         }
       );
 
@@ -74,17 +74,17 @@ class KlaviyoClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error tracking Klaviyo event:', error);
+      console.error("Error tracking Klaviyo event:", error);
       throw error;
     }
   }
 
   // Track a metric (simplified event tracking)
-  async trackMetric(metricName: string, email: string, properties?: Record<string, any>): Promise<void> {
+  async trackMetric(metricName: string, email: string, properties?: Record<string, unknown>): Promise<void> {
     const event: KlaviyoEvent = {
-      profile: { email },
-      metric: { name: metricName },
-      properties: properties || undefined
+      profile: {email},
+      metric: {name: metricName},
+      properties: properties || undefined,
     };
     await this.trackEvent(event);
   }
@@ -94,29 +94,29 @@ class KlaviyoClient {
 export function getKlaviyoClient(): KlaviyoClient {
   const apiKey = process.env.KLAVIYO_PRIVATE_KEY;
   if (!apiKey) {
-    throw new Error('Klaviyo private key not found in Replit Secrets');
+    throw new Error("Klaviyo private key not found in Replit Secrets");
   }
   return new KlaviyoClient(apiKey);
 }
 
 // Predefined event names
 export const KlaviyoEvents = {
-  SIGNED_UP: 'Signed Up',
-  EMAIL_VERIFIED: 'Email Verified',
-  REVIEW_SUBMITTED: 'Review Submitted',
-  REVIEW_VERIFIED: 'Review Verified',
-  REVIEW_PUBLISHED: 'Review Published'
+  SIGNED_UP: "Signed Up",
+  EMAIL_VERIFIED: "Email Verified",
+  REVIEW_SUBMITTED: "Review Submitted",
+  REVIEW_VERIFIED: "Review Verified",
+  REVIEW_PUBLISHED: "Review Published",
 } as const;
 
 // Helper function to create a profile from user data
 export function createKlaviyoProfile(email: string, displayName?: string): KlaviyoProfile {
-  const [firstName, lastName] = (displayName || '').split(' ');
+  const [firstName, lastName] = (displayName || "").split(" ");
   return {
     email,
     first_name: firstName || undefined,
     last_name: lastName || undefined,
     properties: {
-      source: 'walkinggolfer.com'
-    }
+      source: "walkinggolfer.com",
+    },
   };
-} 
+}

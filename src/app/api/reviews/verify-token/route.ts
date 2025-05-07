@@ -4,7 +4,10 @@ import crypto from 'crypto';
 import { z } from 'zod';
 
 import { getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
+import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils'; // Import the utility
 import { CourseReview } from '@/types/review';
+import { GolfCourse } from '@/types/course'; // Import course type
+import { CourseRatingUpdateLog } from '@/types/log'; // Import log type
 
 // Potentially define a broader type for reading pending reviews
 interface PendingReview extends CourseReview {
@@ -75,52 +78,117 @@ export async function POST(request: NextRequest) {
     // 4. Review found, update it within a transaction
     const reviewId = validDoc.id;
     const reviewData = validDoc.data() as PendingReview; // Use broader type initially
-    console.log(`[VerifyToken] Found matching review: ${reviewId}`);
+    const courseId = reviewData.courseId;
+    console.log(`[VerifyToken] Found matching review: ${reviewId} for course ${courseId}`);
+
+    if (!courseId) {
+        console.error(`[VerifyToken] Review ${reviewId} is missing courseId.`);
+        return NextResponse.json({ success: false, error: 'Review data is incomplete (missing courseId).' }, { status: 500 });
+    }
 
     try {
         await db.runTransaction(async (transaction) => {
             const reviewRef = db.collection('reviews').doc(reviewId);
-            const freshSnap = await transaction.get(reviewRef);
+            const courseRef = db.collection('courses').doc(courseId);
             
-            if (!freshSnap.exists) {
+            // Fetch review and course within transaction
+            const [freshReviewSnap, freshCourseSnap] = await Promise.all([
+                transaction.get(reviewRef),
+                transaction.get(courseRef)
+            ]);
+            
+            if (!freshReviewSnap.exists) {
                  console.error(`[VerifyToken] Review ${reviewId} disappeared during transaction.`);
                  throw new Error('Review not found during transaction.');
             }
+             if (!freshCourseSnap.exists) {
+                 console.error(`[VerifyToken] Course ${courseId} disappeared during transaction.`);
+                 throw new Error('Course not found during transaction.');
+             }
 
-            // Use broader type for reading fetched data
-            const freshData = freshSnap.data() as PendingReview;
+            const freshReviewData = freshReviewSnap.data() as PendingReview;
+            const freshCourseData = freshCourseSnap.data() as GolfCourse;
 
             // Double-check status and expiry inside transaction
-            if (freshData.status !== 'pending') {
+            if (freshReviewData.status !== 'pending') {
                  console.warn(`[VerifyToken] Review ${reviewId} was already verified (concurrently?).`);
                  throw new Error('Review already verified.');
             }
             // Safe check for expiry timestamp existence and value
-            if (!freshData.verificationTokenExpiresAt || freshData.verificationTokenExpiresAt <= now) {
+            if (!freshReviewData.verificationTokenExpiresAt || freshReviewData.verificationTokenExpiresAt <= now) {
                 console.warn(`[VerifyToken] Review ${reviewId} token expired concurrently.`);
                 throw new Error('Token expired.');
             }
 
-            // Prepare update data
-            // Type assertion might be needed if the base CourseReview type doesn't allow these fields
-            const updateData: Record<string, any> = {
+            // Prepare review update data
+            const reviewUpdateData: Record<string, any> = {
                 status: 'published' as const,
                 email_verified: true,
                 updatedAt: FieldValue.serverTimestamp(),
-                verificationTokenHash: FieldValue.delete(), // Remove token hash
-                verificationTokenExpiresAt: FieldValue.delete(), // Remove expiry
+                verificationTokenHash: FieldValue.delete(),
+                verificationTokenExpiresAt: FieldValue.delete(),
+                // Keep submittedEmail/Name for potential linking later
+                // submittedEmail: FieldValue.delete(), 
+                // submittedName: FieldValue.delete(), 
             };
+            transaction.update(reviewRef, reviewUpdateData);
+            console.log(`[VerifyToken] Updated review ${reviewId} status to published.`);
 
-            console.log(`[VerifyToken] Updating review ${reviewId} status to published.`);
-            transaction.update(reviewRef, updateData);
+            // --- Update Course Ratings --- 
+            // Ensure all required rating fields exist on freshReviewData before calling
+            if (freshReviewData.overallRating != null && 
+                freshReviewData.costRating != null && 
+                freshReviewData.courseConditionRating != null && 
+                freshReviewData.hillinessRating != null && 
+                freshReviewData.distanceRating != null && 
+                freshReviewData.walkabilityRating != null) 
+            {
+                 await updateCourseRatingsFromReview(
+                     transaction, 
+                     courseId,
+                     {
+                         overallRating: freshReviewData.overallRating,
+                         costRating: freshReviewData.costRating,
+                         courseConditionRating: freshReviewData.courseConditionRating,
+                         hillinessRating: freshReviewData.hillinessRating,
+                         distanceRating: freshReviewData.distanceRating,
+                         walkabilityRating: freshReviewData.walkabilityRating
+                     },
+                     freshCourseData
+                 );
+                 console.log(`[VerifyToken] Updated ratings for course ${courseId}`);
+
+                 // --- Add Rating Update Log Entry --- 
+                 const logRef = db.collection('courseRatingUpdates').doc();
+                 const logData: Omit<CourseRatingUpdateLog, 'id' | 'timestamp'> & { timestamp: FieldValue } = {
+                     courseId: courseId,
+                     triggeringReviewId: reviewId,
+                     triggeringUserId: null, // Set to null as user is not authenticated here
+                     timestamp: FieldValue.serverTimestamp(),
+                     reviewRatings: {
+                         overall: freshReviewData.overallRating,
+                         cost: freshReviewData.costRating,
+                         condition: freshReviewData.courseConditionRating,
+                         hilliness: freshReviewData.hillinessRating,
+                         distance: freshReviewData.distanceRating,
+                         weighted: freshReviewData.walkabilityRating,
+                     }
+                 };
+                 transaction.set(logRef, logData);
+                 console.log(`[VerifyToken] Added courseRatingUpdates log entry for review ${reviewId}`);
+            } else {
+                 console.warn(`[VerifyToken] Review ${reviewId} is missing one or more rating fields, skipping course rating update.`);
+            }
+            // --- End Course Rating Update --- 
+
+            // NOTE: User profile updates (reviewCount, etc.) are not handled here.
         });
 
-        console.log(`[VerifyToken] Review ${reviewId} successfully verified and published.`);
+        console.log(`[VerifyToken] Review ${reviewId} successfully verified and published, course ratings updated.`);
         return NextResponse.json({
             success: true,
             message: 'Review verified successfully!',
-            // Use original reviewData read outside transaction for courseId
-            courseId: reviewData.courseId 
+            courseId: courseId // Return courseId for redirection
         }, { status: 200 });
 
     } catch (transactionError: any) {
@@ -130,6 +198,9 @@ export async function POST(request: NextRequest) {
         }
         if (transactionError.message === 'Token expired.') {
              return NextResponse.json({ success: false, error: 'Verification token has expired.' }, { status: 410 });
+        }
+        if (transactionError.message === 'Review not found during transaction.' || transactionError.message === 'Course not found during transaction.') {
+             return NextResponse.json({ success: false, error: 'Required data not found.' }, { status: 404 });
         }
         return NextResponse.json({ success: false, error: 'Failed to update review status.', details: transactionError.message }, { status: 500 });
     }
