@@ -317,9 +317,21 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         if (response.status === 409 && result.requiresLogin) {
           // User exists, backend responded with 409 and requiresLogin: true
           toast.info(result.message || "An account with this email already exists. Please log in.", { id: toastId });
+          
+          // Store review data and courseId in sessionStorage
+          try {
+            sessionStorage.setItem('pendingReviewDataForLogin', JSON.stringify(fullDataForPending));
+            sessionStorage.setItem('pendingReviewCourseId', course.id); // course is from RatingFormProps
+          } catch (e) {
+            console.error("Error saving review data to sessionStorage:", e);
+            // If sessionStorage fails, we can't proceed with the post-login completion.
+            // Maybe just show a generic error or let the user try submitting again later.
+            // For now, we'll allow the redirect to login but post-login completion might fail.
+          }
+
           setIsModalOpen(false); // Close the review submission modal
-          // Redirect to login page with email and a message
-          router.push(`/login?email=${encodeURIComponent(result.email)}&message=${encodeURIComponent("Please log in to submit your review.")}`);
+          // Redirect to login page with email, message, and returnUrl for post-login completion
+          router.push(`/login?email=${encodeURIComponent(result.email)}&message=${encodeURIComponent("Please log in to submit your review.")}&returnUrl=/review/complete/${course.id}`);
         } else if (response.ok) { // Handles 201 Created (and potentially other 2xx)
           toast.success(result.message || "Review submitted! Please check your email to verify.", { id: toastId });
           setShowVerificationMessage(true);
