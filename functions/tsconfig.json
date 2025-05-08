@@ -9,11 +9,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2021",
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["../src/*"]
-    }
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "include": [

@@ -67,7 +67,7 @@ export interface GolfCourse {
   conditionRatingSum: number;
   hillinessRatingSum: number;
   distanceRatingSum: number; // Sum for walkabilityRating_holeDistance
-  calculatedWeightedRatingSum: number; // Sum walkabilityRating_weightedRating
+  calculatedWeightedRatingSum: number; // Sum for walkabilityRating_weightedRating
   // --- END NEW FIELDS ---
 
   // Calculated average ratings
@@ -82,15 +82,12 @@ export interface GolfCourse {
   walkabilityRating_weightedRating: number | null;
 
   // Timestamps
-  lastRatingUpdate: Date | null; // Using Date for consistency
+  lastRatingUpdate: Date | null; // Using Date for consistency, can be Firestore Timestamp on backend
   createdAt: Date;
   updatedAt: Date;
 
   // Array of lowercase searchable terms
   searchableTerms: string[];
-
-  // NEW: Geohash for location querying
-  geohash?: string; // Make optional initially if migration is ongoing
 
 }
 

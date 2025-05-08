@@ -54,6 +54,20 @@ export async function POST(request: NextRequest) {
     }
     const data: SubmitReviewData = validationResult.data;
 
+    // Check if a user with this email already exists
+    const usersRef = db.collection('users');
+    const userQuery = usersRef.where('email', '==', data.submittedEmail).limit(1);
+    const userSnapshot = await userQuery.get();
+
+    if (!userSnapshot.empty) {
+      // User exists, prompt to log in
+      console.log(`User with email ${data.submittedEmail} already exists. Prompting login.`);
+      return NextResponse.json(
+        { requiresLogin: true, email: data.submittedEmail, message: "An account with this email already exists. Please log in to submit your review." },
+        { status: 409 } // 409 Conflict
+      );
+    }
+
     // Base object with required fields and fields guaranteed by validation
     const reviewToCreateBase: Omit<CourseReview, 'id' | 'submittedName' | 'imageUrls'> = {
       courseId: data.courseId,

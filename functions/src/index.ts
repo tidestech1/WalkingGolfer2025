@@ -31,12 +31,12 @@ import {
   GolfCourse,
   CourseFilters,
   MapBounds,
-} from "./types/course.js";
+} from "./types/course";
 // Import geofire-common
 import * as geofire from "geofire-common";
-// Use path alias to import from root src/types
-import {CourseReview} from "@/types/review";
-import {UserProfile} from "@/types/user";
+// Use local relative paths for copied types
+import {CourseReview} from "./types/review";
+import {UserProfile} from "./types/user";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript

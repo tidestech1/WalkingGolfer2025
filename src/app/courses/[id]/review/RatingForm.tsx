@@ -314,44 +314,24 @@ export default function RatingForm({ course, user }: RatingFormProps) {
             body: JSON.stringify(fullDataForPending),
         });
         const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.error || `HTTP error! status: ${response.status}`);
+        if (response.status === 409 && result.requiresLogin) {
+          // User exists, backend responded with 409 and requiresLogin: true
+          toast.info(result.message || "An account with this email already exists. Please log in.", { id: toastId });
+          setIsModalOpen(false); // Close the review submission modal
+          // Redirect to login page with email and a message
+          router.push(`/login?email=${encodeURIComponent(result.email)}&message=${encodeURIComponent("Please log in to submit your review.")}`);
+        } else if (response.ok) { // Handles 201 Created (and potentially other 2xx)
+          toast.success(result.message || "Review submitted! Please check your email to verify.", { id: toastId });
+          setShowVerificationMessage(true);
+          setSubmittedEmail(email); // email is the param from handleModalSubmit
+          setIsModalOpen(false);
+          // Optionally, reset form or redirect
+          // router.push(`/courses/${course.id}?review_pending=true`);
+        } else {
+          // Handle other non-OK responses (like 400, 500)
+          console.error("Submission failed with status:", response.status, "Result:", result);
+          toast.error(result.error || result.message || "Failed to submit review. Please try again.", { id: toastId });
         }
-        const { pendingReviewId } = result;
-        if (!pendingReviewId) {
-          throw new Error('Backend did not return necessary verification data.');
-        }
-        console.log('Pending review saved, sending email...');
-        toast.loading("Sending verification email...", { id: toastId }); // Update toast
-
-        // 2. Save email locally
-        window.localStorage.setItem('emailForSignIn', email);
-
-        // 3. Send email (Client SDK) - REMOVED: Backend now sends email via Klaviyo
-        // if (!firebaseClientAuth) {
-        //   throw new Error('Firebase authentication is not available. Cannot send verification email.');
-        // }
-        // const frontendBaseUrl = process.env['NEXT_PUBLIC_BASE_URL'] || 'http://localhost:3000';
-        // const paramsForAction = new URLSearchParams({
-        //    reviewId: pendingReviewId,
-        //    courseId: course.id
-        // });
-        // const continueUrl = `${frontendBaseUrl}/auth/action?${paramsForAction.toString()}`;
-        // const actionCodeSettings = {
-        //     url: continueUrl,
-        //     handleCodeInApp: true,
-        // };
-        // console.log('[sendSignInLinkToEmail] Preparing to send email.');
-        // console.log('[sendSignInLinkToEmail] Email:', email);
-        // console.log('[sendSignInLinkToEmail] Action Code Settings:', JSON.stringify(actionCodeSettings, null, 2));
-        // await sendSignInLinkToEmail(firebaseClientAuth, email, actionCodeSettings);
-        
-        // 4. Success
-        setIsModalOpen(false);
-        toast.success(`Verification link sent to ${email}. Please check your inbox!`, { id: toastId, duration: 6000 });
-        setSubmittedEmail(email); // Store email to display in message
-        setShowVerificationMessage(true); // Set state to show the message
-
     } catch (error: any) {
         console.error('Error submitting pending review or sending email:', error);
         toast.error(error.message || 'Failed to save review or send email.', { id: toastId });
