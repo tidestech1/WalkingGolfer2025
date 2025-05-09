@@ -1,54 +1,76 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+// import { subscribeToNewsletter } from '@/lib/firebase/newsletterUtils'
+// import type { CreateNewsletterSubscription } from '@/types/newsletter'
+import { subscribeToKlaviyo } from './actions' // Import the server action
 
-import { subscribeToNewsletter } from '@/lib/firebase/newsletterUtils'
-import type { CreateNewsletterSubscription } from '@/types/newsletter'
+// Define a type for the server action result to provide better UI feedback
+interface SubmissionStatus {
+  success: boolean | null;
+  message: string | null;
+}
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
+  // const [loading, setLoading] = useState(false) // Replaced by useTransition
+  const [isPending, startTransition] = useTransition()
+  const [status, setStatus] = useState<SubmissionStatus>({ success: null, message: null })
+
   const [preferences, setPreferences] = useState({
     courseUpdates: true,
     newsArticles: true,
     tips: true,
-    offers: false
+    offers: false,
   })
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!email) {
- return 
-}
-
-    setLoading(true)
-
-    try {
-      const subscriptionData: CreateNewsletterSubscription = {
-        email,
-        preferences,
-        status: 'active'
-      }
-
-      const result = await subscribeToNewsletter(subscriptionData)
-      
-      if (result.success) {
-        console.log('Newsletter subscription successful for:', email)
-        setEmail('')
-        setPreferences({
-          courseUpdates: true,
-          newsArticles: true,
-          tips: true,
-          offers: false
-        })
-      } else {
-        console.error('Subscription error:', result.error || 'Failed to subscribe')
-      }
-    } catch (err) {
-      console.error('Subscription error:', err)
-    } finally {
-      setLoading(false)
+      setStatus({ success: false, message: 'Email address is required.' })
+      return
     }
+
+    // setLoading(true)
+    setStatus({ success: null, message: null }) // Reset status before new submission
+
+    startTransition(async () => {
+      try {
+        // const subscriptionData: CreateNewsletterSubscription = {
+        //   email,
+        //   preferences,
+        //   status: 'active'
+        // }
+
+        // const result = await subscribeToNewsletter(subscriptionData)
+        const result = await subscribeToKlaviyo(email, preferences)
+
+        if (result.success) {
+          console.log('Newsletter subscription successful for:', email, result.message)
+          setStatus({ success: true, message: result.message || 'Successfully subscribed!' })
+          setEmail('') // Reset email on success
+          // Reset preferences if needed, or keep them for next potential submission
+          // setPreferences({
+          //   courseUpdates: true,
+          //   newsArticles: true,
+          //   tips: true,
+          //   offers: false
+          // })
+        } else {
+          console.error('Subscription error:', result.message || 'Failed to subscribe')
+          setStatus({ success: false, message: result.message || 'Failed to subscribe. Please try again.' })
+        }
+      } catch (err) {
+        console.error('Subscription error:', err)
+        let errorMessage = 'An unexpected error occurred.'
+        if (err instanceof Error) {
+          errorMessage = err.message
+        }
+        setStatus({ success: false, message: `Subscription failed: ${errorMessage}` })
+      } finally {
+        // setLoading(false)
+      }
+    })
   }
 
   return (
@@ -78,10 +100,12 @@ export default function NewsletterForm() {
             <input
               type="checkbox"
               checked={preferences.courseUpdates}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                courseUpdates: e.target.checked
-              }))}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  courseUpdates: e.target.checked,
+                }))
+              }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-gray-700">Course Updates</span>
@@ -91,10 +115,12 @@ export default function NewsletterForm() {
             <input
               type="checkbox"
               checked={preferences.newsArticles}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                newsArticles: e.target.checked
-              }))}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  newsArticles: e.target.checked,
+                }))
+              }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-gray-700">News Articles</span>
@@ -104,10 +130,12 @@ export default function NewsletterForm() {
             <input
               type="checkbox"
               checked={preferences.tips}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                tips: e.target.checked
-              }))}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  tips: e.target.checked,
+                }))
+              }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-gray-700">Walking Golf Tips</span>
@@ -117,10 +145,12 @@ export default function NewsletterForm() {
             <input
               type="checkbox"
               checked={preferences.offers}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                offers: e.target.checked
-              }))}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  offers: e.target.checked,
+                }))
+              }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-gray-700">Partner Offers</span>
@@ -130,11 +160,21 @@ export default function NewsletterForm() {
 
       <button
         type="submit"
-        disabled={loading || !email}
+        disabled={isPending || !email}
         className="w-full bg-[#0A3357] text-white py-3 px-4 rounded-md hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {loading ? 'Subscribing...' : 'Subscribe to Newsletter'}
+        {isPending ? 'Subscribing...' : 'Subscribe to Newsletter'}
       </button>
+
+      {/* Display success or error messages */}
+      {status.message && (
+        <p
+          className={`text-sm text-center ${status.success ? 'text-green-600' : 'text-red-600'
+            }`}
+        >
+          {status.message}
+        </p>
+      )}
 
       <p className="text-sm text-gray-500 text-center">
         By subscribing, you agree to receive marketing emails from The Walking

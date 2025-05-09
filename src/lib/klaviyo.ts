@@ -1,10 +1,27 @@
 // Types for Klaviyo API
-interface KlaviyoProfile {
+export interface KlaviyoProfile {
   email: string;
   first_name?: string | undefined;
   last_name?: string | undefined;
   phone_number?: string | undefined;
   properties?: Record<string, any> | undefined;
+}
+
+interface KlaviyoSubscriptionInfo {
+  marketing: {
+    consent: "SUBSCRIBED" | "UNSUBSCRIBED" | "NEVER_SUBSCRIBED"; // Added more specific consent types
+    // consent_timestamp?: string; // Optional: Klaviyo can set this
+    // method?: string; // Optional: e.g., 'WEBSITE_FORM'
+    // method_detail?: string; // Optional
+  };
+}
+
+interface KlaviyoProfileAttributesForUpdate extends Omit<KlaviyoProfile, 'properties' | 'email'> {
+  email?: string; // Email is optional for updates but good to include if available
+  subscriptions?: {
+    email?: KlaviyoSubscriptionInfo;
+    // sms?: KlaviyoSubscriptionInfo; // If handling SMS in the future
+  };
 }
 
 interface KlaviyoEvent {
@@ -21,16 +38,32 @@ interface KlaviyoEvent {
 // Klaviyo API client class
 class KlaviyoClient {
   private readonly apiKey: string;
-  private readonly baseUrl = 'https://a.klaviyo.com/api/v2';
+  private readonly baseUrl = 'https://a.klaviyo.com/api';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
-  // Create or update a profile
-  async createProfile(profile: KlaviyoProfile): Promise<void> {
+  // Attempts to create a profile. If duplicate (409), it updates attributes/properties only.
+  // Returns the Klaviyo Profile ID on success (either created or existing).
+  // Subscription is handled by a separate call to subscribeProfileToMarketing.
+  async createOrUpdateProfileAttributes(profile: KlaviyoProfile): Promise<string | null> {
+    const initialPayload = { // For both POST (create) and PATCH (update attributes/props)
+      data: {
+        type: "profile",
+        attributes: {
+          email: profile.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone_number: profile.phone_number,
+        },
+        properties: profile.properties || {}
+      }
+    };
+
     try {
-      const response = await fetch(
+      // Attempt to CREATE profile first
+      const createResponse = await fetch(
         `${this.baseUrl}/profiles`,
         {
           method: 'POST',
@@ -39,16 +72,122 @@ class KlaviyoClient {
             'Content-Type': 'application/json',
             'revision': '2023-12-15'
           },
-          body: JSON.stringify(profile)
+          body: JSON.stringify(initialPayload)
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (createResponse.ok) {
+        const responseData = await createResponse.json();
+        console.log("Profile created successfully:", responseData.data.id);
+        return responseData.data.id; // Return the new profile ID
+      }
+
+      if (createResponse.status === 409) {
+        const errorBody = await createResponse.json();
+        console.warn('Klaviyo createProfile returned 409 (duplicate).', errorBody);
+        const duplicateProfileId = errorBody?.errors?.[0]?.meta?.duplicate_profile_id;
+
+        if (duplicateProfileId) {
+          console.log(`Duplicate profile ID: ${duplicateProfileId}. Attempting to PATCH attributes/properties.`);
+          // Profile exists, so PATCH its attributes and properties (excluding subscription here)
+          const patchPayload = {
+            data: {
+              type: "profile",
+              id: duplicateProfileId, // Important for PATCH
+              attributes: initialPayload.data.attributes, // Re-send attributes
+              properties: initialPayload.data.properties  // Re-send properties
+            }
+          };
+          const updateResponse = await fetch(
+            `${this.baseUrl}/profiles/${duplicateProfileId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+                'Content-Type': 'application/json',
+                'revision': '2023-12-15'
+              },
+              body: JSON.stringify(patchPayload)
+            }
+          );
+
+          if (updateResponse.ok) {
+            console.log(`Successfully PATCHED attributes/properties for profile ${duplicateProfileId}.`);
+            return duplicateProfileId; // Return existing profile ID
+          } else {
+            const patchErrorBody = await updateResponse.text();
+            console.error(`Klaviyo API Error Body (PATCH profile ${duplicateProfileId}):`, patchErrorBody);
+            throw new Error(`HTTP error! status: ${updateResponse.status} PATCHING profile ${duplicateProfileId}`);
+          }
+        } else {
+          console.error('Klaviyo API Error: 409 received but no duplicate_profile_id found.', errorBody);
+          throw new Error(`HTTP error! status: ${createResponse.status}, msg: No duplicate_profile_id`);
+        }
+      }
+
+      const errorText = await createResponse.text();
+      console.error('Klaviyo API Error Body (createProfile):', errorText);
+      throw new Error(`HTTP error! status: ${createResponse.status}`);
+
+    } catch (error) {
+      console.error('Error in createOrUpdateProfileAttributes:', error);
+      return null;
+    }
+  }
+
+  // Subscribes a profile to marketing.
+  async subscribeProfileToMarketing(profileId: string, email: string): Promise<boolean> {
+    const subscribePayload = {
+      data: {
+        type: "profile-subscription-bulk-create-job",
+        attributes: {
+          // list_id: "YOUR_PRIMARY_NEWSLETTER_LIST_ID", // Uncomment and set if you want to add to a specific list
+          profiles: {
+            data: [
+              {
+                type: "profile",
+                // For bulk jobs, identifying by attributes like email is common.
+                // The profileId is less relevant here as the job processes based on the attributes provided.
+                attributes: { 
+                  email: email,
+                  // We can also include the profileId as a custom property within the job if needed for reconciliation,
+                  // but primary identification for subscription job is often email/phone.
+                }
+              }
+            ]
+          }
+        }
+      }
+    };
+
+    try {
+      console.log(`Attempting to subscribe email: ${email} (Profile ID: ${profileId}) via profile-subscription-bulk-create-jobs endpoint.`);
+      const response = await fetch(
+        `${this.baseUrl}/profile-subscription-bulk-create-jobs/`, // Corrected endpoint
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'revision': '2023-12-15'
+          },
+          body: JSON.stringify(subscribePayload)
+        }
+      );
+
+      if (response.status === 202 || response.ok) { // 202 Accepted is common for job-based APIs
+        console.log(`Successfully submitted subscription request for profile ${profileId}. Status: ${response.status}`);
+        // If it's a job, it doesn't mean immediate subscription but that the job was accepted.
+        // For simplicity, we'll treat 200/201/202 as success for now.
+        return true;
+      } else {
+        const errorBody = await response.text();
+        console.error(`Klaviyo API Error Body (subscribeProfile ${profileId}):`, errorBody);
+        throw new Error(`HTTP error! status: ${response.status} subscribing profile ${profileId}`);
       }
     } catch (error) {
-      console.error('Error creating Klaviyo profile:', error);
-      throw error;
+      console.error(`Error subscribing Klaviyo profile ${profileId}:`, error);
+      return false;
     }
   }
 
