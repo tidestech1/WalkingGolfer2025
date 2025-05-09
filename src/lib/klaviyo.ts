@@ -48,7 +48,7 @@ class KlaviyoClient {
   // Returns the Klaviyo Profile ID on success (either created or existing).
   // Subscription is handled by a separate call to subscribeProfileToMarketing.
   async createOrUpdateProfileAttributes(profile: KlaviyoProfile): Promise<string | null> {
-    const initialPayload = { // For both POST (create) and PATCH (update attributes/props)
+    const payload = {
       data: {
         type: "profile",
         attributes: {
@@ -56,8 +56,8 @@ class KlaviyoClient {
           first_name: profile.first_name,
           last_name: profile.last_name,
           phone_number: profile.phone_number,
-        },
-        properties: profile.properties || {}
+          properties: profile.properties || {}
+        }
       }
     };
 
@@ -72,7 +72,7 @@ class KlaviyoClient {
             'Content-Type': 'application/json',
             'revision': '2023-12-15'
           },
-          body: JSON.stringify(initialPayload)
+          body: JSON.stringify(payload)
         }
       );
 
@@ -93,9 +93,8 @@ class KlaviyoClient {
           const patchPayload = {
             data: {
               type: "profile",
-              id: duplicateProfileId, // Important for PATCH
-              attributes: initialPayload.data.attributes, // Re-send attributes
-              properties: initialPayload.data.properties  // Re-send properties
+              id: duplicateProfileId,
+              attributes: payload.data.attributes
             }
           };
           const updateResponse = await fetch(
@@ -135,24 +134,75 @@ class KlaviyoClient {
     }
   }
 
-  // Subscribes a profile to marketing.
-  async subscribeProfileToMarketing(profileId: string, email: string): Promise<boolean> {
-    const subscribePayload = {
+  // Subscribes a profile to a specific list.
+  async subscribeProfileToList(profileId: string, listId: string): Promise<boolean> {
+    const payload = {
+      data: [
+        {
+          type: "profile",
+          id: profileId
+        }
+      ]
+    };
+
+    try {
+      console.log(`Attempting to add profile ID: ${profileId} to list ID: ${listId}.`);
+      // Note: The endpoint for adding profiles to a list is typically /api/lists/{LIST_ID}/relationships/profiles/
+      // The Klaviyo API has different ways to manage subscriptions (profile level, list level, bulk jobs).
+      // This targets adding/subscribing to a specific list.
+      const response = await fetch(
+        `${this.baseUrl}/lists/${listId}/relationships/profiles/`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'revision': '2023-12-15'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      // According to Klaviyo docs, a successful add to list returns 204 No Content
+      if (response.status === 204) {
+        console.log(`Successfully added profile ${profileId} to list ${listId}.`);
+        return true;
+      } else if (response.ok) {
+        // Handle other success statuses if Klaviyo API returns them (e.g., 200, 202 for jobs)
+        // For direct list add, 204 is most common.
+        console.log(`Profile ${profileId} processed for list ${listId} with status ${response.status}.`);
+        return true;
+      }
+      else {
+        const errorBody = await response.text();
+        console.error(`Klaviyo API Error Body (add profile ${profileId} to list ${listId}):`, errorBody);
+        throw new Error(`HTTP error! status: ${response.status} adding profile ${profileId} to list ${listId}`);
+      }
+    } catch (error) {
+      console.error(`Error adding profile ${profileId} to list ${listId}:`, error);
+      return false;
+    }
+  }
+
+  // Sets the general marketing consent for a profile.
+  async setProfileMarketingConsent(profileId: string, email: string): Promise<boolean> {
+    const payload = {
       data: {
-        type: "profile-subscription-bulk-create-job",
+        type: "profile-subscription-bulk-create-job", // Using the bulk job endpoint for general subscription
         attributes: {
-          // list_id: "YOUR_PRIMARY_NEWSLETTER_LIST_ID", // Uncomment and set if you want to add to a specific list
+          // No list_id here, for general subscription
           profiles: {
             data: [
               {
                 type: "profile",
-                // For bulk jobs, identifying by attributes like email is common.
-                // The profileId is less relevant here as the job processes based on the attributes provided.
-                attributes: { 
+                attributes: {
                   email: email,
-                  // We can also include the profileId as a custom property within the job if needed for reconciliation,
-                  // but primary identification for subscription job is often email/phone.
-                }
+                  // We could also pass profileId here if the API supports it as an identifier for the job
+                  // but email is a primary identifier for subscription jobs.
+                },
+                // Optionally, define subscription channels and consent status if needed
+                // e.g., meta: { patch_profile_attributes: { subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } } } }
+                // For now, relying on the endpoint to set default email marketing consent.
               }
             ]
           }
@@ -161,9 +211,9 @@ class KlaviyoClient {
     };
 
     try {
-      console.log(`Attempting to subscribe email: ${email} (Profile ID: ${profileId}) via profile-subscription-bulk-create-jobs endpoint.`);
+      console.log(`Attempting to set general marketing consent for email: ${email} (Profile ID: ${profileId}).`);
       const response = await fetch(
-        `${this.baseUrl}/profile-subscription-bulk-create-jobs/`, // Corrected endpoint
+        `${this.baseUrl}/profile-subscription-bulk-create-jobs/`,
         {
           method: 'POST',
           headers: {
@@ -171,22 +221,20 @@ class KlaviyoClient {
             'Content-Type': 'application/json',
             'revision': '2023-12-15'
           },
-          body: JSON.stringify(subscribePayload)
+          body: JSON.stringify(payload)
         }
       );
 
-      if (response.status === 202 || response.ok) { // 202 Accepted is common for job-based APIs
-        console.log(`Successfully submitted subscription request for profile ${profileId}. Status: ${response.status}`);
-        // If it's a job, it doesn't mean immediate subscription but that the job was accepted.
-        // For simplicity, we'll treat 200/201/202 as success for now.
+      if (response.status === 202 || response.ok) { // 202 Accepted for jobs
+        console.log(`Marketing consent job submitted for email ${email}. Status: ${response.status}`);
         return true;
       } else {
         const errorBody = await response.text();
-        console.error(`Klaviyo API Error Body (subscribeProfile ${profileId}):`, errorBody);
-        throw new Error(`HTTP error! status: ${response.status} subscribing profile ${profileId}`);
+        console.error(`Klaviyo API Error Body (setProfileMarketingConsent for ${email}):`, errorBody);
+        throw new Error(`HTTP error! status: ${response.status} setting marketing consent for ${email}`);
       }
     } catch (error) {
-      console.error(`Error subscribing Klaviyo profile ${profileId}:`, error);
+      console.error(`Error setting marketing consent for ${email}:`, error);
       return false;
     }
   }
@@ -273,7 +321,7 @@ export function createKlaviyoProfile(email: string, displayName?: string): Klavi
     first_name: firstName || undefined,
     last_name: lastName || undefined,
     properties: {
-      source: 'walkinggolfer.com'
+      signup_source: 'walkinggolfer.com'
     }
   };
 } 

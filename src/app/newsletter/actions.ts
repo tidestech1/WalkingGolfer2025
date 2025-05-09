@@ -42,23 +42,35 @@ export async function subscribeToKlaviyo(
       newsletter_consent: true, 
     }
 
+    console.log('Profile data being sent to KlaviyoClient:', JSON.stringify(profileData, null, 2)); // Added for debugging
+
     // Step 1: Create or update the profile's attributes and custom properties
     const profileId = await klaviyoClient.createOrUpdateProfileAttributes(profileData);
 
     if (profileId) {
-      // Step 2: Subscribe the profile to marketing communications
-      const subscribed = await klaviyoClient.subscribeProfileToMarketing(profileId, email);
+      // Step 2: Subscribe the profile to the specific newsletter list
+      const subscribedToList = await klaviyoClient.subscribeProfileToList(profileId, "VfjFup");
 
-      if (subscribed) {
-        // Step 3: Track the "Signed Up" event if both profile and subscription were successful
-        await klaviyoClient.trackEvent(KlaviyoEvents.SIGNED_UP, email, {
-          ...preferences,
-          klaviyo_profile_id: profileId,
-        });
-        return { success: true, message: 'Successfully subscribed to newsletter.' };
+      if (subscribedToList) {
+        // Step 3: Set general marketing consent for the profile
+        const consentSet = await klaviyoClient.setProfileMarketingConsent(profileId, email);
+
+        if (consentSet) {
+          // Step 4: Track 'Signed Up' event only if all previous steps were successful
+          await klaviyoClient.trackEvent(KlaviyoEvents.SIGNED_UP, email, {
+            ...preferences,
+            klaviyo_profile_id: profileId,
+          });
+          return { success: true, message: 'Successfully subscribed to newsletter.' };
+        } else {
+          console.error(`Failed to set marketing consent for profile ${profileId}.`);
+          // Profile created/updated & added to list, but general consent failed.
+          // Decide if this is a partial success or full failure for user feedback.
+          return { success: false, message: 'Subscription processed, but consent update failed.' };
+        }
       } else {
-        console.error(`Failed to subscribe profile ${profileId} to marketing.`);
-        return { success: false, message: 'Profile updated, but subscription to marketing failed.' };
+        console.error(`Failed to subscribe profile ${profileId} to list VfjFup.`);
+        return { success: false, message: 'Failed to subscribe to newsletter list.' };
       }
     } else {
       console.error('Klaviyo profile creation or attribute update failed.');
