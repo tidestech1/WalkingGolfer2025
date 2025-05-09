@@ -206,25 +206,25 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
       const afterLogin = searchParams.get('afterLogin');
       if (user && afterLogin === 'true') {
-        postLoginSubmitCalled.current = true; // Mark as called early
-
         const pendingDataJSON = sessionStorage.getItem('pendingReviewDataForLogin');
         const pendingCourseId = sessionStorage.getItem('pendingReviewCourseId');
 
         if (pendingDataJSON && pendingCourseId) {
+          // Mark as called BEFORE attempting to parse or submit
+          // And crucially, clear sessionStorage immediately after reading,
+          // so a rapid re-run of this effect won't find the data again.
+          postLoginSubmitCalled.current = true;
+          sessionStorage.removeItem('pendingReviewDataForLogin'); // Clear immediately
+          sessionStorage.removeItem('pendingReviewCourseId');   // Clear immediately
+
           if (course.id !== pendingCourseId) {
             toast.error("Review course ID mismatch. Please try submitting again.");
-            sessionStorage.removeItem('pendingReviewDataForLogin');
-            sessionStorage.removeItem('pendingReviewCourseId');
-            router.replace(`/courses/${course.id}/review`, { scroll: false }); // Clean URL
+            router.replace(`/courses/${course.id}/review`, { scroll: false });
             return;
           }
 
           try {
             const storedFullData = JSON.parse(pendingDataJSON);
-            
-            // Construct the payload for handleAuthenticatedSubmitInternal
-            // It should match AuthenticatedReviewSubmitData
             const dataForAuthSubmit: AuthenticatedReviewSubmitData = {
               courseId: storedFullData.courseId,
               walkabilityRating: storedFullData.walkabilityRating,
@@ -239,33 +239,27 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               pros: storedFullData.pros,
               cons: storedFullData.cons,
             };
-
-            // Photos are not collected in the unauthenticated flow that saves to sessionStorage
-            await handleAuthenticatedSubmitInternal(dataForAuthSubmit, []); 
-            
+            await handleAuthenticatedSubmitInternal(dataForAuthSubmit, []);
+            // Successful navigation is handled by handleAuthenticatedSubmitInternal
+            // No need to router.replace here if successful
           } catch (e) {
-            console.error("Error processing review data from sessionStorage:", e);
-            toast.error("Could not retrieve pending review data. Please try again.");
-          } finally {
-            sessionStorage.removeItem('pendingReviewDataForLogin');
-            sessionStorage.removeItem('pendingReviewCourseId');
-            // Clean the URL by removing ?afterLogin=true
-            router.replace(`/courses/${course.id}/review`, { scroll: false });
+            console.error("Error processing review data or submitting:", e);
+            toast.error("Could not process or submit pending review data. Please try again.");
+            // If submission fails, stay on page, URL still has ?afterLogin=true
+            // but sessionStorage is clear, so it won't try again automatically.
           }
-        } else {
-            // Clean the URL if data is missing but afterLogin is true
-             router.replace(`/courses/${course.id}/review`, { scroll: false });
+        } else if (afterLogin === 'true') {
+          // Data missing, but afterLogin is true. Clean up URL.
+          // This also handles the case where it runs again after successful submission + data clearing.
+           router.replace(`/courses/${course.id}/review`, { scroll: false });
         }
       }
     };
 
-    if (typeof window !== 'undefined') { // Ensure sessionStorage is available
+    if (typeof window !== 'undefined') {
         attemptPostLoginSubmission();
     }
-  // Dependencies: user, course.id, searchParams, router, authHook (indirectly via handleAuthenticatedSubmitInternal)
-  // searchParams from useSearchParams is stable. router from useRouter is stable.
-  // authHook is stable. user and course.id are primary triggers.
-  }, [user, course.id, searchParams, router, authHook]); // authHook added as handleAuthenticatedSubmitInternal uses it
+  }, [user, course.id, searchParams, router, authHook]); // Ref is not in deps
   // --- END: useEffect for Post-Login Submission ---
 
   // Handle walkability toggle
