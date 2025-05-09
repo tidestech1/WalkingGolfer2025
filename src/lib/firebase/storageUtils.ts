@@ -18,13 +18,14 @@ export async function uploadImage(
       throw new Error('Firebase storage is not initialized')
     }
     
-    // Create a unique filename
-    const timestamp = Date.now()
-    const fileName = file.name.replace(/[^a-zA-Z0-9.]/g, '-') // Remove special chars
-    const uniqueFileName = `${timestamp}-${fileName}`
+    // The path provided by reviewUtils already includes a unique filename.
+    // No need to generate another uniqueFileName here.
+    // const timestamp = Date.now()
+    // const fileName = file.name.replace(/[^a-zA-Z0-9.]/g, '-') // Remove special chars
+    // const uniqueFileName = `${timestamp}-${fileName}`
     
-    // Create a reference to the file location
-    const storageRef = ref(storage, `${path}/${uniqueFileName}`)
+    // Create a reference to the file location using the provided path directly.
+    const storageRef = ref(storage, path)
     
     // Upload the file
     const snapshot = await uploadBytes(storageRef, file)

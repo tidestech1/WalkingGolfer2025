@@ -202,23 +202,49 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   // --- START: useEffect for Post-Login Submission ---
   useEffect(() => {
     const attemptPostLoginSubmission = async () => {
-      if (postLoginSubmitCalled.current) return;
+      if (postLoginSubmitCalled.current) return; // Already attempted or in progress
 
       const afterLogin = searchParams.get('afterLogin');
-      if (user && afterLogin === 'true') {
+      // Ensure user is now logged in and the flag is present, and initial auth check is complete
+      if (user && !authHook.loading && afterLogin === 'true') {
         const pendingDataJSON = sessionStorage.getItem('pendingReviewDataForLogin');
         const pendingCourseId = sessionStorage.getItem('pendingReviewCourseId');
 
         if (pendingDataJSON && pendingCourseId) {
-          // Mark as called BEFORE attempting to parse or submit
-          // And crucially, clear sessionStorage immediately after reading,
-          // so a rapid re-run of this effect won't find the data again.
+          // Mark that we are attempting this submission.
           postLoginSubmitCalled.current = true;
-          sessionStorage.removeItem('pendingReviewDataForLogin'); // Clear immediately
-          sessionStorage.removeItem('pendingReviewCourseId');   // Clear immediately
 
+          // Immediately remove from session storage to prevent re-attempts on error/reload
+          sessionStorage.removeItem('pendingReviewDataForLogin');
+          sessionStorage.removeItem('pendingReviewCourseId');
+
+          // Since File objects cannot be stored in sessionStorage,
+          // any photos selected before login are not available.
+          // Clear any potentially stale photo state from before login and inform user.
+          if (photos.length > 0 || photoPreviews.length > 0) {
+            setPhotos([]);
+            setPhotoPreviews([]);
+            toast.info("Photos selected before login were not carried over. Please re-select them if desired.");
+          }
+
+          // Validate course context first
+          if (!course || !course.id) {
+            console.warn("Post-login submission: Course data not yet available or course ID missing.");
+            toast.error("Could not submit pending review: course information is missing. Please try again.");
+            postLoginSubmitCalled.current = false; // Allow retry when course data is available
+             // Clean up URL even if there's an early exit due to missing course data
+            if (router && searchParams.get('afterLogin')) { // Check router existence
+                // Attempt to clean up URL, but without course.id, redirect to a safe page or root
+                const newSearchParams = new URLSearchParams(searchParams.toString());
+                newSearchParams.delete('afterLogin');
+                router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+            }
+            return;
+          }
+          
           if (course.id !== pendingCourseId) {
-            toast.error("Review course ID mismatch. Please try submitting again.");
+            toast.error("Review course ID mismatch after login. Please submit your review on the correct course page.");
+            // Clean up URL, redirecting to the *current* (potentially mismatched) course's review page
             router.replace(`/courses/${course.id}/review`, { scroll: false });
             return;
           }
@@ -226,7 +252,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
           try {
             const storedFullData = JSON.parse(pendingDataJSON);
             const dataForAuthSubmit: AuthenticatedReviewSubmitData = {
-              courseId: storedFullData.courseId,
+              courseId: storedFullData.courseId || course.id,
               walkabilityRating: storedFullData.walkabilityRating,
               isWalkable: storedFullData.isWalkable,
               courseConditionRating: storedFullData.courseConditionRating,
@@ -235,31 +261,64 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               distanceRating: storedFullData.distanceRating,
               costRating: storedFullData.costRating,
               comment: storedFullData.comment,
-              walkingDate: storedFullData.walkingDate, // Assumes it's already ISO string or undefined
-              pros: storedFullData.pros,
-              cons: storedFullData.cons,
+              walkingDate: storedFullData.walkingDate,
+              pros: storedFullData.pros || [],
+              cons: storedFullData.cons || [],
             };
-            await handleAuthenticatedSubmitInternal(dataForAuthSubmit, []);
-            // Successful navigation is handled by handleAuthenticatedSubmitInternal
-            // No need to router.replace here if successful
+
+            await handleAuthenticatedSubmitInternal(dataForAuthSubmit, []); // Photos are intentionally empty
+            // Navigation on success is handled by handleAuthenticatedSubmitInternal
           } catch (e) {
-            console.error("Error processing review data or submitting:", e);
-            toast.error("Could not process or submit pending review data. Please try again.");
-            // If submission fails, stay on page, URL still has ?afterLogin=true
-            // but sessionStorage is clear, so it won't try again automatically.
+            console.error("Error processing or submitting pending review data after login:", e);
+            toast.error("Could not submit pending review data. Please check your inputs and try again.");
+            // Data is cleared from session storage, so user has to manually retry.
+            // URL cleanup happens in the finally block.
+          } finally {
+            // Always clean up the URL query parameter if it's still present.
+            // This ensures it's cleaned even if handleAuthenticatedSubmitInternal doesn't navigate (e.g. on error)
+            if (router && course && course.id && searchParams.get('afterLogin')) { // Check router & course.id again
+                 router.replace(`/courses/${course.id}/review`, { scroll: false });
+            } else if (router && searchParams.get('afterLogin')) {
+                // Fallback URL cleanup if course.id was somehow lost
+                const newSearchParams = new URLSearchParams(searchParams.toString());
+                newSearchParams.delete('afterLogin');
+                router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+            }
           }
         } else if (afterLogin === 'true') {
-          // Data missing, but afterLogin is true. Clean up URL.
-          // This also handles the case where it runs again after successful submission + data clearing.
-           router.replace(`/courses/${course.id}/review`, { scroll: false });
+          // If afterLogin is true but no data in session, it was already processed or cleared.
+          // Just clean up the URL.
+          if (router && course && course.id) {
+            router.replace(`/courses/${course.id}/review`, { scroll: false });
+          } else if (router) {
+            const newSearchParams = new URLSearchParams(searchParams.toString());
+            newSearchParams.delete('afterLogin');
+            router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+          }
         }
       }
     };
 
-    if (typeof window !== 'undefined') {
-        attemptPostLoginSubmission();
+    if (!authHook.loading) { // Only run logic once auth state is resolved
+        if (user && searchParams.get('afterLogin') === 'true') {
+            attemptPostLoginSubmission();
+        } else if (!user && searchParams.get('afterLogin') === 'true') {
+            // User is not logged in, but afterLogin is true (e.g., navigated back after login attempt failed or logged out)
+            // Clear the flag from URL and any stale session data
+            if (sessionStorage.getItem('pendingReviewDataForLogin')) {
+                sessionStorage.removeItem('pendingReviewDataForLogin');
+                sessionStorage.removeItem('pendingReviewCourseId');
+            }
+            if (router) { // Check router existence
+                const newSearchParams = new URLSearchParams(searchParams.toString());
+                newSearchParams.delete('afterLogin');
+                // Try to use window.location.pathname if course.id is not available for a full path
+                const currentPath = (course && course.id) ? `/courses/${course.id}/review` : window.location.pathname;
+                router.replace(`${currentPath}?${newSearchParams.toString()}`, { scroll: false });
+            }
+        }
     }
-  }, [user, course.id, searchParams, router, authHook]); // Ref is not in deps
+  }, [user, authHook, searchParams, course, router, photos, photoPreviews]); // Updated dependencies
   // --- END: useEffect for Post-Login Submission ---
 
   // Handle walkability toggle
@@ -757,7 +816,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
       </div>
 
       {/* Section 5: Photos & Media */}
-      {user && (
+      {user ? (
         <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Add Photos (Optional)</h3>
           <p className="text-sm text-gray-500">Share photos of the course conditions, views, or specific walking challenges (max 8 images).</p>
@@ -795,6 +854,21 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               </label>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Add Photos</h3>
+          <p className="text-sm text-gray-500">
+            To add photos to your review, please log in or create an account. Photos help other golfers see the course conditions and views!
+          </p>
+          {/* Optionally, add a button/link to the login page */}
+          {/* <button 
+            type="button" 
+            onClick={() => router.push('/login')} 
+            className="mt-2 text-sm text-blue-600 hover:underline"
+          >
+            Log in to add photos
+          </button> */}
         </div>
       )}
 
