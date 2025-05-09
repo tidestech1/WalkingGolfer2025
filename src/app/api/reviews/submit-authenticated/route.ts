@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
-import { getUserProfile } from '@/lib/firebase/userUtils';
+import { getUserProfileAdmin } from '@/lib/firebase/userUtils';
 import { GolfCourse } from '@/types/course';
 import { CourseRatingUpdateLog } from '@/types/log';
 import { CourseReview, ReviewStatus } from '@/types/review';
@@ -24,8 +24,8 @@ const authenticatedSubmitSchema = z.object({
   hillinessRating: z.number().min(1).max(5),
   distanceRating: z.number().min(1).max(5),
   costRating: z.number().min(1).max(5),
-  comment: z.string().min(10),
-  walkingDate: z.string().datetime(),
+  comment: z.string().optional(),
+  walkingDate: z.string().datetime().optional(),
   pros: z.array(z.string()),
   cons: z.array(z.string()),
   imageUrls: z.array(z.string().url()).optional(),
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const data: AuthenticatedSubmitData = validationResult.data;
 
     // 3. Fetch User Profile (Must exist for authenticated submission)
-    const userProfile = await getUserProfile(userId);
+    const userProfile = await getUserProfileAdmin(userId);
     if (!userProfile) {
       console.error(`Authenticated user ${userId} attempting to submit review, but profile not found.`);
       // This case should ideally not happen if profile creation is robust on sign-up/first verification
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       distanceRating: data.distanceRating,
       costRating: data.costRating,
       comment: data.comment || '',
-      walkingDate: new Date(data.walkingDate),
+      walkingDate: data.walkingDate ? new Date(data.walkingDate) : null,
       pros: data.pros,
       cons: data.cons,
       createdAt: FieldValue.serverTimestamp() as any,

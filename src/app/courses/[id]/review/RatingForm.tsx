@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, FormEvent, ChangeEvent, useEffect } from 'react'
+import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react'
 
 import { User } from 'firebase/auth' // Import User type
 import { getAuth, sendSignInLinkToEmail } from "firebase/auth"
 import { Star, Upload, PlusCircle, MinusCircle, X, MapPin } from 'lucide-react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from "sonner"; // Import toast
 import { z } from 'zod'
 
@@ -70,6 +70,7 @@ type RatingFormData = z.infer<typeof ratingFormSchema>;
 // Update component signature to use new props
 export default function RatingForm({ course, user }: RatingFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams() // Initialize useSearchParams
   const authHook = useAuth() // Rename to avoid conflict with firebaseClientAuth
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -78,6 +79,9 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState<string>(''); // Store email for the message
   // --- End state add ---
+
+  // Ref to prevent multiple submissions from useEffect
+  const postLoginSubmitCalled = useRef(false);
 
   // Walkability toggle state - default to true
   const [isWalkable, setIsWalkable] = useState<boolean>(true)
@@ -116,8 +120,153 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     // If user logs in/out, clear the verification message
     setShowVerificationMessage(false);
     setSubmittedEmail('');
+    // Reset the ref if user changes, to allow potential new post-login submissions
+    // if the user logs out and logs back in during the same session on this page.
+    postLoginSubmitCalled.current = false;
   }, [user]);
   // --- End useEffect ---
+
+  // --- START: Extracted Authenticated Submission Logic ---
+  interface AuthenticatedReviewSubmitData {
+    courseId: string;
+    walkabilityRating: number;
+    isWalkable: boolean;
+    courseConditionRating: number;
+    overallRating: number;
+    hillinessRating: number;
+    distanceRating: number;
+    costRating: number;
+    comment?: string | undefined; // Key optional, value can be string or undefined
+    walkingDate?: string | undefined; // Key optional, value can be string or undefined (ISO string)
+    pros: string[]; // Assuming pros/cons are always at least empty arrays from Zod
+    cons: string[];
+  }
+
+  const handleAuthenticatedSubmitInternal = async (
+    reviewData: AuthenticatedReviewSubmitData,
+    photosToUpload: File[]
+  ) => {
+    if (!user) {
+      toast.error("User not authenticated. Please log in.");
+      setIsSubmitting(false);
+      return;
+    }
+    setIsSubmitting(true);
+    const toastId = toast.loading("Submitting your review...");
+
+    try {
+      const finalReviewData = { ...reviewData, imageUrls: [] as string[] };
+
+      if (photosToUpload.length > 0) {
+        console.log(`Uploading ${photosToUpload.length} images...`);
+        toast.loading("Uploading images...", { id: toastId });
+        const uploadResult = await uploadReviewImages(course.id, user.uid, photosToUpload);
+        if (uploadResult.error) {
+          throw new Error(`Image upload failed: ${uploadResult.error}`);
+        }
+        finalReviewData.imageUrls = uploadResult.urls;
+        console.log('Image URLs:', uploadResult.urls);
+      }
+
+      const idToken = await authHook.getIdToken();
+      if (!idToken) {
+        throw new Error('Could not get authentication token.');
+      }
+
+      const response = await fetch('/api/reviews/submit-authenticated', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(finalReviewData),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! status: ${response.status}`);
+      }
+
+      console.log('Authenticated review submitted:', result);
+      toast.success("Review submitted successfully!", { id: toastId });
+      router.push(`/courses/${course.id}?review_success=true`);
+    } catch (error: any) {
+      console.error('Error submitting authenticated review:', error);
+      toast.error(error.message || 'Failed to submit review.', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  // --- END: Extracted Authenticated Submission Logic ---
+
+  // --- START: useEffect for Post-Login Submission ---
+  useEffect(() => {
+    const attemptPostLoginSubmission = async () => {
+      if (postLoginSubmitCalled.current) return;
+
+      const afterLogin = searchParams.get('afterLogin');
+      if (user && afterLogin === 'true') {
+        postLoginSubmitCalled.current = true; // Mark as called early
+
+        const pendingDataJSON = sessionStorage.getItem('pendingReviewDataForLogin');
+        const pendingCourseId = sessionStorage.getItem('pendingReviewCourseId');
+
+        if (pendingDataJSON && pendingCourseId) {
+          if (course.id !== pendingCourseId) {
+            toast.error("Review course ID mismatch. Please try submitting again.");
+            sessionStorage.removeItem('pendingReviewDataForLogin');
+            sessionStorage.removeItem('pendingReviewCourseId');
+            router.replace(`/courses/${course.id}/review`, { scroll: false }); // Clean URL
+            return;
+          }
+
+          try {
+            const storedFullData = JSON.parse(pendingDataJSON);
+            
+            // Construct the payload for handleAuthenticatedSubmitInternal
+            // It should match AuthenticatedReviewSubmitData
+            const dataForAuthSubmit: AuthenticatedReviewSubmitData = {
+              courseId: storedFullData.courseId,
+              walkabilityRating: storedFullData.walkabilityRating,
+              isWalkable: storedFullData.isWalkable,
+              courseConditionRating: storedFullData.courseConditionRating,
+              overallRating: storedFullData.overallRating,
+              hillinessRating: storedFullData.hillinessRating,
+              distanceRating: storedFullData.distanceRating,
+              costRating: storedFullData.costRating,
+              comment: storedFullData.comment,
+              walkingDate: storedFullData.walkingDate, // Assumes it's already ISO string or undefined
+              pros: storedFullData.pros,
+              cons: storedFullData.cons,
+            };
+
+            // Photos are not collected in the unauthenticated flow that saves to sessionStorage
+            await handleAuthenticatedSubmitInternal(dataForAuthSubmit, []); 
+            
+          } catch (e) {
+            console.error("Error processing review data from sessionStorage:", e);
+            toast.error("Could not retrieve pending review data. Please try again.");
+          } finally {
+            sessionStorage.removeItem('pendingReviewDataForLogin');
+            sessionStorage.removeItem('pendingReviewCourseId');
+            // Clean the URL by removing ?afterLogin=true
+            router.replace(`/courses/${course.id}/review`, { scroll: false });
+          }
+        } else {
+            // Clean the URL if data is missing but afterLogin is true
+             router.replace(`/courses/${course.id}/review`, { scroll: false });
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') { // Ensure sessionStorage is available
+        attemptPostLoginSubmission();
+    }
+  // Dependencies: user, course.id, searchParams, router, authHook (indirectly via handleAuthenticatedSubmitInternal)
+  // searchParams from useSearchParams is stable. router from useRouter is stable.
+  // authHook is stable. user and course.id are primary triggers.
+  }, [user, course.id, searchParams, router, authHook]); // authHook added as handleAuthenticatedSubmitInternal uses it
+  // --- END: useEffect for Post-Login Submission ---
 
   // Handle walkability toggle
   const handleWalkabilityChange = (walkable: boolean) => {
@@ -229,54 +378,8 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     // --- Conditional Submission Logic --- 
     if (user) {
       // === AUTHENTICATED USER ===
-      const finalReviewData = { ...coreReviewData, imageUrls: [] as string[] }; // Start with empty array
-      const toastId = toast.loading("Submitting your review..."); // Start loading toast
-
-      try {
-        // 1. Upload images if present
-        if (photos.length > 0) {
-          console.log(`Uploading ${photos.length} images...`);
-          const uploadResult = await uploadReviewImages(course.id, user.uid, photos);
-          if (uploadResult.error) {
-            throw new Error(`Image upload failed: ${uploadResult.error}`);
-          }
-          finalReviewData.imageUrls = uploadResult.urls;
-          console.log('Image URLs:', uploadResult.urls);
-          toast.loading("Uploading images...", { id: toastId }); // Update toast message during image upload
-        }
-
-        // 2. Get ID Token
-        const idToken = await authHook.getIdToken();
-        if (!idToken) {
-          throw new Error('Could not get authentication token.');
-        }
-
-        // 3. Submit review data (including imageUrls)
-        const response = await fetch('/api/reviews/submit-authenticated', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-          },
-          // Send final data including image URLs
-          body: JSON.stringify(finalReviewData), 
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || `HTTP error! status: ${response.status}`);
-        }
-
-        console.log('Authenticated review submitted:', result);
-        toast.success("Review submitted successfully!", { id: toastId }); // Success toast
-        router.push(`/courses/${course.id}?review_success=true`); 
-
-      } catch (error: any) {
-        console.error('Error submitting authenticated review:', error);
-        toast.error(error.message || 'Failed to submit review.', { id: toastId }); // Error toast
-      } finally {
-        setIsSubmitting(false);
-      }
+      // Call the extracted function
+      await handleAuthenticatedSubmitInternal(coreReviewData, photos);
     } else {
       // === UNAUTHENTICATED USER ===
       // Store the data and open the modal
@@ -331,7 +434,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
           setIsModalOpen(false); // Close the review submission modal
           // Redirect to login page with email, message, and returnUrl for post-login completion
-          router.push(`/login?email=${encodeURIComponent(result.email)}&message=${encodeURIComponent("Please log in to submit your review.")}&returnUrl=/review/complete/${course.id}`);
+          router.push(`/login?email=${encodeURIComponent(result.email)}&message=${encodeURIComponent("Please log in to submit your review.")}&returnUrl=/courses/${course.id}/review?afterLogin=true`);
         } else if (response.ok) { // Handles 201 Created (and potentially other 2xx)
           toast.success(result.message || "Review submitted! Please check your email to verify.", { id: toastId });
           setShowVerificationMessage(true);
