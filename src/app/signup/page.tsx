@@ -16,7 +16,8 @@ import { useAuth } from '@/lib/hooks/useAuth'
 export default function SignUpPage() {
   const router = useRouter()
   // user object from useAuth will reflect verified status after AuthContext updates
-  const { user, loading: authLoading, signInWithGoogle } = useAuth()
+  // const { user, loading: authLoading, signInWithGoogle } = useAuth()
+  const { user, loading: authLoading } = useAuth() // Remove signInWithGoogle
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -52,6 +53,7 @@ return;
     }
   }, [email, password, name, loading, authLoading]);
 
+  /*
   const handleGoogleSignUp = useCallback(async () => {
     if (loading || authLoading) {
 return;
@@ -61,13 +63,15 @@ return;
     setShowVerificationMessage(false);
 
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(); // This line would cause an error
     } catch (error: any) {
       setError(formatAuthError(error) || 'An error occurred during Google Sign-In.');
     } finally {
       setLoading(false);
     }
-  }, [loading, authLoading, signInWithGoogle]);
+  // }, [loading, authLoading, signInWithGoogle]); // Also comment out signInWithGoogle from dependencies
+}, [loading, authLoading]); // Adjusted dependencies
+*/
 
   if (showVerificationMessage) {
     return (
@@ -193,30 +197,6 @@ return;
           </Button>
         </div>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Button
-              variant="outline"
-              onClick={handleGoogleSignUp}
-              disabled={loading || authLoading}
-              className={`w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${
-                loading || authLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-              }`}
-            >
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="w-5 h-5 mr-2">{/* Google Icon */}</svg>}
-              Sign up with Google
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
