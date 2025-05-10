@@ -86,11 +86,16 @@ export default function CourseSearchPage() {
     const ratingFilter = Math.max(0, Math.min(5, minRating));
     const walkableFilter = walkableOnly;
 
+    const activeFacilityFilters = Object.entries(facilityFilters)
+      .filter(([, isActive]) => isActive)
+      .map(([key]) => key as FacilityFilterKey);
+
     const hasSearchTerm = query.trim().length >= 2;
     const hasRatingFilter = ratingFilter > 0;
     const hasWalkableFilter = walkableFilter;
+    const hasFacilityFilters = activeFacilityFilters.length > 0;
 
-    if (!hasSearchTerm && !hasRatingFilter && !hasWalkableFilter) {
+    if (!hasSearchTerm && !hasRatingFilter && !hasWalkableFilter && !hasFacilityFilters) {
         setResults([]);
         setIsLoading(false);
         setError('Please enter a search term or select a filter.');
@@ -112,6 +117,9 @@ export default function CourseSearchPage() {
     if (hasWalkableFilter) {
         params.append('isWalkable', 'true');
     }
+    activeFacilityFilters.forEach(filterKey => {
+        params.append(filterKey, 'true');
+    });
     
     const queryString = params.toString();
 
@@ -131,7 +139,7 @@ export default function CourseSearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, minRating, walkableOnly]);
+  }, [searchTerm, minRating, walkableOnly, facilityFilters]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -206,7 +214,7 @@ export default function CourseSearchPage() {
     <div className="container mx-auto p-4 md:p-8">
       <h1 className="text-3xl font-bold mb-4">Search Golf Courses</h1>
       <p className="text-lg text-muted-foreground mb-8 max-w-3xl">
-         Enter a course name, city, or state above, or use the filters to find walking-friendly courses. Click 'Search Courses' to begin.
+         Enter a course name, city, or state, or use the filters to find walking-friendly courses. Click 'Search Courses' to begin.
       </p>
       
       <div className="mb-8 p-4 border rounded-lg bg-card">
@@ -267,9 +275,6 @@ export default function CourseSearchPage() {
              <div className="border-t pt-4">
                 <Label className="text-sm font-medium mb-2 block">
                   Facilities
-                  <span className="text-xs text-red-600 font-normal ml-1">
-                    (NB: Filters below don't function yet!)
-                  </span>
                 </Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
                   {alwaysVisibleFacilities.map(key => (
