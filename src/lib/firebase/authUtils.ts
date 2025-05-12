@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
   type User
 } from 'firebase/auth';
 
@@ -104,4 +105,22 @@ export function formatAuthError(error: unknown): string {
   
   // Final fallback
   return 'An unknown error occurred';
+}
+
+interface ResetPasswordResult {
+  success: boolean;
+  error?: string;
+}
+
+export async function sendPasswordReset(email: string): Promise<ResetPasswordResult> {
+  try {
+    const db = getFirestoreDB(); // Assuming this gets your initialized Firestore instance
+    const auth = getAuth(db.app); // Get the auth instance from the same app
+    await sendPasswordResetEmail(auth, email);
+    console.log('Password reset email sent successfully to:', email);
+    return { success: true };
+  } catch (error) {
+    console.error('Password reset email error:', error);
+    return { success: false, error: formatAuthError(error) };
+  }
 }

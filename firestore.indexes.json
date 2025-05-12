@@ -1,59 +1,407 @@
 {
   "indexes": [
+    // --- Base Sorting Indexes (when no searchQuery) ---
+    // Rating filter ONLY, sort by rating
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "location_coordinates_latitude", "order": "ASCENDING" },
-        { "fieldPath": "location_coordinates_longitude", "order": "ASCENDING" }
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Rating + Walkable, sort by rating
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Rating + Facility X, sort by rating (10 indexes)
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_drivingRange", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "location_state", "order": "ASCENDING" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "facilities_golfCarts", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "walkingAllowed", "order": "ASCENDING" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "facilities_pushCarts", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "courseType", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "facilities_restaurant", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "facilities", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "facilities_proShop", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "priceRange.min", "order": "ASCENDING" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "facilities_puttingGreen", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_chippingGreen", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_practiceBunker", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_caddies", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_clubRental", "order": "ASCENDING" },
+        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // --- Base Sorting Indexes (Default sort by name, when no rating+search) ---
+    // Walkable ONLY, sort by name
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Facility X ONLY, sort by name (10 indexes)
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_drivingRange", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_golfCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_pushCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_restaurant", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_proShop", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_puttingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_chippingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_practiceBunker", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_caddies", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facilities_clubRental", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Walkable + Facility X, sort by name (10 indexes)
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_drivingRange", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_golfCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_pushCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_restaurant", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_proShop", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_puttingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_chippingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_practiceBunker", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_caddies", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "facilities_clubRental", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // --- Sorting Indexes (when searchQuery is present, sort by name) ---
+     // Search term ONLY, sort by name
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Search term + Walkable, sort by name
     {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "walkabilityRating_overall", "order": "DESCENDING" }
+        { "fieldPath": "course_isWalkable", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+    // Search term + Facility X, sort by name (10 indexes)
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_drivingRange", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_golfCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_pushCarts", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_restaurant", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_proShop", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_puttingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_chippingGreen", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_practiceBunker", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_caddies", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchableTerms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "facilities_clubRental", "order": "ASCENDING" },
+        { "fieldPath": "courseName", "order": "ASCENDING" }
       ]
     }
   ],
