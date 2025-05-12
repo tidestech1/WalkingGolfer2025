@@ -4,8 +4,8 @@ import { Metadata } from 'next'
 import ContactForm from './ContactForm'
 
 export const metadata: Metadata = {
-  title: 'Contact Us | The Walking Golfer',
-  description: 'Get in touch with The Walking Golfer team. We&apos;re here to help with any questions about walking golf in the USA.',
+  title: 'Contact Us | Walking Golfer',
+  description: 'Get in touch with the Walking Golfer team. We&apos;re here to help with any questions about walking golf in the USA.',
 }
 
 export default function ContactPage(): JSX.Element {

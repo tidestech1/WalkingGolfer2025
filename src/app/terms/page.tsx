@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | The Walking Golfer",
+  title: "Terms of Service | Walking Golfer",
   description:
-    "Read our Terms of Service to understand the rules and guidelines for using The Walking Golfer website and services.",
+    "Read our Terms of Service to understand the rules and guidelines for using the Walking Golfer website and services.",
 };
 
 export default function TermsPage() {

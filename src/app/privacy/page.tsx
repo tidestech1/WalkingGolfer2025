@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | The Walking Golfer',
-  description: 'Learn about how The Walking Golfer protects and handles your personal information.',
+  title: 'Privacy Policy | Walking Golfer',
+  description: 'Learn about how Walking Golfer protects and handles your personal information.',
 }
 
 export default function PrivacyPolicyPage() {

@@ -36,13 +36,71 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   if (!course) {
     return {
-      title: 'Course Not Found'
+      title: 'Course Not Found | The Walking Golfer',
+      description: 'The requested golf course could not be found. Please try another search or return to our course finder.',
     };
   }
 
+  const titleParts: string[] = [];
+  if (course.courseName) {
+    titleParts.push(course.courseName);
+  }
+  if (course.course_holes) {
+    titleParts.push(`(${course.course_holes} Holes)`);
+  }
+  if (course.club_name && course.club_name.toLowerCase() !== course.courseName.toLowerCase()) { // Avoid "Course Name - Course Name"
+    titleParts.push(`- ${course.club_name}`);
+  }
+  
+  const locationParts: string[] = [];
+  if (course.location_city) {
+    locationParts.push(course.location_city);
+  }
+  if (course.location_state) {
+    locationParts.push(course.location_state);
+  }
+  if (locationParts.length > 0) {
+    titleParts.push(`- ${locationParts.join(', ')}`);
+  }
+
+  let title = titleParts.join(' ') || 'Golf Course Details'; // Fallback if all parts are somehow empty
+
+  // Ensure the main site name is appended
+  if (!title.includes('| Walking Golfer')) {
+      title = `${title} | Walking Golfer`;
+  }
+
+
+  let description = `Learn about ${course.courseName}`;
+  if (course.club_name && course.club_name.toLowerCase() !== course.courseName.toLowerCase()) {
+    description += ` at ${course.club_name}`;
+  }
+  if (course.location_city && course.location_state) {
+    description += `, located in ${course.location_city}, ${course.location_state}. `;
+  } else if (course.location_city) {
+    description += `, located in ${course.location_city}. `;
+  } else if (course.location_state) {
+    description += `, located in ${course.location_state}. `;
+  } else {
+    description += `. `;
+  }
+  description += `Find walkability details, amenities, ${course.course_holes ? course.course_holes + ' holes, ' : ''}and read reviews for this course on Walking Golfer.`;
+  
+  if (course.course_description) {
+    description += ` Official description: ${course.course_description.substring(0, 150)}${course.course_description.length > 150 ? '...' : ''}`;
+  }
+
+
   return {
-    title: `${course.courseName} | The Walking Golfer`,
-    description: course.course_description || `View walkability details and reviews for ${course.courseName}, a golf course.`,
+    title: title,
+    description: description,
+    openGraph: { // Basic Open Graph data
+      title: title,
+      description: description,
+      images: course.imageUrl ? [{ url: course.imageUrl }] : [{ url: '/images/default-og-course.png' }], // Assuming a default OG image
+      url: `/courses/${id}`,
+      type: 'article', // Or 'place' if more appropriate, but 'article' is safe
+    }
   };
 }
 

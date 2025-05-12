@@ -1,0 +1,20 @@
+# Allow all crawlers access to the site
+User-agent: *
+Allow: /
+
+# Disallow crawling of API routes
+Disallow: /api/
+
+# Disallow crawling of admin section (if applicable)
+Disallow: /admin/
+
+# Disallow specific user-related pages if they shouldn't be indexed directly
+Disallow: /profile/
+Disallow: /login/
+Disallow: /signup/
+Disallow: /forgot-password/
+Disallow: /complete-profile/
+Disallow: /verify-email/
+
+# Point to the sitemap (UPDATE WITH YOUR ACTUAL DOMAIN)
+Sitemap: https://www.walkinggolfer.com/sitemap.xml 

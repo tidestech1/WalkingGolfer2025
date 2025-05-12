@@ -18,7 +18,7 @@ import NavbarWrapper from './components/NavbarWrapper'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'The Walking Golfer',
+  title: 'Walking Golfer',
   description: 'Find and review walkable golf courses',
   icons: {
     icon: [

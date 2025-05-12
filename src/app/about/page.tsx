@@ -3,8 +3,8 @@ import { Metadata } from 'next'
 import Image from 'next/image'
 
 export const metadata: Metadata = {
-  title: 'About Us | The Walking Golfer',
-  description: 'Learn about The Walking Golfer community and our mission to promote walking golf across the United States.',
+  title: 'About Us | Walking Golfer',
+  description: 'Learn about the Walking Golfer community and our mission to promote walking golf across the United States.',
 }
 
 export default function AboutPage(): JSX.Element {
