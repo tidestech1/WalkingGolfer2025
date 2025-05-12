@@ -176,70 +176,71 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
         <div className="absolute inset-0 bg-black bg-opacity-15 z-10"></div>
         
         {/* Content Overlay - Above dark overlay */}
-        <div className="absolute inset-0 z-20 p-4 md:p-6 text-white flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-          
-          {/* Combined Text Info Group (Top Left on desktop, Top on mobile) */}
-          <div className="space-y-3 max-w-md lg:max-w-lg bg-black/70 rounded-md p-3"> 
-            {/* Top Part: Course Name, Club Name, Location */}
-            <div>
-              {/* REMOVED Back to Course Finder Link */}
-              
-              {/* Updated h1 to include number of holes */}
-              <h1 className="text-3xl md:text-4xl font-bold">
-                {courseName} 
-                {course?.course_holes && (
-                  <span className="text-lg md:text-xl font-medium text-white/70 ml-2">
-                    ({course.course_holes} Holes)
-                  </span>
-                )}
-              </h1>
-              
-              {/* Display Club Name */}
-              <p className="text-lg md:text-xl text-white/90 mt-2">
-                {course?.club_name ? course.club_name : `${city}, ${state}`}
-              </p>
-            </div>
+        <div className="absolute inset-0 z-20 text-white">
+          <div className="container mx-auto px-4 h-full flex flex-col md:flex-row md:justify-between md:items-start gap-4 pt-4 md:pt-6">
+            {/* Combined Text Info Group (Top Left on desktop, Top on mobile) */}
+            <div className="space-y-3 max-w-md lg:max-w-lg bg-black/70 rounded-md p-3"> 
+              {/* Top Part: Course Name, Club Name, Location */}
+              <div>
+                {/* REMOVED Back to Course Finder Link */}
+                
+                {/* Updated h1 to include number of holes */}
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  {courseName} 
+                  {course?.course_holes && (
+                    <span className="text-lg md:text-xl font-medium text-white/70 ml-2">
+                      ({course.course_holes} Holes)
+                    </span>
+                  )}
+                </h1>
+                
+                {/* Display Club Name */}
+                <p className="text-lg md:text-xl text-white/90 mt-2">
+                  {course?.club_name ? course.club_name : `${city}, ${state}`}
+                </p>
+              </div>
 
-            {/* Contact Info (Moved into the text group) */}
-            <div className="space-y-2 text-sm pt-2 border-t border-white/20"> {/* Added border-top for separation */}
-                {(course?.location_address1 || city) && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
-                      <div className="text-white/90">
-                        {course?.location_address1 && <p>{course.location_address1}</p>}
-                        {course?.location_address2 && <p>{course.location_address2}</p>}
-                        <p>
-                          {city}{city && state ? ', ' : ''}{state} {course?.location_zip ?? ''}
-                        </p>
+              {/* Contact Info (Moved into the text group) */}
+              <div className="space-y-2 text-sm pt-2 border-t border-white/20"> {/* Added border-top for separation */}
+                  {(course?.location_address1 || city) && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
+                        <div className="text-white/90">
+                          {course?.location_address1 && <p>{course.location_address1}</p>}
+                          {course?.location_address2 && <p>{course.location_address2}</p>}
+                          <p>
+                            {city}{city && state ? ', ' : ''}{state} {course?.location_zip ?? ''}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                )}
-                {course?.contact_phone && (
-                    <div className="flex items-start gap-2">
-                      <Phone className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <a href={`tel:${course.contact_phone}`} className="text-white hover:underline">
-                          {course.contact_phone}
-                        </a>
+                  )}
+                  {course?.contact_phone && (
+                      <div className="flex items-start gap-2">
+                        <Phone className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <a href={`tel:${course.contact_phone}`} className="text-white hover:underline">
+                            {course.contact_phone}
+                          </a>
+                        </div>
                       </div>
-                    </div>
-                )}
-                {course?.contact_website && (
-                    <div className="flex items-start gap-2">
-                      <Globe className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <a href={course.contact_website} target="_blank" rel="noopener noreferrer" className="text-white hover:underline break-all">
-                          {(course.contact_website ?? '').replace(/^https?:\/\/(www\.)?/, '')}
-                        </a>
+                  )}
+                  {course?.contact_website && (
+                      <div className="flex items-start gap-2">
+                        <Globe className="h-4 w-4 text-white/80 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <a href={course.contact_website} target="_blank" rel="noopener noreferrer" className="text-white hover:underline break-all">
+                            {(course.contact_website ?? '').replace(/^https?:\/\/(www\.)?/, '')}
+                          </a>
+                        </div>
                       </div>
-                    </div>
-                )}
+                  )}
+              </div>
             </div>
-          </div>
-          
-          {/* Actions Group (Top Right on desktop, Hidden on mobile) */}
-          <div className="w-full md:w-auto flex-shrink-0 bg-black/40 rounded-md p-3 hidden md:block">
-            <CourseActions course={course} /> 
+            
+            {/* Actions Group (Top Right on desktop, Hidden on mobile) */}
+            <div className="w-full md:w-auto flex-shrink-0 bg-black/40 rounded-md p-3 hidden md:block">
+              <CourseActions course={course} /> 
+            </div>
           </div>
         </div>
       </div>
