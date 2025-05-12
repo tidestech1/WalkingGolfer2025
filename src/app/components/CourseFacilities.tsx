@@ -86,15 +86,15 @@ const CourseFacilities: React.FC<CourseFacilitiesProps> = ({ course }) => {
        
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Main</h3>
+          <h3 className="text-sm font-semibold text-gray-600 mb-1">Main</h3>
           {mainFacilities.map(f => <FacilityItem key={f.label} label={f.label} status={f.status} />)}
         </div>
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Practice Areas</h3>
+          <h3 className="text-sm font-semibold text-gray-600 mb-1">Practice Areas</h3>
           {practiceFacilities.map(f => <FacilityItem key={f.label} label={f.label} status={f.status} />)}
         </div>
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Rentals & Services</h3>
+          <h3 className="text-sm font-semibold text-gray-600 mb-1">Rentals & Services</h3>
           {rentalFacilities.map(f => <FacilityItem key={f.label} label={f.label} status={f.status} />)}
         </div>
       </div> 

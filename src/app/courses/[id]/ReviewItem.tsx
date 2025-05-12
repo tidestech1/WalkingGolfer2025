@@ -49,12 +49,12 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
 
   return (
     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-      <div className="flex items-start space-x-4 mb-4">
-        <Avatar>
+      <div className="flex items-start mb-4">
+        <Avatar className="hidden md:block">
           <AvatarImage src={review.userPhotoUrl ?? undefined} alt={displayName} />
           <AvatarFallback>{displayName.substring(0, 1).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div className="flex-1">
+        <div className="flex-1 ml-0 md:ml-4">
           <div className="flex justify-between items-center">
             <p className="font-semibold text-gray-800 text-sm">{displayName}</p>
             <p className="text-xs text-gray-500">Reviewed: {reviewDate}</p>
@@ -68,7 +68,10 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
 
       <p className="text-gray-700 text-sm mb-4 leading-relaxed">{review.comment}</p>
       
-      <Separator className="my-4" />
+      {/* Conditionally render Separator only if there are pros or cons */}
+      {(review.pros && review.pros.length > 0 || review.cons && review.cons.length > 0) && (
+        <Separator className="my-4" />
+      )}
 
       {/* Pros and Cons */}
       {(review.pros && review.pros.length > 0 || review.cons && review.cons.length > 0) && (
@@ -103,28 +106,26 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
       {/* Additional Details */}
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500 border-t pt-3 mt-3">
         <span>Walked on: {walkingDate}</span>
+        {/* Removed Walkability Rating and its separator */}
+
+        {/* Added Hilliness Rating */}
         <Separator orientation="vertical" className="h-4" />
-        <span>Walkability Rating: <Badge variant="secondary">{review.walkabilityRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+        <span>Hilliness/Terrain: <Badge variant="secondary">{review.hillinessRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+        
+        {/* Added Distance Rating */}
+        <Separator orientation="vertical" className="h-4" />
+        <span>Green to Tee Distance: <Badge variant="secondary">{review.distanceRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+
+        {/* Added Cost Rating */}
+        <Separator orientation="vertical" className="h-4" />
+        <span>Cost Opinion: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+
+        {/* Kept Course Condition */}
         {review.courseConditionRating && (
            <>
             <Separator orientation="vertical" className="h-4" />
             <span>Course Condition: <Badge variant="secondary">{review.courseConditionRating?.toFixed(1)}/5</Badge></span>
            </>
-        )}
-        {review.usedPushCart !== undefined && (
-           <>
-             <Separator orientation="vertical" className="h-4" />
-             <span>Push Cart Used: <Badge variant={review.usedPushCart ? "default" : "outline"}>{review.usedPushCart ? 'Yes' : 'No'}</Badge></span>
-           </>
-        )}
-         {review.usedGolfCart !== undefined && (
-           <>
-             <Separator orientation="vertical" className="h-4" />
-             <span>Golf Cart Used: <Badge variant={review.usedGolfCart ? "default" : "outline"}>{review.usedGolfCart ? 'Yes' : 'No'}</Badge></span>
-           </>
-        )}
-        {review.cartExperience && (
-          <p className="w-full text-xs text-gray-600 mt-2 italic">Cart Notes: {review.cartExperience}</p>
         )}
       </div>
     </div>

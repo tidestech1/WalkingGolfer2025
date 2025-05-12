@@ -24,7 +24,7 @@ export default function MiniHeader(): JSX.Element {
               <div className="relative h-10 w-40 sm:w-60">
                 <Image
                   src="/brand/WalkingGolfer-landscape-white.svg"
-                  alt="The Walking Golfer"
+                  alt="Walking Golfer"
                   fill
                   className="object-contain"
                   priority
@@ -62,7 +62,7 @@ export default function MiniHeader(): JSX.Element {
 
             {/* Rate Button (Visible all sizes in this section) */}
             <Link
-              href="/rate-course"
+              href="/add-review"
               className="bg-white rounded-md px-2 py-1 flex items-center gap-0.5 hover:bg-[#00FFFF] transition-colors"
             >
               <span className="font-medium text-[#0A3357] text-xs">RATE</span>

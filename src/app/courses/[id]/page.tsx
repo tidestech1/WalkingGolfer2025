@@ -24,10 +24,12 @@ import { IMAGES } from '@/lib/constants/images'
 import { getCourseById } from '@/lib/firebase/courseUtils'
 import { getPublishedReviewsForCourse } from '@/lib/firebase/reviewUtils'
 import type { GolfCourse } from '@/types/course'
+import type { CourseReview } from '@/types/review'
 
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
+import ReviewsDisplay from './ReviewsDisplay'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -146,7 +148,8 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
 
   // Serialize course data
   const course = serializeDates(courseResult) as GolfCourse;
-  const reviews = reviewsResult;
+  // Serialize reviews data
+  const reviews = (serializeDates(reviewsResult) as CourseReview[]) ?? [];
 
   const courseName = course?.courseName ?? 'Unknown Course';
   const city = course?.location_city ?? '';
@@ -271,17 +274,8 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
                 <CardTitle className="text-xl font-semibold text-gray-800">Reviews ({reviews.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                {reviews.length > 0 ? (
-                  <div className="space-y-6">
-                    {reviews.map((review) => (
-                      <ReviewItem key={review.id} review={review} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 italic">
-                    No reviews yet. Be the first to review this course!
-                  </p>
-                )}
+                {/* Pass serialized reviews to the client component */}
+                <ReviewsDisplay reviews={reviews} />
               </CardContent>
             </Card>
           </div>
@@ -293,22 +287,79 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
                 <CardTitle className="text-xl font-semibold text-gray-800">Course Detail</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm border-t pt-4">
+                <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block">Holes:</span>
+                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Holes:</span>
                     <span className="text-gray-800">{course?.course_holes ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block">Type:</span>
+                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Type:</span>
                     <span className="text-gray-800">{course?.course_type ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block">Designer:</span>
+                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Designer:</span>
                     <span className="text-gray-800">{course?.course_designer ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block">Established:</span>
+                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Established:</span>
                     <span className="text-gray-800">{course?.course_yearEstablished ?? 'N/A'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location & Contact Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-gray-800">Location & Contact</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4 text-sm">
+                  {course?.club_name && (
+                    <p className="text-lg font-medium text-gray-800">{course.club_name}</p>
+                  )}
+                  {(course?.location_address1 || city) && (
+                      <div className="flex items-start gap-3"> {/* Increased gap */} 
+                        <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-gray-700">
+                          {course?.location_address1 && <p>{course.location_address1}</p>}
+                          {course?.location_address2 && <p>{course.location_address2}</p>}
+                          <p>
+                            {city}{city && state ? ', ' : ''}{state} {course?.location_zip ?? ''}
+                          </p>
+                        </div>
+                      </div>
+                  )}
+                  {course?.contact_phone && (
+                      <div className="flex items-start gap-3"> {/* Increased gap */} 
+                        <Phone className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-gray-700">
+                          <a href={`tel:${course.contact_phone}`} className="hover:underline hover:text-blue-600">
+                            {course.contact_phone}
+                          </a>
+                        </div>
+                      </div>
+                  )}
+                  {course?.contact_website && (
+                      <div className="flex items-start gap-3"> {/* Increased gap */} 
+                        <Globe className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-gray-700">
+                          <a href={course.contact_website} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-600 break-all">
+                            {(course.contact_website ?? '').replace(/^https?:\/\/(www\.)?/, '')}
+                          </a>
+                        </div>
+                      </div>
+                  )}
+                  {/* Mini Map */}
+                  <div className="pt-2">
+                     <div className="h-40 w-full overflow-hidden rounded-md border"> 
+                        <CourseClientMap 
+                          coordinates={coordinates}
+                          name={courseName}
+                          zoom={14} // Increased zoom level
+                          maptype='roadmap' // Set map type to roadmap
+                        />
+                     </div>
                   </div>
                 </div>
               </CardContent>

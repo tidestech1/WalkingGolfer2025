@@ -8,9 +8,11 @@ type CourseClientMapProps = {
     lng: number;
   };
   name: string;
+  zoom?: number; // Optional zoom level
+  maptype?: 'roadmap' | 'satellite' | 'hybrid' | 'terrain'; // Optional map type
 }
 
-export default function CourseClientMap({ coordinates, name }: CourseClientMapProps): JSX.Element {
+export default function CourseClientMap({ coordinates, name, zoom = 10, maptype = 'hybrid' }: CourseClientMapProps): JSX.Element {
   // Ensure coordinates are valid numbers
   const validCoordinates = {
     lat: typeof coordinates?.lat === 'number' ? coordinates.lat : 39.8283,
@@ -31,8 +33,8 @@ export default function CourseClientMap({ coordinates, name }: CourseClientMapPr
     );
   }
   
-  // Create static map URL - Zoom 10, size 640x400, scale=2, maptype=hybrid
-  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${validCoordinates.lat},${validCoordinates.lng}&zoom=10&size=640x400&scale=2&maptype=hybrid&markers=color:red%7C${validCoordinates.lat},${validCoordinates.lng}&key=${mapApiKey}`;
+  // Create static map URL - Use dynamic zoom and maptype, size 640x400, scale=2
+  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${validCoordinates.lat},${validCoordinates.lng}&zoom=${zoom}&size=640x400&scale=2&maptype=${maptype}&markers=color:red%7C${validCoordinates.lat},${validCoordinates.lng}&key=${mapApiKey}`;
   
   // Create a Google Maps link for when users click on the image
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${validCoordinates.lat},${validCoordinates.lng}`;
