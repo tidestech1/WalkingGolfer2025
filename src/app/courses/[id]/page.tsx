@@ -126,10 +126,14 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
             <div>
               {/* REMOVED Back to Course Finder Link */}
               
-              {/* Updated h1 to include "Course" as a styled span */}
+              {/* Updated h1 to include number of holes */}
               <h1 className="text-3xl md:text-4xl font-bold">
                 {courseName} 
-                <span className="text-lg md:text-xl font-medium text-white/70 ml-2">Course</span>
+                {course?.course_holes && (
+                  <span className="text-lg md:text-xl font-medium text-white/70 ml-2">
+                    ({course.course_holes} Holes)
+                  </span>
+                )}
               </h1>
               
               {/* Display Club Name */}
