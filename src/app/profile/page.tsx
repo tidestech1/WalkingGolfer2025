@@ -14,9 +14,10 @@ import { getUserReviews, getUserProfile, updateUserProfile } from '@/lib/firebas
 import { useAuth } from '@/lib/hooks/useAuth'
 import type { CourseReview, DisplayNameType } from '@/types/review'
 import type { UserProfile } from '@/types/user'
+import type { GolfCourse } from '@/types/course';
+import { getCourseById } from '@/lib/firebase/courseUtils';
 
-
-import ReviewItem from '../courses/[id]/ReviewItem';
+import ProfileReviewCard from './ProfileReviewCard';
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -24,7 +25,8 @@ export default function ProfilePage() {
   const [reviews, setReviews] = useState<CourseReview[]>([])
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loadingData, setLoadingData] = useState(true)
-  
+  const [coursesDetails, setCoursesDetails] = useState<Record<string, GolfCourse>>({});
+
   const [displayNameType, setDisplayNameType] = useState<DisplayNameType | '' >('');
   const [isSaving, setIsSaving] = useState(false);
   const [initialDisplayNameType, setInitialDisplayNameType] = useState<DisplayNameType | '' >('');
@@ -46,8 +48,23 @@ export default function ProfilePage() {
       setDisplayNameType(currentType);
       setInitialDisplayNameType(currentType);
 
+      // Fetch course details for each review
+      if (userReviews.length > 0) {
+        const courseIds = Array.from(new Set(userReviews.map(r => r.courseId)));
+        const coursePromises = courseIds.map(id => getCourseById(id));
+        const fetchedCoursesArray = await Promise.all(coursePromises);
+        
+        const details: Record<string, GolfCourse> = {};
+        fetchedCoursesArray.forEach(course => {
+          if (course) {
+            details[course.id] = course;
+          }
+        });
+        setCoursesDetails(details);
+      }
+
     } catch (error) {
-      console.error('Error loading user data:', error)
+      console.error('Error loading user data or course details:', error)
       toast.error("Failed to load your profile data. Please refresh the page.");
     } finally {
       setLoadingData(false)
@@ -173,9 +190,14 @@ export default function ProfilePage() {
             </div>
           ) : reviews.length > 0 ? (
             <div className="space-y-6">
-              {reviews.map((review) => (
-                <ReviewItem key={review.id} review={review} />
-              ))}
+              {reviews.map((review) => {
+                const course = coursesDetails[review.courseId];
+                if (!course) {
+                  console.warn(`Course data for review ${review.id} (courseId: ${review.courseId}) not found.`);
+                  return null;
+                }
+                return <ProfileReviewCard key={review.id} review={review} course={course} />;
+              })}
             </div>
           ) : (
             <div className="text-center py-8">

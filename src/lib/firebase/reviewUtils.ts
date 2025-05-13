@@ -92,7 +92,7 @@ export async function getPublishedReviewsForCourse(courseId: string): Promise<Co
         ...data,
         createdAt: (data['createdAt'] as Timestamp)?.toDate ? (data['createdAt'] as Timestamp).toDate() : new Date(),
         updatedAt: (data['updatedAt'] as Timestamp)?.toDate ? (data['updatedAt'] as Timestamp).toDate() : new Date(),
-        walkingDate: (data['walkingDate'] as Timestamp)?.toDate ? (data['walkingDate'] as Timestamp).toDate() : new Date(), 
+        walkingDate: (data['walkingDate'] as Timestamp)?.toDate ? (data['walkingDate'] as Timestamp).toDate() : null, 
       } as CourseReview;
       reviews.push(review);
     });
