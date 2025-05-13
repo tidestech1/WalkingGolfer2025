@@ -118,7 +118,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
 
         {/* Added Cost Rating */}
         <Separator orientation="vertical" className="h-4" />
-        <span>Cost Opinion: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+        <span>Value: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
 
         {/* Kept Course Condition */}
         {review.courseConditionRating && (

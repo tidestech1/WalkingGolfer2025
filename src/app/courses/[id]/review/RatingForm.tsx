@@ -378,12 +378,16 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     const walkingDateElement = e.currentTarget.elements.namedItem('date-played') as HTMLInputElement;
 
     const rawFormData = {
-        walkabilityRating: calculateWeightedWalkabilityRating({ terrain: terrainRating, distance: distanceRating, cost: costRating }) ?? 0,
+        walkabilityRating: calculateWeightedWalkabilityRating({
+            terrain: terrainRating > 0 ? 6 - terrainRating : 0, // Invert terrain for calculation if rated
+            distance: distanceRating > 0 ? 6 - distanceRating : 0, // Invert distance for calculation if rated
+            cost: costRating
+        }) ?? 0,
         isWalkable: isWalkable,
         courseConditionRating: courseConditionRating,
         overallRating: overallRating,
-        hillinessRating: terrainRating,
-        distanceRating: distanceRating,
+        hillinessRating: terrainRating > 0 ? 6 - terrainRating : 0, // Invert for submission if rated, else 0
+        distanceRating: distanceRating > 0 ? 6 - distanceRating : 0, // Invert for submission if rated, else 0
         costRating: costRating,
         comment: commentElement?.value || undefined, // Use undefined for optional empty string
         walkingDate: walkingDateElement?.value || undefined, // Use undefined for optional empty string
@@ -755,7 +759,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Cost *
+              Course Value *
             </label>
             <CostRating
               rating={costRating}
@@ -764,20 +768,20 @@ export default function RatingForm({ course, user }: RatingFormProps) {
               setHovered={setHoveredCostRating}
               size="lg"
               descriptions={{
-                1: "Budget-friendly pricing",
-                2: "Moderate pricing",
-                3: "Standard pricing",
-                4: "Premium pricing",
-                5: "Ultra-premium pricing"
+                1: "Poor Value",
+                2: "Below Average Value",
+                3: "Average Value",
+                4: "Good Value",
+                5: "Excellent Value"
               }}
             />
             <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
               {(hoveredCostRating || costRating) > 0
                 ? (
-                    {1: "Budget-friendly pricing", 2: "Moderate pricing", 3: "Standard pricing", 4: "Premium pricing", 5: "Ultra-premium pricing"}
+                    {1: "Poor Value", 2: "Below Average Value", 3: "Average Value", 4: "Good Value", 5: "Excellent Value"}
                     [hoveredCostRating || costRating] || ''
                   )
-                : 'Larger $ icons mean higher pricing'
+                : 'Larger $ icons mean greater value'
               }
             </p>
             {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}

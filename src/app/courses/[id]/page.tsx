@@ -264,7 +264,7 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
               <CardContent className="space-y-6 pt-6">
                 <CourseRatings course={course} />
                 <Button asChild size="lg" className="bg-[#0A3357] hover:bg-[#0A3357]/90 text-white w-full md:w-auto">
-                  <Link href={`/courses/${id}/review`}>Write a Review</Link>
+                  <Link href={`/courses/${id}/review`}>Rate this course</Link>
                 </Button>
               </CardContent>
             </Card>

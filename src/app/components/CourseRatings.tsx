@@ -4,6 +4,7 @@ import React from 'react'
 
 import { getWalkabilityLabel } from '@/lib/utils/walkabilityRating'
 import { GolfCourse } from '@/types/course'
+import { Mountain, Footprints, CircleDollarSign, Goal } from 'lucide-react'
 
 interface CourseRatingsProps {
   course: GolfCourse;
@@ -31,46 +32,48 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
   const cost = course.walkabilityRating_cost || 0
   const condition = course.walkabilityRating_courseCondition || 0
 
-  // Helper function to get hilliness description (higher is better/flatter)
+  // Helper function to get hilliness description (rating 1=very hilly, 5=very flat)
   const getHillinessDescription = (rating: number): string => {
-    if (rating >= 4) {
-      return 'Mostly flat course'
-    }
-    if (rating >= 3) {
-      return 'Moderately hilly'
-    }
-    return 'Challenging hills'
+    // Data is now stored as 1=very hilly, 5=very flat.
+    // Descriptions should align directly with this stored value.
+    if (rating <= 1) return "Very hilly and challenging terrain" // Stored 1
+    if (rating <= 2) return "Hilly with significant elevation changes" // Stored 2
+    if (rating <= 3) return "Moderate hills and terrain" // Stored 3
+    if (rating <= 4) return "Gentle slopes, mostly flat" // Stored 4
+    if (rating > 4) return "Very flat and easy terrain" // Stored 5 (covers 5 and above)
+    return "Not rated" // Fallback for 0 or unexpected values
   }
 
-  // Helper function to get hole distance description (higher is better/more compact)
+  // Helper function to get hole distance description (rating 1=very spread out, 5=very compact)
   const getDistanceDescription = (rating: number): string => {
-    if (rating >= 4) {
-      return 'Compact layout'
-    }
-    if (rating >= 3) {
-      return 'Average distance between holes'
-    }
-    return 'Long walks between holes'
+    // Data is now stored as 1=very spread out, 5=very compact.
+    // Descriptions should align directly with this stored value.
+    if (rating <= 1) return "Very spread out" // Stored 1
+    if (rating <= 2) return "Spread out layout" // Stored 2
+    if (rating <= 3) return "Average distances" // Stored 3
+    if (rating <= 4) return "Relatively compact" // Stored 4
+    if (rating > 4) return "Very compact layout" // Stored 5 (covers 5 and above)
+    return "Not rated" // Fallback for 0 or unexpected values
   }
 
-  // Helper function to get cost description (higher is better/more affordable)
-  const getCostDescription = (rating: number): string => {
-    if (rating >= 4) {
-      return 'Very affordable'
-    }
-    if (rating >= 3) {
-      return 'Reasonably priced'
-    }
-    return 'Premium pricing'
+  // Helper function to get value description (rating 1=poor value, 5=excellent value)
+  const getValueDescription = (rating: number): string => {
+    if (rating <= 1) return "Poor Value"
+    if (rating <= 2) return "Below Average Value"
+    if (rating <= 3) return "Average Value"
+    if (rating <= 4) return "Good Value"
+    if (rating > 4) return "Excellent Value" // Covers 5 and above
+    return "Not rated" // Fallback
   }
 
-  // Helper function to get condition description
+  // Helper function to get condition description (rating 1=poor, 5=excellent)
   const getConditionDescription = (rating: number): string => {
-    if (rating >= 4.5) return 'Excellent condition'
-    if (rating >= 3.5) return 'Good condition'
-    if (rating >= 2.5) return 'Fair condition'
-    if (rating >= 1.5) return 'Poor condition'
-    return 'Condition not rated'
+    if (rating <= 1) return "Poor course quality"
+    if (rating <= 2) return "Below average course quality"
+    if (rating <= 3) return "Average course quality"
+    if (rating <= 4) return "Good course quality"
+    if (rating > 4) return "Excellent course quality" // Covers 5 and above
+    return "Condition not rated" // Fallback
   }
 
   return (
@@ -99,12 +102,16 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
         {/* Hilliness */}
         <div>
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-gray-700">Hilliness</span>
+            <span className="text-gray-700 flex items-center">
+              <Mountain className="w-4 h-4 mr-2 text-blue-600" />
+              Hilliness & Terrain
+            </span>
             <span className="font-medium">{formatRating(hilliness)}/5</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
               className="bg-blue-600 h-1.5 rounded-full" 
+              // Logic for hilliness: higher rating = fuller bar (text description clarifies meaning)
               style={{ width: `${(hilliness / 5) * 100}%` }}
             ></div>
           </div>
@@ -116,12 +123,16 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
         {/* Hole Distance */}
         <div>
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-gray-700">Hole Distance</span>
+            <span className="text-gray-700 flex items-center">
+              <Footprints className="w-4 h-4 mr-2 text-amber-800" />
+              Green to Tee Distance
+            </span>
             <span className="font-medium">{formatRating(holeDistance)}/5</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
               className="bg-blue-600 h-1.5 rounded-full" 
+              // Logic for distance: higher rating = fuller bar (text description clarifies meaning)
               style={{ width: `${(holeDistance / 5) * 100}%` }}
             ></div>
           </div>
@@ -133,30 +144,37 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
         {/* Cost */}
         <div>
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-gray-700">Cost</span>
+            <span className="text-gray-700 flex items-center">
+              <CircleDollarSign className="w-4 h-4 mr-2 text-emerald-600" />
+              Course Value
+            </span>
             <span className="font-medium">{formatRating(cost)}/5</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
               className="bg-blue-600 h-1.5 rounded-full" 
+              // Logic for value: higher rating = better value, so bar width increases with rating
               style={{ width: `${(cost / 5) * 100}%` }}
             ></div>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {getCostDescription(cost)}
+            {getValueDescription(cost)}
           </p>
         </div>
         
         {/* Course Condition - NEW */}
         <div>
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-gray-700">Course Condition</span>
+            <span className="text-gray-700 flex items-center">
+              <Goal className="w-4 h-4 mr-2 text-teal-600" />
+              Course Quality
+            </span>
             <span className="font-medium">{formatRating(condition)}/5</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
               className="bg-blue-600 h-1.5 rounded-full" 
-              // TODO: Consider a different color scale for condition (e.g., greens?)
+              // Logic for condition: higher rating = better condition, so bar width increases with rating
               style={{ width: `${(condition / 5) * 100}%` }}
             ></div>
           </div>
