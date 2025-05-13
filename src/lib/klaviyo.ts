@@ -310,7 +310,8 @@ export const KlaviyoEvents = {
   EMAIL_VERIFIED: 'Email Verified',
   REVIEW_SUBMITTED: 'Review Submitted',
   REVIEW_VERIFIED: 'Review Verified',
-  REVIEW_PUBLISHED: 'Review Published'
+  REVIEW_PUBLISHED: 'Review Published',
+  CONTACT_FORM_SUBMITTED: 'Contact Form Submitted'
 } as const;
 
 // Helper function to create a profile from user data

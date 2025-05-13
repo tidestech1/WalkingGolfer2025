@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { addDocument } from '@/lib/firebase/firebaseUtils'
 import type { ContactFormData } from '@/types/contact'
+import { trackContactSubmissionEvent } from './actions'
 
 export default function ContactForm(): JSX.Element {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -12,12 +13,26 @@ export default function ContactForm(): JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
+    const form = e.currentTarget
+
     setIsSubmitting(true)
     setSubmitError(null)
     setSubmitSuccess(false)
     
     try {
-      const formData = new FormData(e.currentTarget)
+      const formData = new FormData(form)
+
+      // Honeypot check
+      const honeypotValue = formData.get('website_url') as string;
+      if (honeypotValue) {
+        console.log('Honeypot field filled, likely spam. Silently ignoring.');
+        // Optionally, still set success to true to deceive basic bots
+        // setSubmitSuccess(true); 
+        // form.reset();
+        // setIsSubmitting(false); // Ensure submission state is reset
+        return; // Exit early
+      }
+
       const name = formData.get('name') as string
       const email = formData.get('email') as string
       const subject = formData.get('subject') as string
@@ -37,8 +52,30 @@ export default function ContactForm(): JSX.Element {
       }
 
       await addDocument('contacts', contactData)
+
+      // Track Klaviyo event using server action
+      try {
+        const klaviyoTrackResult = await trackContactSubmissionEvent({
+          email: contactData.email,
+          name: contactData.name,
+          subject: contactData.subject,
+          message: contactData.message,
+          submittedAt: contactData.createdAt
+        });
+
+        if (klaviyoTrackResult.success) {
+          console.log('Klaviyo event tracking initiated successfully via server action.');
+        } else {
+          console.error('Klaviyo event tracking failed via server action:', klaviyoTrackResult.message);
+          // Optionally, inform the user or set a specific error state if critical
+        }
+      } catch (klaviyoError) {
+        console.error('Error calling trackContactSubmissionEvent server action:', klaviyoError);
+        // Decide if you want to setSubmitError here or just log it
+      }
+
       setSubmitSuccess(true)
-      e.currentTarget.reset()
+      form.reset()
     } catch (error) {
       console.error('Error submitting contact form:', error)
       setSubmitError(error instanceof Error ? error.message : 'Failed to submit form. Please try again.')
@@ -63,6 +100,16 @@ export default function ContactForm(): JSX.Element {
           <p>{submitError}</p>
         </div>
       )}
+
+      <div style={{ position: 'absolute', left: '-5000px' }} aria-hidden="true">
+        <input 
+          type="text" 
+          id="website_url" 
+          name="website_url" 
+          tabIndex={-1} 
+          autoComplete="off" 
+        />
+      </div>
 
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">

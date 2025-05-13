@@ -19,6 +19,10 @@
   - `courses`
   - `reviews`
   - `users`
+  - `news`
+  - `contacts`
+  - `newsletters`
+  - `courseRatingUpdates`
 
 ## geographic_scope
 - App scope is USA-only
