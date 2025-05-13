@@ -41,8 +41,6 @@
   animation: loading-bar 2s ease-in-out infinite;
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -99,13 +97,17 @@
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .prose p {
+    @apply mb-4;
   }
 }
