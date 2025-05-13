@@ -34,6 +34,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
 
   // Helper function to get hilliness description (rating 1=very hilly, 5=very flat)
   const getHillinessDescription = (rating: number): string => {
+    if (rating === 0) return "Not yet rated";
     // Data is now stored as 1=very hilly, 5=very flat.
     // Descriptions should align directly with this stored value.
     if (rating <= 1) return "Very hilly and challenging terrain" // Stored 1
@@ -46,6 +47,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
 
   // Helper function to get hole distance description (rating 1=very spread out, 5=very compact)
   const getDistanceDescription = (rating: number): string => {
+    if (rating === 0) return "Not yet rated";
     // Data is now stored as 1=very spread out, 5=very compact.
     // Descriptions should align directly with this stored value.
     if (rating <= 1) return "Very spread out" // Stored 1
@@ -58,6 +60,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
 
   // Helper function to get value description (rating 1=poor value, 5=excellent value)
   const getValueDescription = (rating: number): string => {
+    if (rating === 0) return "Not yet rated";
     if (rating <= 1) return "Poor Value"
     if (rating <= 2) return "Below Average Value"
     if (rating <= 3) return "Average Value"
@@ -68,6 +71,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
 
   // Helper function to get condition description (rating 1=poor, 5=excellent)
   const getConditionDescription = (rating: number): string => {
+    if (rating === 0) return "Not yet rated";
     if (rating <= 1) return "Poor course quality"
     if (rating <= 2) return "Below average course quality"
     if (rating <= 3) return "Average course quality"
