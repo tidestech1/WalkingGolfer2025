@@ -74,18 +74,38 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Verify the Firebase ID token
     const decodedToken = await verifyAuthToken(idToken);
     if (!decodedToken) {
+      console.error('Admin verify: Invalid ID token received or verification failed.');
       return NextResponse.json({ error: 'Invalid ID token' }, { status: 401 });
     }
     
+    // Log the entire decoded token to inspect its contents, especially custom claims
+    console.log('Admin verify: Decoded ID token:', JSON.stringify(decodedToken, null, 2));
+
     // Check if the user is an admin
     // You can customize this check based on your admin criteria
     // This example uses email for simplicity, but in production you should
     // use custom claims or check against a database of admin users
     // Accessing potential index signature properties with bracket notation
 
-    // Check for custom claims safely using bracket notation
-    const customClaims = decodedToken['customClaims'] as { admin?: boolean } | undefined;
-    const hasAdminClaim = typeof customClaims?.admin === 'boolean' && customClaims.admin === true;
+    // Check for custom claims
+    // First, check for claims nested under a 'customClaims' object
+    const nestedCustomClaims = decodedToken['customClaims'] as { admin?: boolean } | undefined;
+    console.log('Admin verify: Extracted nestedCustomClaims:', JSON.stringify(nestedCustomClaims, null, 2));
+    let hasAdminClaim = typeof nestedCustomClaims?.admin === 'boolean' && nestedCustomClaims.admin === true;
+    console.log('Admin verify: hasAdminClaim (from nested check) evaluated to:', hasAdminClaim);
+
+    // If not found in nested, check for 'admin' claim at the root of the decodedToken,
+    // as observed in token structure from logs.
+    if (!hasAdminClaim) {
+      const adminClaimFromRoot = decodedToken['admin'];
+      console.log('Admin verify: adminClaimFromRoot:', JSON.stringify(adminClaimFromRoot, null, 2));
+      if (typeof adminClaimFromRoot === 'boolean' && adminClaimFromRoot === true) {
+        hasAdminClaim = true;
+        console.log('Admin verify: hasAdminClaim (from root check) now set to true');
+      }
+    }
+    // Log final status of admin claim check
+    console.log('Admin verify: Final hasAdminClaim evaluated to:', hasAdminClaim);
 
     const isAdmin = decodedToken.email === "neilrossstewart@gmail.com" ||
                    decodedToken.email?.endsWith('@admin.golfwalker.com') ||
