@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react'
 
 import { useRouter, usePathname } from 'next/navigation'
+import { toast } from 'sonner'
 
 import { useAnalytics } from '@/lib/hooks/useAnalytics'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -38,19 +39,23 @@ export default function CourseActions({ course, layout = 'vertical' }: CourseAct
     // Track bookmark attempt
     trackUserInteraction('bookmark_attempt', courseId)
     
-    if (!user) {
-      // Track redirect to login
-      trackUserInteraction('redirect_to_login', 'bookmark_flow')
-      // If not logged in, redirect to login
-      router.push('/login?returnUrl=' + encodeURIComponent(`/courses/${courseId}`))
-      return
-    }
+    // Display a toast notification informing the user the feature is coming soon
+    toast.info('Course bookmarking feature coming soon!');
+
+    // Temporarily commenting out the login redirect and actual bookmark logic
+    // if (!user) {
+    //   // Track redirect to login
+    //   trackUserInteraction('redirect_to_login', 'bookmark_flow')
+    //   // If not logged in, redirect to login
+    //   router.push('/login?returnUrl=' + encodeURIComponent(`/courses/${courseId}`))
+    //   return
+    // }
     
-    // Track successful bookmark click
-    trackCourseEvent('bookmark', courseId, courseName)
+    // // Track successful bookmark click (Do not track as success yet)
+    // trackCourseEvent('bookmark', courseId, courseName)
     
-    // TODO: Implement bookmark functionality
-    alert('Bookmark functionality coming soon!')
+    // // TODO: Implement bookmark functionality
+    // alert('Bookmark functionality coming soon!')
   }
   
   const handleReviewClick = (): void => {
