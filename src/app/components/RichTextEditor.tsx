@@ -89,6 +89,7 @@ export default function RichTextEditor({ initialValue, onChange }: RichTextEdito
     onUpdate: ({ editor: currentEditor }) => {
       onChange(currentEditor.getHTML())
     },
+    immediatelyRender: false,
   })
 
   useEffect(() => {

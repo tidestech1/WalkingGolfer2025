@@ -5,12 +5,12 @@ import { storage } from './firebase'
 /**
  * Upload an image to Firebase Storage
  * @param file The file to upload
- * @param path The path to store the file at (default: 'news')
+ * @param folderPath The folder path to store the file at (default: 'news')
  * @returns The download URL of the uploaded file
  */
 export async function uploadImage(
   file: File, 
-  path = 'news'
+  folderPath = 'news'
 ): Promise<string> {
   try {
     // Check if storage is available
@@ -18,14 +18,17 @@ export async function uploadImage(
       throw new Error('Firebase storage is not initialized')
     }
     
-    // The path provided by reviewUtils already includes a unique filename.
-    // No need to generate another uniqueFileName here.
-    // const timestamp = Date.now()
-    // const fileName = file.name.replace(/[^a-zA-Z0-9.]/g, '-') // Remove special chars
-    // const uniqueFileName = `${timestamp}-${fileName}`
+    // Sanitize and create a unique filename
+    const timestamp = Date.now();
+    // Replace characters not allowed by isValidPath and also common problematic ones like spaces
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9-_.]/g, '_').replace(/\s+/g, '_');
+    const uniqueFileName = `${timestamp}-${sanitizedFileName}`;
     
-    // Create a reference to the file location using the provided path directly.
-    const storageRef = ref(storage, path)
+    // Construct the full path including the folder and the unique filename
+    const fullStoragePath = `${folderPath}/${uniqueFileName}`;
+    
+    // Create a reference to the file location using the full path.
+    const storageRef = ref(storage, fullStoragePath)
     
     // Upload the file
     const snapshot = await uploadBytes(storageRef, file)

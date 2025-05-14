@@ -8,8 +8,10 @@ service firebase.storage {
     }
     
     function isAdmin() {
+      // Ensure user document and role field exist to prevent errors
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isValidImage() {
@@ -17,8 +19,9 @@ service firebase.storage {
              request.resource.size < 5 * 1024 * 1024; // 5MB max
     }
     
-    function isValidPath(path) {
-      return path.matches('^[a-zA-Z0-9-_.]+$');
+    function isValidPath(pathSegment) {
+      // Path segments should not contain slashes
+      return pathSegment.matches('^[a-zA-Z0-9-_.]+$') && !pathSegment.matches('.*/.*');
     }
 
     // News article images
@@ -41,11 +44,29 @@ service firebase.storage {
       allow write: if isAuthenticated() && 
                    request.auth.uid == userId && 
                    isValidImage() && 
-                   isValidPath(imageId);
+                   isValidPath(imageId); // userId is implicitly validated by request.auth.uid
       allow delete: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Default deny
+    // Review images
+    // Path: reviews/{courseId}/{userId}/{filename}
+    match /reviews/{courseId}/{userId}/{filename} {
+      allow read: if true; // Or restrict as needed, e.g., if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                   request.auth.uid == userId && 
+                   isValidImage() &&
+                   isValidPath(courseId) && // courseId should be a valid path segment
+                   isValidPath(userId);     // userId should also be a valid path segment (though matched by auth.uid)
+                   // filename itself is generated and can contain various characters, so not checking with isValidPath
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default deny: IMPORTANT - This should be the last rule in this block
+    // if it's intended to catch all unmatched paths.
+    // However, specific matches are usually preferred over a global {allPaths=**}
+    // if you want to ensure only defined paths are accessible.
+    // If your intention is to deny everything not explicitly allowed by the rules above,
+    // then this is correct.
     match /{allPaths=**} {
       allow read, write: if false;
     }
