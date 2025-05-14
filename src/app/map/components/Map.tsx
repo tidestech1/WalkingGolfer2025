@@ -63,7 +63,8 @@ const convertToMapBounds = (bounds: google.maps.LatLngBounds): MapBounds => {
 const MARKER_COLORS = {
   walkable: 'rgba(5, 150, 105, 0.85)',    // Darker green with transparency
   default: 'rgba(30, 64, 175, 0.85)',     // Darker blue (blue-800) with transparency
-  selectedBorder: '#FF9A00',             // Yellow for selected border (rating star yellow)
+  selectedBackground: '#DC2626',         // Red for selected background (e.g., Tailwind red-600)
+  selectedBorder: '#1A202C',             // Dark Gray for selected border (Gray 900 from brand guide)
   defaultBorder: 'rgba(0, 0, 0, 0.8)',   // Darker border for better contrast
   cluster: 'rgba(37, 99, 235, 0.95)'      // Cluster blue
 };
@@ -134,53 +135,68 @@ export default function Map({
   }, [isLoaded]);
 
   // Function to calculate marker scale based on zoom level and selection state
-  const getMarkerScale = useCallback((isSelected: boolean): number => {
+  const getMarkerScale = useCallback((isSelected: boolean, hasRating: boolean): number => {
     // Return default scale if map isn't ready yet
+    let baseScale: number;
     if (!mapRef.current) {
-      return isSelected ? 1.5 : 1.0; // Adjusted default selected scale
+      baseScale = isSelected ? 1.5 : 1.0; // Adjusted default selected scale
+    } else {
+      const currentZoom = mapRef.current.getZoom();
+      // Return default scale if zoom level isn't available
+      if (!currentZoom) {
+        baseScale = isSelected ? 1.5 : 1.0; // Adjusted default selected scale
+      } else if (currentZoom <= 8) {
+        baseScale = isSelected ? 1.2 : 0.7; // Slightly larger selected at far zoom
+      } else if (currentZoom <= 10) {
+        baseScale = isSelected ? 1.4 : 0.9; // Larger selected at medium zoom
+      } else {
+        // Larger scale when zoomed in or selected - Increased selected scale
+        baseScale = isSelected ? 1.5 : 1.0;
+      }
     }
-    const currentZoom = mapRef.current.getZoom();
-    // Return default scale if zoom level isn't available
-    if (!currentZoom) {
-      return isSelected ? 1.5 : 1.0; // Adjusted default selected scale
+    // Apply 20% increase for rated courses ONLY if they are NOT selected
+    if (hasRating && !isSelected) {
+      return baseScale * 1.2;
     }
-
-    // Adjust scale based on zoom ranges
-    if (currentZoom <= 8) {
-      return isSelected ? 1.2 : 0.7; // Slightly larger selected at far zoom
-    }
-    if (currentZoom <= 10) {
-      return isSelected ? 1.4 : 0.9; // Larger selected at medium zoom
-    }
-    // Larger scale when zoomed in or selected - Increased selected scale
-    return isSelected ? 1.5 : 1.0;
+    return baseScale; // Otherwise, use the base scale (selected or not rated)
   }, []);
 
   // Function to create marker icon for individual courses
   const createMarkerIcon = useCallback((course: GolfCourse, isSelected: boolean): google.maps.marker.PinElement => {
     // Directly use the boolean field from the course data
     const isCourseWalkable = course.course_isWalkable === true; // Check if explicitly true
+    const hasWalkabilityRating = typeof course.walkabilityRating_overall === 'number';
 
-    const scale = getMarkerScale(isSelected);
+    const scale = getMarkerScale(isSelected, hasWalkabilityRating);
     const pinGlyph = document.createElement("span");
     pinGlyph.className = 'material-symbols-outlined';
     pinGlyph.style.fontFamily = '\'Material Symbols Outlined\'';
-    pinGlyph.style.fontSize = '16px';
-    pinGlyph.style.color = '#FFFFFF';
-    // Use course_isWalkable to determine the icon
-    pinGlyph.textContent = isCourseWalkable ? 'directions_walk' : 'golf_course';
+    pinGlyph.style.fontSize = '16px'; // Adjust size as needed for the star icon
+
+    if (hasWalkabilityRating) {
+      pinGlyph.textContent = 'star';
+      if (isSelected) {
+        pinGlyph.style.color = '#FFFFFF'; // White star when selected (against red background)
+      } else {
+        pinGlyph.style.color = '#FBBF24'; // Yellow star when not selected
+      }
+      pinGlyph.style.fontVariationSettings = "'FILL' 1"; // Ensure star is filled
+    } else {
+      pinGlyph.textContent = isCourseWalkable ? 'directions_walk' : 'golf_course';
+      pinGlyph.style.color = '#FFFFFF'; // Default white icon (outline)
+      pinGlyph.style.fontVariationSettings = "'FILL' 0"; // Ensure other icons are outlined
+    }
 
     const pinElement = new google.maps.marker.PinElement({
-      // Use course_isWalkable to determine the background color
-      background: isCourseWalkable ? MARKER_COLORS.walkable : MARKER_COLORS.default,
+      background: isSelected ? MARKER_COLORS.selectedBackground : (isCourseWalkable ? MARKER_COLORS.walkable : MARKER_COLORS.default),
       borderColor: isSelected ? MARKER_COLORS.selectedBorder : MARKER_COLORS.defaultBorder,
-      glyphColor: '#FFFFFF',
+      // glyphColor is not needed here as pinGlyph.style.color is set directly
       scale: scale,
       glyph: pinGlyph
     });
 
     return pinElement;
-  }, [getMarkerScale]); // Removed isWalkable from dependencies
+  }, [getMarkerScale]); // Dependencies remain the same
 
   const updateVisibleMarkers = useCallback((): void => {
     console.log('[MapComponent LOG] updateVisibleMarkers called.');

@@ -8,10 +8,8 @@ service firebase.storage {
     }
     
     function isAdmin() {
-      // Ensure user document and role field exist to prevent errors
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Now checks the admin custom claim in the ID token
+      return isAuthenticated() && request.auth.token.admin == true;
     }
     
     function isValidImage() {

@@ -389,19 +389,30 @@ export default function MapPage(): JSX.Element {
           <div className="p-4 mt-4 border-t">
             <h4 className="font-semibold text-sm mb-2">Marker Key</h4>
             <div className="space-y-1.5">
+              {/* Rated Course */}
               <div className="flex items-center gap-2">
-                {/* Approximate green marker color */}
-                <div className="w-3 h-3 rounded-sm bg-emerald-600"></div> 
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#FBBF24', fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>star</span>
+                </div>
+                <span className="text-xs">Rated Course</span>
+              </div>
+              {/* Walkable Course */}
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}>
+                  <span className="material-symbols-outlined text-white" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 0" }}>directions_walk</span>
+                </div>
                 <span className="text-xs">Walkable Course</span>
               </div>
+              {/* Other Course */}
               <div className="flex items-center gap-2">
-                {/* Approximate blue marker color */}
-                <div className="w-3 h-3 rounded-sm bg-blue-800"></div> 
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(30, 64, 175, 0.85)' }}>
+                  <span className="material-symbols-outlined text-white" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 0" }}>golf_course</span>
+                </div>
                 <span className="text-xs">Other Course</span>
               </div>
+              {/* Selected Course */}
               <div className="flex items-center gap-2">
-                {/* Yellow border for selected */}
-                <div className="w-3 h-3 rounded-sm border-2 border-amber-500 bg-gray-200"></div>
+                <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#DC2626' }}></div>
                 <span className="text-xs">Selected Course</span>
               </div>
             </div>
