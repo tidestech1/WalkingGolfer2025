@@ -299,6 +299,28 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
                     <span className="text-gray-800">{course?.course_holes ?? 'N/A'}</span>
                   </div>
                   <div>
+                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Cost:</span>
+                    <span className="text-gray-800">
+                      {(() => {
+                        const twilightCost = course?.course_twilightCost;
+                        const weekendCost = course?.course_weekendCost;
+
+                        const isTwilightValid = typeof twilightCost === 'number' && !isNaN(twilightCost);
+                        const isWeekendValid = typeof weekendCost === 'number' && !isNaN(weekendCost);
+
+                        if (isTwilightValid && isWeekendValid) {
+                          return `$${twilightCost} - $${weekendCost}`;
+                        } else if (isTwilightValid) {
+                          return `$${twilightCost}`;
+                        } else if (isWeekendValid) {
+                          return `$${weekendCost}`;
+                        } else {
+                          return 'N/A';
+                        }
+                      })()}
+                    </span>
+                  </div>
+                  <div>
                     <span className="font-medium text-gray-500 w-20 inline-block mr-2">Type:</span>
                     <span className="text-gray-800">{course?.course_type ?? 'N/A'}</span>
                   </div>
