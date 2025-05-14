@@ -118,10 +118,10 @@ export default function AboutPage(): JSX.Element {
             </div>
             <div className="relative rounded-lg overflow-hidden h-[300px]">
               <Image
-                src="https://placehold.co/800x600/458332/FFFFFF?text=Image+Placeholder%0Ascreenshot+of+course+info+page"
-                alt="Golfer walking the course"
+                src="/images/about-page/course-info-page.png"
+                alt="Course Info Page"
                 fill
-                className="object-cover"
+                className="object-cover object-top"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>

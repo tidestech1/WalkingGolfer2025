@@ -288,6 +288,12 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
+                  {courseName && (
+                    <div>
+                      <span className="font-medium text-gray-500 w-20 inline-block mr-2">Name:</span>
+                      <span className="text-gray-800">{courseName}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="font-medium text-gray-500 w-20 inline-block mr-2">Holes:</span>
                     <span className="text-gray-800">{course?.course_holes ?? 'N/A'}</span>
