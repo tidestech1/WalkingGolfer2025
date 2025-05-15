@@ -91,9 +91,9 @@ export default function Home() {
                   strokeWidth={1.5}
                 />
               </div>
-              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Connect with Nature</h3>
+              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Walk the Course</h3>
               <p className="text-gray-600 text-lg">
-                Experience the course as it was meant to be enjoyed, at a natural pace.
+              Experience golf the way it was meant to be - one step at a time.
               </p>
             </div>
             <div className="text-center">
@@ -119,7 +119,7 @@ export default function Home() {
             Join Our Walking Golf Community
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto">
-            Discover walking-friendly courses, share your experiences, and connect with other walking golfers.
+            Discover walking-friendly courses, share your insights to help others, and support a growing community of golfers that celebrates walking the game.
           </p>
           <Link 
             href="/signup" 

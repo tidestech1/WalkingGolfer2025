@@ -104,27 +104,34 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
       )}
 
       {/* Additional Details */}
-      <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500 border-t pt-3 mt-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1 sm:gap-y-2 sm:gap-x-2 md:gap-x-3 text-xs text-gray-500 border-t pt-3 mt-3">
         <span>Walked on: {walkingDate}</span>
-        {/* Removed Walkability Rating and its separator */}
-
-        {/* Added Hilliness Rating */}
-        <Separator orientation="vertical" className="h-4" />
-        <span>Hilliness/Terrain: <Badge variant="secondary">{review.hillinessRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
         
-        {/* Added Distance Rating */}
-        <Separator orientation="vertical" className="h-4" />
-        <span>Green to Tee Distance: <Badge variant="secondary">{review.distanceRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+        {review.hillinessRating !== undefined && (
+          <>
+            <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
+            <span>Hilliness: <Badge variant="secondary">{review.hillinessRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+          </>
+        )}
+        
+        {review.distanceRating !== undefined && (
+          <>
+            <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
+            <span>Green to Tee: <Badge variant="secondary">{review.distanceRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+          </>
+        )}
 
-        {/* Added Cost Rating */}
-        <Separator orientation="vertical" className="h-4" />
-        <span>Value: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+        {review.costRating !== undefined && (
+          <>
+            <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
+            <span>Value: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>
+          </>
+        )}
 
-        {/* Kept Course Condition */}
-        {review.courseConditionRating && (
+        {review.courseConditionRating !== undefined && (
            <>
-            <Separator orientation="vertical" className="h-4" />
-            <span>Course Condition: <Badge variant="secondary">{review.courseConditionRating?.toFixed(1)}/5</Badge></span>
+            <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
+            <span>Condition: <Badge variant="secondary">{review.courseConditionRating?.toFixed(1)}/5</Badge></span>
            </>
         )}
       </div>
