@@ -34,7 +34,7 @@ export default function Navbar(): JSX.Element {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Logo - positioned absolutely to span both rows (desktop only) */}
         <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 hidden md:block">
-          <Link href="/" className="flex-shrink-0 flex items-center">
+          <Link href="/" className="flex-shrink-0 flex items-center select-none">
             <Image
               src="/brand/WalkingGolferLogo.svg"
               alt="The Walking Golfer"
@@ -50,7 +50,7 @@ export default function Navbar(): JSX.Element {
         <div className="md:hidden py-3">
           <div className="flex items-center justify-between">
             {/* Logo - increased size by ~15% */}
-            <Link href="/" className="flex-shrink-0">
+            <Link href="/" className="flex-shrink-0 select-none">
               <Image
                 src="/brand/WalkingGolferLogo.svg"
                 alt="The Walking Golfer"
