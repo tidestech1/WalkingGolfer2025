@@ -69,7 +69,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-10 sm:mb-16 text-[#0A3357]">
-            Why Choose Walking Golf?
+            Why walk when you golf?
           </h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
             <div className="text-center">
@@ -116,7 +116,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-[#0A3357]/5">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-[#0A3357]">
-            Join Our Walking Golf Community
+            Join Our Walking Golfers Community
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto">
             Discover walking-friendly courses, share your insights to help others, and support a growing community of golfers that celebrates walking the game.
