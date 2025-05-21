@@ -120,9 +120,13 @@ export function buildFilterSortConstraints(filters: CourseFilters): QueryConstra
   const sortDirection = filters.sortOrder || 'desc'; 
 
   // --- Add clauses for active boolean filters ---
-  if (filters.filter_isWalkable === true) {
-    constraints.push(where('course_isWalkable', '==', true));
+  // If "Include un-walkable courses" is UNCHECKED (default), then filter out un-walkable courses.
+  // This means we only want courses where course_isWalkable is true or null.
+  if (filters.filter_isWalkable === false) {
+    constraints.push(where('course_isWalkable', '!=', false));
   }
+  // If filters.filter_isWalkable is true (box is checked), we include all courses, so no constraint is added for walkability.
+  
   if (filters.filter_drivingRange === true) {
     constraints.push(where('facilities_drivingRange', '==', true));
   }

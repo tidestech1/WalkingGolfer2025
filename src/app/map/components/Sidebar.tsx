@@ -196,7 +196,7 @@ export default function Sidebar({
                     className="h-3.5 w-3.5"
                   />
               <label htmlFor="isWalkableFilter" className="text-xs font-medium">
-                Walkable Courses Only
+                Include un-walkable courses
                   </label>
             </div>
           </div>

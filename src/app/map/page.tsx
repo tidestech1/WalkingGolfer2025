@@ -433,24 +433,24 @@ export default function MapPage(): JSX.Element {
             <div className="space-y-1.5">
               {/* Rated Course */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}>
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}> {/* Green */}
                   <span className="material-symbols-outlined" style={{ color: '#FBBF24', fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>star</span>
                 </div>
-                <span className="text-xs">Rated Course</span>
+                <span className="text-xs">Rated Courses</span>
               </div>
-              {/* Walkable Course */}
+              {/* Golf Courses (Walkable/Unknown) */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}>
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}> {/* Green */}
                   <span className="material-symbols-outlined text-white" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 0" }}>directions_walk</span>
                 </div>
-                <span className="text-xs">Walkable Course</span>
+                <span className="text-xs">Golf Courses</span>
               </div>
-              {/* Other Course */}
+              {/* Unwalkable Course */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(30, 64, 175, 0.85)' }}>
-                  <span className="material-symbols-outlined text-white" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 0" }}>golf_course</span>
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(75, 85, 99, 0.85)' }}> {/* Dark Grey */}
+                  {/* No icon for unwalkable, so no span here, or an empty one if needed for alignment */}
                 </div>
-                <span className="text-xs">Other Course</span>
+                <span className="text-xs">Unwalkable Courses {filters.filter_isWalkable ? '(Shown)' : '(Hidden)'}</span>
               </div>
               {/* Selected Course */}
               <div className="flex items-center gap-2">

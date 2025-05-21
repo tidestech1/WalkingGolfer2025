@@ -243,7 +243,7 @@ export function FilterBottomSheet({
                         }}
                       />
                   <label htmlFor="filter_isWalkable_bottomsheet" className="text-sm font-medium">
-                    Walkable Courses Only
+                    Include un-walkable courses
                       </label>
               </div>
 

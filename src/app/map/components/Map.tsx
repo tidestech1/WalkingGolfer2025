@@ -63,6 +63,7 @@ const convertToMapBounds = (bounds: google.maps.LatLngBounds): MapBounds => {
 const MARKER_COLORS = {
   walkable: 'rgba(5, 150, 105, 0.85)',    // Darker green with transparency
   default: 'rgba(30, 64, 175, 0.85)',     // Darker blue (blue-800) with transparency
+  unwalkable: 'rgba(75, 85, 99, 0.85)', // Dark grey (Tailwind gray-500) with transparency
   selectedBackground: '#DC2626',         // Red for selected background (e.g., Tailwind red-600)
   selectedBorder: '#1A202C',             // Dark Gray for selected border (Gray 900 from brand guide)
   defaultBorder: 'rgba(0, 0, 0, 0.8)',   // Darker border for better contrast
@@ -163,36 +164,44 @@ export default function Map({
 
   // Function to create marker icon for individual courses
   const createMarkerIcon = useCallback((course: GolfCourse, isSelected: boolean): google.maps.marker.PinElement => {
-    // Directly use the boolean field from the course data
-    const isCourseWalkable = course.course_isWalkable === true; // Check if explicitly true
-    const hasWalkabilityRating = typeof course.walkabilityRating_overall === 'number';
+    const isActuallyWalkable = course.course_isWalkable === true;
+    const isUnknownWalkability = course.course_isWalkable === null || course.course_isWalkable === undefined;
+    const isExplicitlyUnwalkable = course.course_isWalkable === false;
+    const hasWalkabilityRating = typeof course.walkabilityRating_overall === 'number' && course.walkabilityRating_overall > 0;
 
     const scale = getMarkerScale(isSelected, hasWalkabilityRating);
     const pinGlyph = document.createElement("span");
     pinGlyph.className = 'material-symbols-outlined';
     pinGlyph.style.fontFamily = '\'Material Symbols Outlined\'';
-    pinGlyph.style.fontSize = '16px'; // Adjust size as needed for the star icon
+    pinGlyph.style.fontSize = '16px'; // Adjust size as needed
 
-    if (hasWalkabilityRating) {
-      pinGlyph.textContent = 'star';
-      if (isSelected) {
-        pinGlyph.style.color = '#FFFFFF'; // White star when selected (against red background)
-      } else {
-        pinGlyph.style.color = '#FBBF24'; // Yellow star when not selected
-      }
-      pinGlyph.style.fontVariationSettings = "'FILL' 1"; // Ensure star is filled
-    } else {
-      pinGlyph.textContent = isCourseWalkable ? 'directions_walk' : 'golf_course';
-      pinGlyph.style.color = '#FFFFFF'; // Default white icon (outline)
-      pinGlyph.style.fontVariationSettings = "'FILL' 0"; // Ensure other icons are outlined
+    let backgroundColor = MARKER_COLORS.default; // Fallback
+    let glyphContent: string | null = null;
+
+    if (isExplicitlyUnwalkable) {
+      backgroundColor = MARKER_COLORS.unwalkable;
+      glyphContent = null; // No icon for unwalkable courses
+    } else if (isActuallyWalkable || isUnknownWalkability) {
+      backgroundColor = MARKER_COLORS.walkable;
+      glyphContent = 'directions_walk'; // Walker icon for walkable or unknown
+      pinGlyph.style.color = '#FFFFFF';
+      pinGlyph.style.fontVariationSettings = "'FILL' 0";
     }
 
+    if (hasWalkabilityRating) {
+      backgroundColor = isActuallyWalkable || isUnknownWalkability ? MARKER_COLORS.walkable : MARKER_COLORS.unwalkable;
+      glyphContent = 'star';
+      pinGlyph.style.fontVariationSettings = "'FILL' 1"; // Ensure star is filled
+      pinGlyph.style.color = isSelected ? '#FFFFFF' : '#FBBF24'; // White star when selected, Yellow otherwise
+    }
+    
+    pinGlyph.textContent = glyphContent;
+
     const pinElement = new google.maps.marker.PinElement({
-      background: isSelected ? MARKER_COLORS.selectedBackground : (isCourseWalkable ? MARKER_COLORS.walkable : MARKER_COLORS.default),
+      background: isSelected ? MARKER_COLORS.selectedBackground : backgroundColor,
       borderColor: isSelected ? MARKER_COLORS.selectedBorder : MARKER_COLORS.defaultBorder,
-      // glyphColor is not needed here as pinGlyph.style.color is set directly
       scale: scale,
-      glyph: pinGlyph
+      glyph: glyphContent ? pinGlyph : null, // Pass glyph if content exists, else null
     });
 
     return pinElement;
