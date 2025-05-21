@@ -4,7 +4,7 @@ import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react'
 
 import { User } from 'firebase/auth' // Import User type
 import { getAuth, sendSignInLinkToEmail } from "firebase/auth"
-import { Star, Upload, PlusCircle, MinusCircle, X, MapPin } from 'lucide-react'
+import { Star, Upload, PlusCircle, MinusCircle, X, MapPin, HelpCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from "sonner"; // Import toast
@@ -23,6 +23,7 @@ import { GolfCourse } from '@/types/course'
 
 // Import the newly created modal
 import { ReviewSubmitModal } from './ReviewSubmitModal'; 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
 // Define ReviewSubmitModal props (placeholder - will be created later)
 // interface ReviewSubmitModalProps {
@@ -606,412 +607,491 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   }
   // --- End conditional rendering ---
 
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpDismissed, setHelpDismissed] = useState(false);
+
+  // Show help on first load unless dismissed
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem('walkgolf_help_dismissed');
+      if (!dismissed) setShowHelp(true);
+      setHelpDismissed(!!dismissed);
+    }
+  }, []);
+
+  const handleHelpClose = () => {
+    setShowHelp(false);
+    localStorage.setItem('walkgolf_help_dismissed', '1');
+    setHelpDismissed(true);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-8">
-      {/* --- Update Confirming Course Section Styling --- */}
-      {/* Use same container style as other sections for alignment */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-2"> 
-        <h2 className="text-xl font-semibold text-[#0A3357] mb-3">Confirming Course</h2>
-        <p className="text-gray-800 font-medium pt-1"> {/* Added small top padding */}
-            <span className="font-semibold">Course:</span> {course.courseName}
-            {course.course_holes ? ` (${course.course_holes} Holes)` : ''}
-        </p>
-        {course.club_name && (
-            <p className="text-gray-700 mt-1">
-                 <span className="font-semibold">Club:</span> {course.club_name}
-            </p>
-        )}
-        <p className="text-gray-600 mt-1 flex items-center">
-             <MapPin className="h-4 w-4 mr-1.5 text-gray-400 flex-shrink-0" aria-hidden="true" />
-             {course.location_address1 ? `${course.location_address1}, ` : ''}{course.location_city}, {course.location_state}
-        </p>
-      </div>
-      {/* --- End Confirming Course Section --- */}
-
-      {/* Section 2: Overall Walkability Experience */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
-        <h2 className="text-xl font-semibold text-[#0A3357]">Overall Walkability</h2>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Is this course walkable? *
-          </label>
-          <div className="flex gap-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="isWalkable"
-                value="yes"
-                checked={isWalkable === true}
-                onChange={() => handleWalkabilityChange(true)}
-                required
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-sm text-gray-700">Yes</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="isWalkable"
-                value="no"
-                checked={isWalkable === false}
-                onChange={() => handleWalkabilityChange(false)}
-                required
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-sm text-gray-700">No</span>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            How would you rate the overall walkability of this course? *
-          </label>
-          <StarRating
-            rating={isWalkable === false ? 1 : overallRating}
-            hovered={hoveredOverallRating}
-            setRating={setOverallRating}
-            setHovered={setHoveredOverallRating}
-            size="lg"
-            disabled={isWalkable === false}
-            descriptions={{
-              1: "Very difficult to walk",
-              2: "Challenging to walk",
-              3: "Moderately walkable",
-              4: "Good walkability",
-              5: "Excellent walkability"
-            }}
-          />
-          {formErrors['overallRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['overallRating']}</p>}
-        </div>
-      </div>
-
-      {/* Section 3: Detailed Walkability Metrics */}
-      <div className={`bg-white p-6 rounded-lg shadow-sm space-y-6 ${!isWalkable ? 'opacity-50 pointer-events-none' : ''}`}>
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-[#0A3357]">Detailed Walkability Ratings</h2>
-          <p className="text-sm text-gray-600">
-            Help other walking golfers by rating these key aspects of the course. Hover over each icon for more details.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Terrain & Hilliness *
-            </label>
-            <TerrainRating
-              rating={terrainRating}
-              hovered={hoveredTerrainRating}
-              setRating={setTerrainRating}
-              setHovered={setHoveredTerrainRating}
-              size="lg"
-              descriptions={{
-                1: "Very flat and easy terrain",
-                2: "Gentle slopes, mostly flat",
-                3: "Moderate hills and terrain",
-                4: "Hilly with significant elevation changes",
-                5: "Very hilly and challenging terrain"
-              }}
-            />
-            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
-              {(hoveredTerrainRating || terrainRating) > 0
-                ? (
-                    {1: "Very flat and easy terrain", 2: "Gentle slopes, mostly flat", 3: "Moderate hills and terrain", 4: "Hilly with significant elevation changes", 5: "Very hilly and challenging terrain"}
-                    [hoveredTerrainRating || terrainRating] || ''
-                  )
-                : 'Small mountains = flatter terrain'
-              }
-            </p>
-            {formErrors['hillinessRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['hillinessRating']}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Distance Between Holes *
-            </label>
-            <DistanceRating
-              rating={distanceRating}
-              hovered={hoveredDistanceRating}
-              setRating={setDistanceRating}
-              setHovered={setHoveredDistanceRating}
-              size="lg"
-              descriptions={{
-                1: "Very compact layout",
-                2: "Relatively compact",
-                3: "Average distances",
-                4: "Spread out layout",
-                5: "Very spread out"
-              }}
-            />
-            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
-              {(hoveredDistanceRating || distanceRating) > 0
-                ? (
-                    {1: "Very compact layout", 2: "Relatively compact", 3: "Average distances", 4: "Spread out layout", 5: "Very spread out"}
-                    [hoveredDistanceRating || distanceRating] || ''
-                  )
-                : 'Small footprints = short distance'
-              }
-            </p>
-            {formErrors['distanceRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['distanceRating']}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Value *
-            </label>
-            <CostRating
-              rating={costRating}
-              hovered={hoveredCostRating}
-              setRating={setCostRating}
-              setHovered={setHoveredCostRating}
-              size="lg"
-              descriptions={{
-                1: "Poor Value",
-                2: "Below Average Value",
-                3: "Average Value",
-                4: "Good Value",
-                5: "Excellent Value"
-              }}
-            />
-            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
-              {(hoveredCostRating || costRating) > 0
-                ? (
-                    {1: "Poor Value", 2: "Below Average Value", 3: "Average Value", 4: "Good Value", 5: "Excellent Value"}
-                    [hoveredCostRating || costRating] || ''
-                  )
-                : 'Larger $ icons mean greater value'
-              }
-            </p>
-            {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Quality *
-            </label>
-            <ConditionsRating
-              rating={courseConditionRating}
-              hovered={hoveredConditionRating}
-              setRating={setCourseConditionRating}
-              setHovered={setHoveredConditionRating}
-              size="lg"
-              descriptions={{
-                1: "Poor course quality",
-                2: "Below average course quality",
-                3: "Average course quality",
-                4: "Good course quality",
-                5: "Excellent course quality"
-              }}
-            />
-            <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
-              {(hoveredConditionRating || courseConditionRating) > 0
-                ? (
-                    {1: "Poor course quality", 2: "Below average course quality", 3: "Average course quality", 4: "Good course quality", 5: "Excellent course quality"}
-                    [hoveredConditionRating || courseConditionRating] || ''
-                  )
-                : 'Larger icons mean better maintained'
-              }
-            </p>
-            {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Section 5: Photos & Media */}
-      {user ? (
-        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Add Photos (Optional)</h3>
-          <p className="text-sm text-gray-500">Share photos of the course conditions, views, or specific walking challenges (max 8 images).</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {photoPreviews.map((previewUrl, index) => (
-              <div key={index} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group">
-                <Image
-                  src={previewUrl}
-                  alt={`Review photo preview ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-                <button 
-                  type="button"
-                  onClick={() => removePhoto(index)}
-                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Remove photo"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+    <>
+      {/* Help Modal and Trigger */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-lg w-full sm:rounded-lg p-6 sm:p-8 md:p-10 lg:p-12 max-h-[90vh] overflow-y-auto" style={{ maxWidth: '95vw' }}>
+          <DialogHeader>
+            <DialogTitle>How to Rate This Course</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-4 text-left text-gray-700">
+                <p><b>Your feedback helps other walking golfers! Here's how to fill out the form:</b></p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><b>Overall Walkability:</b> Is the course walkable? Rate how easy or challenging it is to walk the entire course.</li>
+                  <li><b>Detailed Walkability Ratings:</b>
+                    <ul className="list-disc pl-5">
+                      <li><b>Terrain & Hilliness:</b> How flat or hilly is the course?</li>
+                      <li><b>Distance Between Holes:</b> Are the holes close together or far apart?</li>
+                      <li><b>Course Value:</b> Was the course a good value for the price?</li>
+                      <li><b>Course Quality:</b> How well maintained was the course?</li>
+                    </ul>
+                  </li>
+                  <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
+                  <li><b>Pros & Cons:</b> List what you liked and any challenges you faced while walking the course.</li>
+                  <li><b>Additional Comments:</b> Share any extra details about your experience that might help other golfers.</li>
+                  <li><b>Date Played:</b> Let us know when you played for context.</li>
+                </ul>
+                <p><b>Tips:</b></p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Be honest and specific—your review helps others decide where to play!</li>
+                  <li>Only review courses you've walked yourself.</li>
+                  <li>If you're unsure about a rating, just leave it blank or choose your best estimate.</li>
+                </ul>
               </div>
-            ))}
-            
-            {photos.length < 8 && (
-              <label className="aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
-                <Upload className="w-8 h-8 text-gray-400 mb-1" />
-                <span className="text-xs text-gray-500 text-center">Upload Photos</span>
-                <input 
-                  type="file"
-                  multiple
-                  accept="image/jpeg, image/png, image/webp"
-                  className="sr-only"
-                  onChange={handlePhotoChange}
-                />
-              </label>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Add Photos</h3>
-          <p className="text-sm text-gray-500">
-            To add photos to your review, please log in or create an account. Photos help other golfers see the course conditions and views!
-          </p>
-          {/* Optionally, add a button/link to the login page */}
-          {/* <button 
-            type="button" 
-            onClick={() => router.push('/login')} 
-            className="mt-2 text-sm text-blue-600 hover:underline"
+            </DialogDescription>
+          </DialogHeader>
+          <button onClick={handleHelpClose} className="mt-6 w-full py-2 px-4 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sticky bottom-0">Got it!</button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Persistent Help Button (Desktop: top-right, Mobile: floating) */}
+      <div className="relative">
+        <div className="absolute right-0 top-0 z-20 hidden sm:block">
+          <button
+            type="button"
+            aria-label="How to Rate"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md shadow-sm border border-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Log in to add photos
-          </button> */}
+            <HelpCircle className="w-5 h-5" /> How to Rate
+          </button>
         </div>
-      )}
+        {/* Floating button for mobile */}
+        <button
+          type="button"
+          aria-label="How to Rate"
+          onClick={() => setShowHelp(true)}
+          className="fixed bottom-5 right-5 z-50 sm:hidden bg-blue-600 text-white rounded-full p-3 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <HelpCircle className="w-6 h-6" />
+        </button>
+        {/* Main form content below */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* --- Update Confirming Course Section Styling --- */}
+          {/* Use same container style as other sections for alignment */}
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-2"> 
+            <h2 className="text-xl font-semibold text-[#0A3357] mb-3">Confirming Course</h2>
+            <p className="text-gray-800 font-medium pt-1"> {/* Added small top padding */}
+                <span className="font-semibold">Course:</span> {course.courseName}
+                {course.course_holes ? ` (${course.course_holes} Holes)` : ''}
+            </p>
+            {course.club_name && (
+                <p className="text-gray-700 mt-1">
+                     <span className="font-semibold">Club:</span> {course.club_name}
+                </p>
+            )}
+            <p className="text-gray-600 mt-1 flex items-center">
+                 <MapPin className="h-4 w-4 mr-1.5 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                 {course.location_address1 ? `${course.location_address1}, ` : ''}{course.location_city}, {course.location_state}
+            </p>
+          </div>
+          {/* --- End Confirming Course Section --- */}
 
-      {/* Section 6: Pros & Cons */}
-      <div className={`bg-white p-6 rounded-lg shadow-sm space-y-6 ${!isWalkable ? 'opacity-50' : ''}`}>
-        <h2 className="text-xl font-semibold text-[#0A3357]">Pros & Cons</h2>
-        
-        {/* Pros */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            What did you like about walking this course?
-          </label>
-          {pros.map((pro, index) => (
-            <div key={index} className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={pro}
-                onChange={(e) => updatePro(index, e.target.value)}
-                disabled={!isWalkable}
-                placeholder="Enter a pro"
-                className="flex-1 p-2 border rounded-md"
-              />
-              {index === pros.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={addPro}
-                  disabled={!isWalkable}
-                  className="p-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                >
-                  <PlusCircle className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => removePro(index)}
-                  disabled={!isWalkable}
-                  className="p-2 text-red-600 hover:text-red-700 disabled:opacity-50"
-                >
-                  <MinusCircle className="w-5 h-5" />
-                </button>
-              )}
+          {/* Section 2: Overall Walkability Experience */}
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
+            <h2 className="text-xl font-semibold text-[#0A3357]">Overall Walkability</h2>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Is this course walkable? *
+              </label>
+              <div className="flex gap-4">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="isWalkable"
+                    value="yes"
+                    checked={isWalkable === true}
+                    onChange={() => handleWalkabilityChange(true)}
+                    required
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Yes</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="isWalkable"
+                    value="no"
+                    checked={isWalkable === false}
+                    onChange={() => handleWalkabilityChange(false)}
+                    required
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">No</span>
+                </label>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Cons */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            What were the challenges of walking this course?
-          </label>
-          {cons.map((con, index) => (
-            <div key={index} className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={con}
-                onChange={(e) => updateCon(index, e.target.value)}
-                disabled={!isWalkable}
-                placeholder="Enter a con"
-                className="flex-1 p-2 border rounded-md"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                How would you rate the overall walkability of this course? *
+              </label>
+              <StarRating
+                rating={isWalkable === false ? 1 : overallRating}
+                hovered={hoveredOverallRating}
+                setRating={setOverallRating}
+                setHovered={setHoveredOverallRating}
+                size="lg"
+                disabled={isWalkable === false}
+                descriptions={{
+                  1: "Very difficult to walk",
+                  2: "Challenging to walk",
+                  3: "Moderately walkable",
+                  4: "Good walkability",
+                  5: "Excellent walkability"
+                }}
               />
-              {index === cons.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={addCon}
-                  disabled={!isWalkable}
-                  className="p-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                >
-                  <PlusCircle className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => removeCon(index)}
-                  disabled={!isWalkable}
-                  className="p-2 text-red-600 hover:text-red-700 disabled:opacity-50"
-                >
-                  <MinusCircle className="w-5 h-5" />
-                </button>
-              )}
+              {formErrors['overallRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['overallRating']}</p>}
             </div>
-          ))}
-        </div>
+          </div>
+
+          {/* Section 3: Detailed Walkability Metrics */}
+          <div className={`bg-white p-6 rounded-lg shadow-sm space-y-6 ${!isWalkable ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-[#0A3357]">Detailed Walkability Ratings</h2>
+              <p className="text-sm text-gray-600">
+                Help other walking golfers by rating these key aspects of the course. Hover over each icon for more details.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Terrain & Hilliness *
+                </label>
+                <TerrainRating
+                  rating={terrainRating}
+                  hovered={hoveredTerrainRating}
+                  setRating={setTerrainRating}
+                  setHovered={setHoveredTerrainRating}
+                  size="lg"
+                  descriptions={{
+                    1: "Very flat and easy terrain",
+                    2: "Gentle slopes, mostly flat",
+                    3: "Moderate hills and terrain",
+                    4: "Hilly with significant elevation changes",
+                    5: "Very hilly and challenging terrain"
+                  }}
+                />
+                <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+                  {(hoveredTerrainRating || terrainRating) > 0
+                    ? (
+                        {1: "Very flat and easy terrain", 2: "Gentle slopes, mostly flat", 3: "Moderate hills and terrain", 4: "Hilly with significant elevation changes", 5: "Very hilly and challenging terrain"}
+                        [hoveredTerrainRating || terrainRating] || ''
+                      )
+                    : 'Small mountains = flatter terrain'
+                  }
+                </p>
+                {formErrors['hillinessRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['hillinessRating']}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Distance Between Holes *
+                </label>
+                <DistanceRating
+                  rating={distanceRating}
+                  hovered={hoveredDistanceRating}
+                  setRating={setDistanceRating}
+                  setHovered={setHoveredDistanceRating}
+                  size="lg"
+                  descriptions={{
+                    1: "Very compact layout",
+                    2: "Relatively compact",
+                    3: "Average distances",
+                    4: "Spread out layout",
+                    5: "Very spread out"
+                  }}
+                />
+                <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+                  {(hoveredDistanceRating || distanceRating) > 0
+                    ? (
+                        {1: "Very compact layout", 2: "Relatively compact", 3: "Average distances", 4: "Spread out layout", 5: "Very spread out"}
+                        [hoveredDistanceRating || distanceRating] || ''
+                      )
+                    : 'Small footprints = short distance'
+                  }
+                </p>
+                {formErrors['distanceRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['distanceRating']}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course Value *
+                </label>
+                <CostRating
+                  rating={costRating}
+                  hovered={hoveredCostRating}
+                  setRating={setCostRating}
+                  setHovered={setHoveredCostRating}
+                  size="lg"
+                  descriptions={{
+                    1: "Poor Value",
+                    2: "Below Average Value",
+                    3: "Average Value",
+                    4: "Good Value",
+                    5: "Excellent Value"
+                  }}
+                />
+                <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+                  {(hoveredCostRating || costRating) > 0
+                    ? (
+                        {1: "Poor Value", 2: "Below Average Value", 3: "Average Value", 4: "Good Value", 5: "Excellent Value"}
+                        [hoveredCostRating || costRating] || ''
+                      )
+                    : 'Larger $ icons mean greater value'
+                  }
+                </p>
+                {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course Quality *
+                </label>
+                <ConditionsRating
+                  rating={courseConditionRating}
+                  hovered={hoveredConditionRating}
+                  setRating={setCourseConditionRating}
+                  setHovered={setHoveredConditionRating}
+                  size="lg"
+                  descriptions={{
+                    1: "Poor course quality",
+                    2: "Below average course quality",
+                    3: "Average course quality",
+                    4: "Good course quality",
+                    5: "Excellent course quality"
+                  }}
+                />
+                <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+                  {(hoveredConditionRating || courseConditionRating) > 0
+                    ? (
+                        {1: "Poor course quality", 2: "Below average course quality", 3: "Average course quality", 4: "Good course quality", 5: "Excellent course quality"}
+                        [hoveredConditionRating || courseConditionRating] || ''
+                      )
+                    : 'Larger icons mean better maintained'
+                  }
+                </p>
+                {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Photos & Media */}
+          {user ? (
+            <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Photos (Optional)</h3>
+              <p className="text-sm text-gray-500">Share photos of the course conditions, views, or specific walking challenges (max 8 images).</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {photoPreviews.map((previewUrl, index) => (
+                  <div key={index} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group">
+                    <Image
+                      src={previewUrl}
+                      alt={`Review photo preview ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove photo"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                {photos.length < 8 && (
+                  <label className="aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors">
+                    <Upload className="w-8 h-8 text-gray-400 mb-1" />
+                    <span className="text-xs text-gray-500 text-center">Upload Photos</span>
+                    <input 
+                      type="file"
+                      multiple
+                      accept="image/jpeg, image/png, image/webp"
+                      className="sr-only"
+                      onChange={handlePhotoChange}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Photos</h3>
+              <p className="text-sm text-gray-500">
+                To add photos to your review, please log in or create an account. Photos help other golfers see the course conditions and views!
+              </p>
+              {/* Optionally, add a button/link to the login page */}
+              {/* <button 
+                type="button" 
+                onClick={() => router.push('/login')} 
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                Log in to add photos
+              </button> */}
+            </div>
+          )}
+
+          {/* Section 6: Pros & Cons */}
+          <div className={`bg-white p-6 rounded-lg shadow-sm space-y-6 ${!isWalkable ? 'opacity-50' : ''}`}>
+            <h2 className="text-xl font-semibold text-[#0A3357]">Pros & Cons</h2>
+            
+            {/* Pros */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                What did you like about walking this course?
+              </label>
+              {pros.map((pro, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={pro}
+                    onChange={(e) => updatePro(index, e.target.value)}
+                    disabled={!isWalkable}
+                    placeholder="Enter a pro"
+                    className="flex-1 p-2 border rounded-md"
+                  />
+                  {index === pros.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={addPro}
+                      disabled={!isWalkable}
+                      className="p-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                    >
+                      <PlusCircle className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removePro(index)}
+                      disabled={!isWalkable}
+                      className="p-2 text-red-600 hover:text-red-700 disabled:opacity-50"
+                    >
+                      <MinusCircle className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Cons */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                What were the challenges of walking this course?
+              </label>
+              {cons.map((con, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={con}
+                    onChange={(e) => updateCon(index, e.target.value)}
+                    disabled={!isWalkable}
+                    placeholder="Enter a con"
+                    className="flex-1 p-2 border rounded-md"
+                  />
+                  {index === cons.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={addCon}
+                      disabled={!isWalkable}
+                      className="p-2 text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                    >
+                      <PlusCircle className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removeCon(index)}
+                      disabled={!isWalkable}
+                      className="p-2 text-red-600 hover:text-red-700 disabled:opacity-50"
+                    >
+                      <MinusCircle className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 7: Additional Comments */}
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 className="text-xl font-semibold text-[#0A3357]">Additional Comments</h2>
+            
+            <div>
+              <label htmlFor="review" className="block text-sm font-medium text-gray-700">
+                Your Review
+              </label>
+              <textarea
+                id="review"
+                name="review"
+                rows={5}
+                className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${formErrors['comment'] ? 'border-red-500' : ''}`}
+                placeholder="Share your detailed experience walking this course. What would other walking golfers want to know?"
+              />
+              {formErrors['comment'] && <p className="text-xs text-red-500 mt-1">{formErrors['comment']}</p>}
+            </div>
+          </div>
+
+          {/* Date Played Input */}
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+             <label htmlFor="date-played" className="block text-sm font-medium text-gray-700 mb-1">
+                Date Played
+             </label>
+             <input
+                type="date"
+                id="date-played"
+                name="date-played"
+                max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formErrors['walkingDate'] ? 'border-red-500' : ''}`}
+             />
+             {formErrors['walkingDate'] && <p className="text-xs text-red-500 mt-1">{formErrors['walkingDate']}</p>}
+          </div>
+
+          {/* Submission Button and Error Message */}
+          <button 
+            type="submit" 
+            disabled={isSubmitting || !isWalkable} // Disable if submitting or marked not walkable
+            className="w-full py-3 px-4 bg-[#1A73E8] text-white rounded-md font-semibold hover:bg-[#1765C7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1A73E8] disabled:opacity-50"
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Review'}
+          </button>
+
+          {/* Use the imported ReviewSubmitModal */}
+          {isModalOpen && pendingReviewData && (
+              <ReviewSubmitModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                  setIsModalOpen(false);
+                  setPendingReviewData(null); // Clear data if modal is closed
+                }}
+                onSubmit={handleModalSubmit}
+                reviewData={pendingReviewData}
+              />
+            )}
+        </form>
       </div>
-
-      {/* Section 7: Additional Comments */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-        <h2 className="text-xl font-semibold text-[#0A3357]">Additional Comments</h2>
-        
-        <div>
-          <label htmlFor="review" className="block text-sm font-medium text-gray-700">
-            Your Review
-          </label>
-          <textarea
-            id="review"
-            name="review"
-            rows={5}
-            className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${formErrors['comment'] ? 'border-red-500' : ''}`}
-            placeholder="Share your detailed experience walking this course. What would other walking golfers want to know?"
-          />
-          {formErrors['comment'] && <p className="text-xs text-red-500 mt-1">{formErrors['comment']}</p>}
-        </div>
-      </div>
-
-      {/* Date Played Input */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-         <label htmlFor="date-played" className="block text-sm font-medium text-gray-700 mb-1">
-            Date Played
-         </label>
-         <input
-            type="date"
-            id="date-played"
-            name="date-played"
-            max={new Date().toISOString().split('T')[0]} // Prevent future dates
-            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formErrors['walkingDate'] ? 'border-red-500' : ''}`}
-         />
-         {formErrors['walkingDate'] && <p className="text-xs text-red-500 mt-1">{formErrors['walkingDate']}</p>}
-      </div>
-
-      {/* Submission Button and Error Message */}
-      <button 
-        type="submit" 
-        disabled={isSubmitting || !isWalkable} // Disable if submitting or marked not walkable
-        className="w-full py-3 px-4 bg-[#1A73E8] text-white rounded-md font-semibold hover:bg-[#1765C7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1A73E8] disabled:opacity-50"
-      >
-        {isSubmitting ? 'Submitting...' : 'Submit Review'}
-      </button>
-
-      {/* Use the imported ReviewSubmitModal */}
-      {isModalOpen && pendingReviewData && (
-          <ReviewSubmitModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setPendingReviewData(null); // Clear data if modal is closed
-            }}
-            onSubmit={handleModalSubmit}
-            reviewData={pendingReviewData}
-          />
-        )}
-    </form>
+    </>
   )
 } 
