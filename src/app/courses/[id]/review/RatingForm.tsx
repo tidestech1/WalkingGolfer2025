@@ -629,37 +629,58 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     <>
       {/* Help Modal and Trigger */}
       <Dialog open={showHelp} onOpenChange={setShowHelp}>
-        <DialogContent className="max-w-lg w-full sm:rounded-lg p-6 sm:p-8 md:p-10 lg:p-12 max-h-[90vh] overflow-y-auto" style={{ maxWidth: '95vw' }}>
-          <DialogHeader>
-            <DialogTitle>How to Rate This Course</DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-4 text-left text-gray-700">
-                <p><b>Your feedback helps other walking golfers! Here's how to fill out the form:</b></p>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li><b>Overall Walkability:</b> Is the course walkable? Rate how easy or challenging it is to walk the entire course.</li>
-                  <li><b>Detailed Walkability Ratings:</b>
-                    <ul className="list-disc pl-5">
-                      <li><b>Terrain & Hilliness:</b> How flat or hilly is the course?</li>
-                      <li><b>Distance Between Holes:</b> Are the holes close together or far apart?</li>
-                      <li><b>Course Value:</b> Was the course a good value for the price?</li>
-                      <li><b>Course Quality:</b> How well maintained was the course?</li>
-                    </ul>
-                  </li>
-                  <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
-                  <li><b>Pros & Cons:</b> List what you liked and any challenges you faced while walking the course.</li>
-                  <li><b>Additional Comments:</b> Share any extra details about your experience that might help other golfers.</li>
-                  <li><b>Date Played:</b> Let us know when you played for context.</li>
-                </ul>
-                <p><b>Tips:</b></p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Be honest and specific—your review helps others decide where to play!</li>
-                  <li>Only review courses you've walked yourself.</li>
-                  <li>If you're unsure about a rating, just leave it blank or choose your best estimate.</li>
-                </ul>
-              </div>
-            </DialogDescription>
+        <DialogContent
+          className="w-full sm:max-w-md sm:rounded-2xl p-0 min-h-[100dvh] max-h-[100dvh] sm:min-h-0 sm:max-h-[80vh] flex flex-col shadow-2xl border border-gray-100 bg-white sm:top-1/2 sm:left-1/2 sm:fixed sm:translate-x-[-50%] sm:translate-y-[-50%]"
+          style={{
+            maxWidth: '75vw',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+          }}
+        >
+          <DialogHeader className="pt-6 sm:pt-8 px-4 sm:px-8">
+            <DialogTitle className="text-lg sm:text-xl">How to Rate This Course</DialogTitle>
           </DialogHeader>
-          <button onClick={handleHelpClose} className="mt-6 w-full py-2 px-4 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sticky bottom-0">Got it!</button>
+
+          <DialogDescription asChild>
+            <div className="space-y-4 text-left text-gray-700 flex-1 overflow-y-auto px-4 sm:px-8">
+              <p><b>Your feedback helps other walking golfers! Here's how to fill out the form:</b></p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><b>Overall Walkability:</b> Is the course walkable? Rate how easy or challenging it is to walk the entire course.</li>
+                <li><b>Detailed Walkability Ratings:</b>
+                  <ul className="list-disc pl-5">
+                    <li><b>Terrain & Hilliness:</b> How flat or hilly is the course?</li>
+                    <li><b>Distance Between Holes:</b> Are the holes close together or far apart?</li>
+                    <li><b>Course Value:</b> Was the course a good value for the price?</li>
+                    <li><b>Course Quality:</b> How well maintained was the course?</li>
+                  </ul>
+                </li>
+                <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
+                <li><b>Pros & Cons:</b> List what you liked and any challenges you faced while walking the course.</li>
+                <li><b>Additional Comments:</b> Share any extra details about your experience that might help other golfers.</li>
+                <li><b>Date Played:</b> Let us know when you played for context.</li>
+              </ul>
+              <p><b>Tips:</b></p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Be honest and specific—your review helps others decide where to play!</li>
+                <li>Only review courses you've walked yourself.</li>
+                <li>If you're unsure about a rating, just leave it blank or choose your best estimate.</li>
+              </ul>
+            </div>
+          </DialogDescription>
+
+          <div
+            className="px-4 sm:px-8 pt-4 flex-shrink-0 sm:flex sm:justify-center"
+            style={{
+              paddingBottom: `max(env(safe-area-inset-bottom, 0px), 1.5rem)`,
+            }}
+          >
+            <button
+              onClick={handleHelpClose}
+              className="w-full sm:w-auto py-2 px-4 sm:px-6 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Got it!
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 
