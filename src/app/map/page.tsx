@@ -67,6 +67,7 @@ export default function MapPage(): JSX.Element {
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [targetMapBounds, setTargetMapBounds] = useState<MapBounds | null>(null);
+  const [targetMapZoom, setTargetMapZoom] = useState<number | null>(null);
   const [isZoomedOut, setIsZoomedOut] = useState<boolean>(false);
 
   // Initialize showLocationPrompt state based on sessionStorage
@@ -92,6 +93,26 @@ export default function MapPage(): JSX.Element {
       );
     } 
     return null; // Return null during SSR or if functions not ready
+  }, []);
+
+  // Get bounds from URL if available
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const boundsParam = searchParams.get('bounds');
+      const zoomParam = searchParams.get('zoom');
+      if (boundsParam) {
+        try {
+          const bounds = JSON.parse(decodeURIComponent(boundsParam));
+          setTargetMapBounds(bounds);
+          if (zoomParam) {
+            setTargetMapZoom(Number(zoomParam));
+          }
+        } catch (e) {
+          console.error('Error parsing bounds from URL:', e);
+        }
+      }
+    }
   }, []);
 
   const loadCourses = useCallback(async (bounds?: MapBounds) => {
@@ -282,6 +303,26 @@ export default function MapPage(): JSX.Element {
     setIsZoomedOut(status);
   }, []);
 
+  const handleMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    setMapLoaded(true);
+
+    // If we have target bounds from URL, set them
+    if (targetMapBounds && map) {
+      const bounds = new google.maps.LatLngBounds(
+        { lat: targetMapBounds.south, lng: targetMapBounds.west },
+        { lat: targetMapBounds.north, lng: targetMapBounds.east }
+      );
+      map.fitBounds(bounds);
+      if (targetMapZoom !== null) {
+        map.setZoom(targetMapZoom);
+      }
+      // Clear the target bounds and zoom after applying
+      setTargetMapBounds(null);
+      setTargetMapZoom(null);
+    }
+  }, [targetMapBounds, targetMapZoom]);
+
   if (error) {
     return <ErrorMessage message={error} />;
   }
@@ -302,10 +343,7 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             onBoundsChanged={handleBoundsChanged}
             loading={loading}
-            onMapLoad={(map: google.maps.Map) => {
-              mapRef.current = map; 
-              setMapLoaded(true);
-            }}
+            onMapLoad={handleMapLoad}
             onPlaceSelect={handlePlaceSelect}
             targetBounds={targetMapBounds}
             onZoomStatusChange={handleZoomStatusChange}
@@ -349,6 +387,8 @@ export default function MapPage(): JSX.Element {
               selectedCourseIndex={selectedCourseIndex}
               onClose={() => {}}
               isZoomedOut={isZoomedOut}
+              currentBounds={mapBounds}
+              currentZoom={mapRef.current?.getZoom() || 0}
             />
           </div>
         </div>
@@ -383,6 +423,8 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             selectedCourseId={null}
             filtersOnly={true}
+            currentBounds={mapBounds}
+            currentZoom={mapRef.current?.getZoom() || 0}
           />
           
           {/* --- START: Marker Key Section --- */}
@@ -433,6 +475,8 @@ export default function MapPage(): JSX.Element {
               totalInBounds={coursesInBoundsCount}
               selectedCourseIndex={selectedCourseIndex}
               isZoomedOut={isZoomedOut}
+              currentBounds={mapBounds}
+              currentZoom={mapRef.current?.getZoom() || 0}
             />
           ) : (
             // Placeholder or message when zoomed out for desktop list column
@@ -450,10 +494,7 @@ export default function MapPage(): JSX.Element {
             onCourseSelect={handleCourseSelect}
             onBoundsChanged={handleBoundsChanged}
             loading={loading}
-            onMapLoad={(map: google.maps.Map) => {
-              mapRef.current = map; 
-              setMapLoaded(true);
-            }}
+            onMapLoad={handleMapLoad}
             onPlaceSelect={handlePlaceSelect}
             targetBounds={targetMapBounds}
             onZoomStatusChange={handleZoomStatusChange}

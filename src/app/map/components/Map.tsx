@@ -81,7 +81,7 @@ export default function Map({
   onZoomStatusChange,
 }: MapProps): JSX.Element | React.ReactNode {
   const [showZoomMessage, setShowZoomMessage] = useState<boolean>(false);
-  const [currentBounds] = useState<MapBounds | null>(null);
+  const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
   const [currentMapZoom, setCurrentMapZoom] = useState<number>(DEFAULT_ZOOM);
   const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -310,6 +310,7 @@ export default function Map({
           console.log(`[MapComponent LOG] useEffect[bounds_changed]: fitBounds complete. New zoom=${currentZoom}, isNowZoomedOut=${isZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
           setShowZoomMessage(isZoomedOut);
           onZoomStatusChange(isZoomedOut);
+          setCurrentBounds(convertToMapBounds(bounds));
         } else {
            console.warn('[MapComponent LOG] useEffect[bounds_changed]: Could not get zoom after fitBounds.');
         }
@@ -330,19 +331,19 @@ export default function Map({
       if (bounds) {
         // Directly call onBoundsChanged with converted bounds
         onBoundsChanged(convertToMapBounds(bounds));
-      }
-
-      // Check zoom level on bounds_changed and update state/notify parent
-      const currentZoom = map.getZoom();
-      if (typeof currentZoom === 'number') {
-        setCurrentMapZoom(currentZoom);
-        const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
-        // Always update state and notify parent on bounds_changed
-        console.log(`[MapComponent LOG] bounds_changed listener: zoom=${currentZoom}, isZoomedOut=${isZoomedOut}. Current state showZoomMessage=${showZoomMessage}. Calling setShowZoomMessage(${isZoomedOut})`);
-        setShowZoomMessage(isZoomedOut);
-        onZoomStatusChange(isZoomedOut);
-      } else {
-        console.warn('[MapComponent LOG] bounds_changed listener: Could not get zoom.');
+        // Check zoom level on bounds_changed and update state/notify parent
+        const currentZoom = map.getZoom();
+        if (typeof currentZoom === 'number') {
+          setCurrentMapZoom(currentZoom);
+          const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
+          // Always update state and notify parent on bounds_changed
+          console.log(`[MapComponent LOG] bounds_changed listener: zoom=${currentZoom}, isZoomedOut=${isZoomedOut}. Current state showZoomMessage=${showZoomMessage}. Calling setShowZoomMessage(${isZoomedOut})`);
+          setShowZoomMessage(isZoomedOut);
+          onZoomStatusChange(isZoomedOut);
+          setCurrentBounds(convertToMapBounds(bounds));
+        } else {
+          console.warn('[MapComponent LOG] bounds_changed listener: Could not get zoom.');
+        }
       }
     });
     
@@ -379,6 +380,10 @@ export default function Map({
         console.log(`[MapComponent LOG] useEffect[targetBounds]: fitBounds complete. New zoom=${newZoom}, isNowZoomedOut=${isNowZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
         setShowZoomMessage(isNowZoomedOut);
         onZoomStatusChange(isNowZoomedOut); // Notify parent immediately
+        const bounds = map.getBounds();
+        if (bounds) {
+          setCurrentBounds(convertToMapBounds(bounds));
+        }
       } else {
          console.warn('[MapComponent LOG] useEffect[targetBounds]: Could not get zoom after fitBounds.');
       }
@@ -469,7 +474,12 @@ export default function Map({
                 </span>
               </div>
               <Link
-                href={`/courses/${selectedInfoWindowCourse.id}`}
+                href={`/courses/${selectedInfoWindowCourse.id}?from=map&bounds=${encodeURIComponent(JSON.stringify({
+                  north: mapRef.current?.getBounds()?.getNorthEast().lat(),
+                  south: mapRef.current?.getBounds()?.getSouthWest().lat(),
+                  east: mapRef.current?.getBounds()?.getNorthEast().lng(),
+                  west: mapRef.current?.getBounds()?.getSouthWest().lng()
+                }))}`}
                 className="text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium"
                 onClick={(e) => e.stopPropagation()}
               >

@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { StarRating } from '@/components/ui/star-rating';
 import { cn } from '@/lib/utils';
-import { GolfCourse, CourseFilters } from '@/types/course';
+import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
 interface SidebarProps {
   courses: GolfCourse[];
@@ -23,6 +23,8 @@ interface SidebarProps {
   onClose?: () => void;
   selectedCourseIndex?: number | null;
   isZoomedOut?: boolean;
+  currentBounds: MapBounds | null;
+  currentZoom: number | null;
 }
 
 export default function Sidebar({
@@ -35,7 +37,9 @@ export default function Sidebar({
   filtersOnly = false,
   onClose,
   selectedCourseIndex,
-  isZoomedOut
+  isZoomedOut,
+  currentBounds,
+  currentZoom
 }: SidebarProps) {
   const updateFilters = (updates: Partial<CourseFilters>) => {
     onFilterChange({ ...filters, ...updates });
@@ -272,6 +276,8 @@ export default function Sidebar({
                 course={course}
                 isSelected={selectedCourseId === course.id}
                 onSelect={onCourseSelect}
+                currentBounds={currentBounds}
+                currentZoom={currentZoom}
               />
             )}
           />
@@ -281,17 +287,18 @@ export default function Sidebar({
   );
 }
 
-function CourseCard({ course, isSelected, onSelect }: {
+function CourseCard({ course, isSelected, onSelect, currentBounds, currentZoom }: {
   course: GolfCourse;
   isSelected: boolean;
   onSelect: (course: GolfCourse) => void;
+  currentBounds: MapBounds | null;
+  currentZoom: number | null;
 }): JSX.Element {
-  // Destructure necessary fields, including club_name and course_holes
   const {
     id,
     club_name,
     courseName,
-    course_holes, // Added field
+    course_holes,
     location_city,
     location_state,
     walkabilityRating_overall
@@ -301,8 +308,21 @@ function CourseCard({ course, isSelected, onSelect }: {
     onSelect(course);
   }, [course, onSelect]);
 
+  // Get current map bounds from window.location.search if available
+  const searchParams = new URLSearchParams(window.location.search);
+  const boundsParam = searchParams.get('bounds');
+  const bounds = boundsParam ? JSON.parse(decodeURIComponent(boundsParam)) : null;
+
   // Helper to format the hole count string
   const holeText = course_holes ? `(${course_holes} holes)` : '';
+
+  // Build the course details link with bounds and zoom
+  let detailsHref = `/courses/${id}`;
+  if (currentBounds && typeof currentZoom === 'number') {
+    detailsHref += `?from=map&bounds=${encodeURIComponent(JSON.stringify(currentBounds))}&zoom=${currentZoom}`;
+  } else if (currentBounds) {
+    detailsHref += `?from=map&bounds=${encodeURIComponent(JSON.stringify(currentBounds))}`;
+  }
 
   return (
     <div
@@ -361,7 +381,7 @@ function CourseCard({ course, isSelected, onSelect }: {
 
       {/* Line 5: Details Link */}
       <Link
-        href={`/courses/${id}`} // Use id directly
+        href={detailsHref}
         className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
         onClick={(e) => e.stopPropagation()}
       >

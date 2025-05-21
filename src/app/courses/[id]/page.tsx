@@ -10,7 +10,7 @@ Key features of the Firebase version:
 import React from 'react'
 
 import { Timestamp } from 'firebase/firestore'
-import { MapPin, Phone, Globe } from 'lucide-react'
+import { MapPin, Phone, Globe, ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -26,6 +26,7 @@ import { getPublishedReviewsForCourse } from '@/lib/firebase/reviewUtils'
 import type { GolfCourse } from '@/types/course'
 import type { CourseReview } from '@/types/review'
 
+import BackToMapButton from './components/BackToMapButton'
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
@@ -170,8 +171,6 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
            <CourseClientMap 
              coordinates={coordinates}
              name={courseName}
-             // Optional: Add props to disable interaction if needed
-             // options={{ gestureHandling: 'none', zoomControl: false }} 
            />
         </div>
         
@@ -181,12 +180,13 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
         {/* Content Overlay - Above dark overlay */}
         <div className="absolute inset-0 z-20 text-white">
           <div className="container mx-auto px-4 h-full flex flex-col md:flex-row md:justify-between md:items-start gap-4 pt-4 md:pt-6">
+            {/* Back Button - Now using client component */}
+            <BackToMapButton />
+
             {/* Combined Text Info Group (Top Left on desktop, Top on mobile) */}
             <div className="space-y-3 max-w-md lg:max-w-lg bg-black/70 rounded-md p-3"> 
               {/* Top Part: Course Name, Club Name, Location */}
               <div>
-                {/* REMOVED Back to Course Finder Link */}
-                
                 {/* Updated h1 to include number of holes */}
                 <h1 className="text-3xl md:text-4xl font-bold">
                   {courseName} 
