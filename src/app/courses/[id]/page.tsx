@@ -31,6 +31,7 @@ import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
 import ReviewsDisplay from './ReviewsDisplay'
+import BackToSearchButton from './components/BackToSearchButton'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -179,6 +180,7 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
         
         {/* Content Overlay - Above dark overlay */}
         <div className="absolute inset-0 z-20 text-white">
+          <BackToSearchButton />
           <div className="container mx-auto px-4 h-full flex flex-col md:flex-row md:justify-between md:items-start gap-4 pt-4 md:pt-6">
             {/* Back Button - Now using client component */}
             <BackToMapButton />

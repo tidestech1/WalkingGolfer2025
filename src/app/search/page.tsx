@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, MapPin } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,7 @@ const FacilityCheckbox: React.FC<{
 
 export default function CourseSearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [walkableOnly, setWalkableOnly] = useState(false);
@@ -80,6 +81,58 @@ export default function CourseSearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Track if we just restored from URL and if we've already searched
+  const restoredFromUrl = useRef(false);
+  const hasRestoredAndSearched = useRef(false);
+
+  // Restore state from URL params on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const q = searchParams.get('q') || '';
+    const minRating = searchParams.get('minRating');
+    const isWalkable = searchParams.get('isWalkable') === 'true';
+    const facilityKeys = [
+      'filter_drivingRange', 'filter_golfCarts', 'filter_pushCarts', 'filter_restaurant',
+      'filter_proShop', 'filter_puttingGreen', 'filter_chippingGreen', 'filter_practiceBunker',
+      'filter_caddies', 'filter_clubRental'
+    ];
+    const facilities: Record<string, boolean> = {};
+    facilityKeys.forEach(key => {
+      facilities[key] = searchParams.get(key) === 'true';
+    });
+    if (
+      q || minRating || isWalkable || facilityKeys.some(key => searchParams.get(key))
+    ) {
+      setSearchTerm(q);
+      setMinRating(minRating ? parseInt(minRating, 10) : 0);
+      setWalkableOnly(isWalkable);
+      setFacilityFilters(prev => ({ ...prev, ...facilities }));
+      setShowFilters(
+        !!(minRating || isWalkable || facilityKeys.some(key => searchParams.get(key)))
+      );
+      restoredFromUrl.current = true;
+      hasRestoredAndSearched.current = false;
+    }
+  }, []);
+
+  // Trigger search after restoring from URL, only once, and only if params are present
+  useEffect(() => {
+    if (
+      restoredFromUrl.current &&
+      !hasRestoredAndSearched.current &&
+      (
+        searchTerm.trim().length >= 2 ||
+        minRating > 0 ||
+        walkableOnly ||
+        Object.values(facilityFilters).some(Boolean)
+      )
+    ) {
+      performSearch();
+      hasRestoredAndSearched.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, minRating, walkableOnly, facilityFilters]);
 
   const performSearch = useCallback(async () => {
     const query = searchTerm;
@@ -383,53 +436,72 @@ export default function CourseSearchPage() {
 
       {!isLoading && !error && results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {results.map((course) => (
-            <Link 
-              href={`/courses/${course.id}`} 
-              key={course.id} 
-              className={cn(
-                "block rounded-lg border bg-card text-card-foreground shadow-sm",
-                "transition-colors duration-150 ease-in-out",
-                "hover:bg-gray-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              )}
-              passHref
-            >
-              <div className="p-4 flex flex-col h-full">
-                  <h3 className="text-lg font-semibold mb-0.5">
-                    {course.course_name}
-                    {course.course_holes && (
-                      <span className="text-sm text-muted-foreground font-normal ml-1.5">
-                        ({course.course_holes} holes)
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-2">Part of {course.club_name}</p>
-                  
-                  <div className="flex items-center text-sm text-muted-foreground mb-3">
-                    <MapPin className="w-4 h-4 mr-1.5 shrink-0" />
-                    {course.location_city}, {course.location_state}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mt-auto pt-3 border-t"> 
-                    {course.walkabilityRating_overall && course.walkabilityRating_overall > 0 ? (
-                      <>
-                        <StarRating 
-                          rating={course.walkabilityRating_overall} 
-                          starClassName="w-5 h-5"
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          Walkability: ({course.walkabilityRating_overall.toFixed(1)})
+          {results.map((course) => {
+            // Build query string for preserving search state
+            const params = new URLSearchParams();
+            params.append('from', 'search');
+            if (searchTerm.trim().length >= 2) {
+              params.append('q', searchTerm.trim());
+            }
+            if (minRating > 0) {
+              params.append('minRating', minRating.toString());
+            }
+            if (walkableOnly) {
+              params.append('isWalkable', 'true');
+            }
+            Object.entries(facilityFilters).forEach(([key, value]) => {
+              if (value) params.append(key, 'true');
+            });
+            const queryString = params.toString();
+            const courseHref = `/courses/${course.id}${queryString ? `?${queryString}` : ''}`;
+            return (
+              <Link
+                href={courseHref}
+                key={course.id}
+                className={cn(
+                  "block rounded-lg border bg-card text-card-foreground shadow-sm",
+                  "transition-colors duration-150 ease-in-out",
+                  "hover:bg-gray-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                )}
+                passHref
+              >
+                <div className="p-4 flex flex-col h-full">
+                    <h3 className="text-lg font-semibold mb-0.5">
+                      {course.course_name}
+                      {course.course_holes && (
+                        <span className="text-sm text-muted-foreground font-normal ml-1.5">
+                          ({course.course_holes} holes)
                         </span>
-                      </>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        Course not yet rated.
-                      </div>
-                    )}
-                  </div>
-              </div>
-            </Link>
-          ))}
+                      )}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">Part of {course.club_name}</p>
+                    
+                    <div className="flex items-center text-sm text-muted-foreground mb-3">
+                      <MapPin className="w-4 h-4 mr-1.5 shrink-0" />
+                      {course.location_city}, {course.location_state}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-auto pt-3 border-t"> 
+                      {course.walkabilityRating_overall && course.walkabilityRating_overall > 0 ? (
+                        <>
+                          <StarRating 
+                            rating={course.walkabilityRating_overall} 
+                            starClassName="w-5 h-5"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            Walkability: ({course.walkabilityRating_overall.toFixed(1)})
+                          </span>
+                        </>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          Course not yet rated.
+                        </div>
+                      )}
+                    </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
