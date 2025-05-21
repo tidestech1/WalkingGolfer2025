@@ -571,7 +571,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 className={`${starSizes[size]} ${
                   star <= (hovered || rating)
                     ? 'fill-[#FF9A00] text-[#FF9A00]'
-                    : 'fill-gray-200 text-gray-200'
+                    : 'fill-gray-300 text-gray-300'
                 }`}
               />
             </button>

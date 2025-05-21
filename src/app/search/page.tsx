@@ -423,19 +423,7 @@ export default function CourseSearchPage() {
                       </>
                     ) : (
                       <div className="text-sm text-muted-foreground">
-                        Not yet rated. 
-                        <Button 
-                          variant="link"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(`/courses/${course.id}/review`);
-                          }}
-                          className="text-blue-600 hover:underline ml-1 h-auto p-0"
-                        >
-                          Rate now
-                        </Button>
+                        Course not yet rated.
                       </div>
                     )}
                   </div>
