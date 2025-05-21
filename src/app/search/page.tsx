@@ -428,6 +428,7 @@ export default function CourseSearchPage() {
                           variant="link"
                           size="sm"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             router.push(`/courses/${course.id}/review`);
                           }}

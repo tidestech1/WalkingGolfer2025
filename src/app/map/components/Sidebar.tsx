@@ -327,7 +327,7 @@ function CourseCard({ course, isSelected, onSelect }: {
       {/* Line 2: Club Name (De-emphasized) */}
       {club_name && (
         <p className="text-xs text-gray-600 mb-1.5">
-          Part of {club_name}
+          {club_name}
         </p>
       )}
 

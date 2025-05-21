@@ -23,9 +23,9 @@ export default function AddReviewPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-xl mx-auto text-center">
-        <h1 className="text-3xl font-bold text-[#0A3357] mb-4">Review a Golf Course</h1>
+        <h1 className="text-3xl font-bold text-[#0A3357] mb-4">Rate a Golf Course</h1>
         <p className="text-gray-600 mb-8">
-          Find the golf course you want to review by searching below. Your feedback helps fellow walking golfers!
+          Find the golf course you want to rate and review by searching below. Your feedback helps the Walking Golfers community!
         </p>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
