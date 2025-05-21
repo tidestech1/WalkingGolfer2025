@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, MapPin } from 'lucide-react';
@@ -55,7 +55,15 @@ const FacilityCheckbox: React.FC<{
   );
 };
 
-export default function CourseSearchPage() {
+export default function CourseSearchPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading search...</div>}>
+      <CourseSearchPage />
+    </Suspense>
+  );
+}
+
+function CourseSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
