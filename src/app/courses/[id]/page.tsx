@@ -292,16 +292,20 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
                 <div className="space-y-2 text-sm">
                   {courseName && (
                     <div>
-                      <span className="font-medium text-gray-500 w-20 inline-block mr-2">Name:</span>
+                      <span className="font-medium text-gray-500 w-28 inline-block mr-2">Name:</span>
                       <span className="text-gray-800">{courseName}</span>
                     </div>
                   )}
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Holes:</span>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Holes:</span>
                     <span className="text-gray-800">{course?.course_holes ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Cost:</span>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Membership:</span>
+                    <span className="text-gray-800">{course?.club_type ?? 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Cost:</span>
                     <span className="text-gray-800">
                       {(() => {
                         const twilightCost = course?.course_twilightCost;
@@ -323,15 +327,15 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
                     </span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Type:</span>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Terrain:</span>
                     <span className="text-gray-800">{course?.course_type ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Designer:</span>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Designer:</span>
                     <span className="text-gray-800">{course?.course_designer ?? 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-500 w-20 inline-block mr-2">Established:</span>
+                    <span className="font-medium text-gray-500 w-28 inline-block mr-2">Established:</span>
                     <span className="text-gray-800">{course?.course_yearEstablished ?? 'N/A'}</span>
                   </div>
                 </div>
