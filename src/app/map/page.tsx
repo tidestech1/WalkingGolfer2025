@@ -31,8 +31,8 @@ const MapComponent = dynamic(
 // UPDATED Default Filters - Omit optional fields instead of using undefined
 const DEFAULT_FILTERS: CourseFilters = {
   walkabilityRating_overall_min: 0,
-  clubTypes: ['Public', 'Semi-Private', 'Resort'],
-  courseHoles: [18],
+  clubTypes: ['Public', 'Semi-Private', 'Resort'], // Default to courses users can play without membership
+  courseHoles: [18], // Default to full 18-hole courses
   sortBy: 'walkabilityRating_overall',
   sortOrder: 'desc',
   // searchQuery: undefined, // OMIT

@@ -64,10 +64,21 @@ export default function Sidebar({
     // Calculate active filter count (matching mobile logic)
     const activeFilterCount = [
         filters.walkabilityRating_overall_min > 0,
-        filters.clubTypes && filters.clubTypes.length > 0 && (
-          filters.clubTypes.length !== 6
+        // Count clubTypes as active if different from default ['Public', 'Semi-Private', 'Resort']
+        filters.clubTypes && (
+          filters.clubTypes.length === 0 || // "All" selected
+          (filters.clubTypes.length !== 3 || 
+           !filters.clubTypes.includes('Public') || 
+           !filters.clubTypes.includes('Semi-Private') || 
+           !filters.clubTypes.includes('Resort'))
         ),
-        filters.courseHoles && filters.courseHoles.length > 0
+        // Count courseHoles as active if different from default [18]
+        filters.courseHoles && (
+          filters.courseHoles.length === 0 || // "Any" selected
+          filters.courseHoles.length !== 1 || 
+          !filters.courseHoles.includes(18)
+        ),
+        filters.filter_isWalkable === true, // Count if explicitly including un-walkable courses
     ].filter(Boolean).length;
 
     // Use activeFilterCount to determine if any filters are active
@@ -91,6 +102,7 @@ export default function Sidebar({
                   walkabilityRating_overall_min: 0,
                   clubTypes: ['Public', 'Semi-Private', 'Resort'],
                   courseHoles: [18],
+                  filter_isWalkable: false,
                 })}
                 className="text-sm text-blue-600"
               >
@@ -115,6 +127,7 @@ export default function Sidebar({
                   walkabilityRating_overall_min: 0,
                   clubTypes: ['Public', 'Semi-Private', 'Resort'],
                   courseHoles: [18],
+                  filter_isWalkable: false,
                 })}
                 className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
@@ -192,19 +205,38 @@ export default function Sidebar({
                 <div key={option.value} className="flex items-center space-x-2">
                   <Checkbox
                     id={`clubType_${option.value}`}
-                    checked={filters.clubTypes?.includes(option.value) ?? false}
+                    checked={
+                      // If clubTypes is empty, show all as checked (= "all")
+                      // If clubTypes has values, check only those included
+                      (filters.clubTypes?.length === 0) || (filters.clubTypes?.includes(option.value) ?? false)
+                    }
                     onCheckedChange={checked => {
+                      const allOptions = ['Public', 'Semi-Private', 'Resort', 'Private', 'Military', 'University'];
                       const prev = filters.clubTypes || [];
-                      updateFilters({
-                        clubTypes: checked
+                      
+                      let newClubTypes: string[];
+                      if (prev.length === 0) {
+                        // Currently showing "all", if unchecking one item, show all others
+                        newClubTypes = checked ? allOptions : allOptions.filter(v => v !== option.value);
+                      } else {
+                        // Normal add/remove logic
+                        newClubTypes = checked
                           ? [...prev, option.value]
-                          : prev.filter(v => v !== option.value),
-                      });
+                          : prev.filter(v => v !== option.value);
+                      }
+                      
+                      // If all options are selected, use empty array (= "all")
+                      if (newClubTypes.length === allOptions.length) {
+                        newClubTypes = [];
+                      }
+                      
+                      updateFilters({ clubTypes: newClubTypes });
+                      
                       if (typeof window !== 'undefined' && window.gtag) {
                         window.gtag('event', 'ClubTypeChanged', {
                           event_category: 'MapFilters',
-                          event_label: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).join(','),
-                          value: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).length,
+                          event_label: newClubTypes.length === 0 ? 'All' : newClubTypes.join(','),
+                          value: newClubTypes.length === 0 ? 'All' : newClubTypes.length,
                         });
                       }
                     }}
@@ -231,13 +263,13 @@ export default function Sidebar({
                     id={`courseHoles_${option.label}`}
                     checked={
                       option.value === 'any'
-                        ? !filters.courseHoles || filters.courseHoles.length === 0
-                        : filters.courseHoles?.includes(option.value as number) ?? false
+                        ? (filters.courseHoles?.length === 0) // Any is checked only when array is empty
+                        : (filters.courseHoles?.includes(option.value as number) ?? false) // 9 or 18 checked if included in array
                     }
                     onCheckedChange={checked => {
                       let newHoles: number[] = filters.courseHoles ? [...filters.courseHoles] : [];
                       if (option.value === 'any') {
-                        newHoles = [];
+                        newHoles = []; // Set to empty array for "Any"
                       } else {
                         if (checked) {
                           newHoles = Array.from(new Set([...newHoles, option.value as number]));

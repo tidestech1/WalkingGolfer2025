@@ -17,94 +17,58 @@ import {
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
-import { Firestore as AdminFirestore, FieldValue, Transaction } from 'firebase-admin/firestore';
+import { FieldValue, Transaction } from 'firebase-admin/firestore';
  
-import { getCachedCourse, setCachedCourse, getCachedCourseList, setCachedCourseList, generateQueryKey } from '@/lib/utils/courseCache';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 import { CourseReview } from '@/types/review';
 
 // Client-side Firestore instance
 import { db, isFirebaseAvailable } from './firebase'; 
 // Server-side Firestore instance (Admin SDK)
-import { getAdminFirestore } from './firebaseAdmin'; 
+import { getAdminFirestore } from './firebaseAdmin';
 
 const COLLECTION_NAME = 'courses';
-const COURSES_PER_PAGE = 20;
-const MAX_QUERY_ATTEMPTS = 3;
 
 // Error message for when Firebase is unavailable
 const FIREBASE_UNAVAILABLE_ERROR = 'Sorry, the Walking Golfer course database is currently not available. Please check again later or contact us.';
 
-interface CourseQueryResult {
-  courses: GolfCourse[];
-  lastVisible: QueryDocumentSnapshot<DocumentData> | null;
-  hasMore: boolean;
-  source: 'cache' | 'firebase';
-}
-
 /**
- * Get a single course by ID with caching
+ * Get a single course by ID
  */
 export async function getCourseById(id: string): Promise<GolfCourse | null> {
   try {
-    const cached = getCachedCourse(id);
-    if (cached) {
-      console.log(`Cache hit for course: ${id}`);
-      return cached;
-    }
-    console.log(`Cache miss for course: ${id}, fetching from Firestore...`);
-
-    let course: GolfCourse | null = null;
-    let docSnap;
-
     if (typeof window === 'undefined') {
-      // --- Server-Side --- 
+      // Server-side: Use Admin SDK
       console.log("Using Admin Firestore SDK (server-side) for getCourseById");
-      try {
-        const adminDb: AdminFirestore = getAdminFirestore();
-        const docRef = adminDb.collection(COLLECTION_NAME).doc(id); // Use Admin SDK methods
-        docSnap = await docRef.get();
-        
-        if (docSnap.exists) {
-          course = { id: docSnap.id, ...docSnap.data() } as GolfCourse;
-        } else {
-          console.log(`Course not found in Admin Firestore: ${id}`);
-        }
-      } catch (adminError) {
-        console.error(`Admin Firestore error fetching course ${id}:`, adminError);
-        throw adminError; // Re-throw server errors
+      const adminDb = getAdminFirestore();
+      const courseDoc = adminDb.collection('courses').doc(id);
+      const snapshot = await courseDoc.get();
+      
+      if (snapshot.exists) {
+        const data = snapshot.data();
+        return { id: snapshot.id, ...data } as GolfCourse;
       }
+      
+      return null;
     } else {
-      // --- Client-Side --- 
+      // Client-side: Use Client SDK
       console.log("Using Client Firestore SDK (client-side) for getCourseById");
-      if (!db) { 
-          console.error('Client Firestore DB instance is not available.');
-          return null;
-      }
-      try {
-        const docRef = doc(db, COLLECTION_NAME, id); // Use Client SDK function
-        docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          course = { id: docSnap.id, ...docSnap.data() } as GolfCourse;
-        } else {
-          console.log(`Course not found in Client Firestore: ${id}`);
-        }
-      } catch (clientError) {
-        console.error(`Client Firestore error fetching course ${id}:`, clientError);
+      if (!db) {
+        console.error('Firestore is not available');
         return null;
       }
+      
+      const courseDoc = doc(db, 'courses', id);
+      const snapshot = await getDoc(courseDoc);
+      
+      if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as GolfCourse;
+      }
+      
+      return null;
     }
-
-    if (course) {
-      console.log(`Fetched course from Firestore, caching: ${id}`);
-      setCachedCourse(course);
-    }
-    
-    return course;
-
   } catch (error) {
-    console.error(`Overall error fetching course ${id}:`, error);
+    console.error('Error fetching course by ID:', error);
     return null;
   }
 }
@@ -179,8 +143,7 @@ export function addPaginationConstraints(
  * Get courses with pagination and caching
  */
 export async function getCourses(
-  filters: CourseFilters,
-  lastVisible?: QueryDocumentSnapshot<DocumentData>
+  filters: CourseFilters
 ): Promise<{ courses: GolfCourse[], lastDoc: QueryDocumentSnapshot<DocumentData> | null }> {
   if (!isFirebaseAvailable() || !db) {
     throw new Error('Firebase/DB not available in getCourses');
@@ -191,7 +154,6 @@ export async function getCourses(
     // NOTE: Pagination is NOT added here by default anymore. 
     // The caller (like a paginated list) should handle adding pagination if needed.
     // For map view, we typically want all results matching filters (within bounds, handled later)
-    // const finalConstraints = addPaginationConstraints(filterSortConstraints, lastVisible); // Add pagination if needed
 
     console.log('[getCourses LOG] Attempting Firestore query with constraints:', filterSortConstraints); 
     const coursesRef = collection(db, COLLECTION_NAME);
@@ -225,11 +187,10 @@ export async function getCourses(
  * Prefetch the next page of results
  */
 export async function prefetchNextPage(
-  filters: CourseFilters,
-  lastVisible: QueryDocumentSnapshot<DocumentData>
+  filters: CourseFilters
 ): Promise<void> {
   try {
-    await getCourses(filters, lastVisible);
+    await getCourses(filters);
   } catch (error) {
     console.error('Error prefetching next page:', error);
     // Swallow the error since this is just prefetching
@@ -300,8 +261,9 @@ export async function searchCourses(filters: CourseFilters): Promise<GolfCourse[
  */
 export async function addCourse(courseData: Omit<GolfCourse, 'id'>): Promise<string | null> {
   if (!db) {
- console.error('Cannot add course: Firebase DB not available on client.'); return null; 
-}
+    console.error('Cannot add course: Firebase DB not available on client.');
+    return null;
+  }
   try {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...courseData,
@@ -310,18 +272,20 @@ export async function addCourse(courseData: Omit<GolfCourse, 'id'>): Promise<str
     });
     return docRef.id;
   } catch (error) {
- console.error('Error adding course:', error); return null; 
-}
+    console.error('Error adding course:', error);
+    return null;
+  }
 }
 
 /**
  * Update an existing course
  */
 export async function updateCourse(id: string, courseData: Partial<GolfCourse>): Promise<boolean> {
-   if (!db) {
- console.error('Cannot update course: Firebase DB not available on client.'); return false; 
-}
-   try {
+  if (!db) {
+    console.error('Cannot update course: Firebase DB not available on client.');
+    return false;
+  }
+  try {
     const docRef = doc(db, COLLECTION_NAME, id);
     await updateDoc(docRef, {
       ...courseData,
@@ -329,24 +293,27 @@ export async function updateCourse(id: string, courseData: Partial<GolfCourse>):
     });
     return true;
   } catch (error) {
- console.error('Error updating course:', error); return false; 
-}
+    console.error('Error updating course:', error);
+    return false;
+  }
 }
 
 /**
  * Delete a course
  */
 export async function deleteCourse(id: string): Promise<boolean> {
-   if (!db) {
- console.error('Cannot delete course: Firebase DB not available on client.'); return false; 
-}
-   try {
+  if (!db) {
+    console.error('Cannot delete course: Firebase DB not available on client.');
+    return false;
+  }
+  try {
     const docRef = doc(db, COLLECTION_NAME, id);
     await deleteDoc(docRef);
     return true;
   } catch (error) {
- console.error('Error deleting course:', error); return false; 
-}
+    console.error('Error deleting course:', error);
+    return false;
+  }
 }
 
 /**
@@ -380,8 +347,8 @@ export function generateSearchableTerms(course: Omit<GolfCourse, 'searchableTerm
 // Use this when creating or updating a course
 export async function createCourse(courseData: Omit<GolfCourse, 'id' | 'searchableTerms'>) {
   if (!db) {
- throw new Error('Firebase is not initialized'); 
-}
+    throw new Error('Firebase is not initialized');
+  }
   const searchableTerms = generateSearchableTerms(courseData);
   const courseRef = doc(collection(db, 'courses'));
   await setDoc(courseRef, {

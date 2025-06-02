@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { StarRating } from '@/components/ui/star-rating';
-import { CourseFilters, GolfCourse } from '@/types/course';
+import { CourseFilters } from '@/types/course';
 
 import { BottomSheet } from './BottomSheet';
 
@@ -28,8 +27,9 @@ export function FilterBottomSheet({
   // Track local filter state
   const [localFilters, setLocalFilters] = useState<CourseFilters>(() => ({
     walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
-    clubTypes: filters.clubTypes ?? ['Public', 'Semi-Private', 'Resort'],
-    courseHoles: filters.courseHoles ?? [18],
+    clubTypes: filters.clubTypes ?? ['Public', 'Semi-Private', 'Resort'], // Default to selective defaults
+    courseHoles: filters.courseHoles ?? [18], // Default to 18-hole courses
+    filter_isWalkable: filters.filter_isWalkable ?? false,
     ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
     ...(filters.state && { state: filters.state }),
     ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
@@ -45,6 +45,7 @@ export function FilterBottomSheet({
         walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
         clubTypes: filters.clubTypes ?? ['Public', 'Semi-Private', 'Resort'],
         courseHoles: filters.courseHoles ?? [18],
+        filter_isWalkable: filters.filter_isWalkable ?? false,
         ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
         ...(filters.state && { state: filters.state }),
         ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
@@ -66,33 +67,25 @@ export function FilterBottomSheet({
     onClose();
   };
 
-  // Check if any NEW filters are active
-  const hasActiveFilters =
-    localFilters.walkabilityRating_overall_min > 0 ||
-    (localFilters.clubTypes && localFilters.clubTypes.length > 0 && localFilters.clubTypes.length !== 6) ||
-    (localFilters.courseHoles && localFilters.courseHoles.length > 0) ||
-    !!localFilters.searchQuery ||
-    !!localFilters.state ||
-    !!localFilters.mapBounds ||
-    !!localFilters.sortBy ||
-    !!localFilters.sortOrder ||
-    localFilters.simpleSearch === true;
-
-  // Count active NEW filters
+  // Calculate active filter count (matching mobile logic)
   const activeFilterCount = [
     localFilters.walkabilityRating_overall_min > 0,
-    localFilters.clubTypes && localFilters.clubTypes.length > 0 && localFilters.clubTypes.length !== 6,
-    localFilters.courseHoles && localFilters.courseHoles.length > 0,
-    !!localFilters.searchQuery,
-    !!localFilters.state,
-    !!localFilters.mapBounds,
-    !!localFilters.sortBy,
-    !!localFilters.sortOrder,
-    localFilters.simpleSearch === true,
+    // Count clubTypes as active if different from default ['Public', 'Semi-Private', 'Resort']
+    localFilters.clubTypes && (
+      localFilters.clubTypes.length === 0 || // "All" selected
+      (localFilters.clubTypes.length !== 3 || 
+       !localFilters.clubTypes.includes('Public') || 
+       !localFilters.clubTypes.includes('Semi-Private') || 
+       !localFilters.clubTypes.includes('Resort'))
+    ),
+    // Count courseHoles as active if different from default [18]
+    localFilters.courseHoles && (
+      localFilters.courseHoles.length === 0 || // "Any" selected
+      localFilters.courseHoles.length !== 1 || 
+      !localFilters.courseHoles.includes(18)
+    ),
+    localFilters.filter_isWalkable === true, // Count if explicitly including un-walkable courses
   ].filter(Boolean).length;
-
-  // ADD state for facility filters visibility
-  const [showAllFacilities, setShowAllFacilities] = useState(false);
 
   return (
     <BottomSheet
@@ -115,12 +108,13 @@ export function FilterBottomSheet({
                   <span>No filters applied</span>
                 )}
               </div>
-              {hasActiveFilters && (
+              {activeFilterCount > 0 && (
                 <button
                   onClick={() => setLocalFilters({
                     walkabilityRating_overall_min: 0,
                     clubTypes: ['Public', 'Semi-Private', 'Resort'],
                     courseHoles: [18],
+                    filter_isWalkable: false,
                   })}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
@@ -192,36 +186,25 @@ export function FilterBottomSheet({
               {/* Replace old Course Types/Categories/Price sections */}
               <div className="space-y-3 border-t pt-4">
                 
-                {/* Facilities Section */} 
+                {/* Walkability Rating Section - moved from bottom */}
                 <div className="pt-2">
-                  <label className="block text-sm font-medium mb-1.5">Facilities</label>
-                  <div className="space-y-1.5">
-                    {/* Always Shown Facilities */}
-                    <FacilityCheckbox label="Driving Range" filterKey="filter_drivingRange" filters={localFilters} updateFilters={updateLocalFilters} />
-                    <FacilityCheckbox label="Golf Cart Rental" filterKey="filter_golfCarts" filters={localFilters} updateFilters={updateLocalFilters} />
-                    <FacilityCheckbox label="Push Cart Rental" filterKey="filter_pushCarts" filters={localFilters} updateFilters={updateLocalFilters} />
-                    <FacilityCheckbox label="Restaurant" filterKey="filter_restaurant" filters={localFilters} updateFilters={updateLocalFilters} />
-
-                    {/* Conditionally Render Hidden Facilities */} 
-                    {showAllFacilities && (
-                      <>
-                        <FacilityCheckbox label="Pro Shop" filterKey="filter_proShop" filters={localFilters} updateFilters={updateLocalFilters} />
-                        <FacilityCheckbox label="Putting Green" filterKey="filter_puttingGreen" filters={localFilters} updateFilters={updateLocalFilters} />
-                        <FacilityCheckbox label="Chipping Green" filterKey="filter_chippingGreen" filters={localFilters} updateFilters={updateLocalFilters} />
-                        <FacilityCheckbox label="Practice Bunker" filterKey="filter_practiceBunker" filters={localFilters} updateFilters={updateLocalFilters} />
-                        <FacilityCheckbox label="Caddies" filterKey="filter_caddies" filters={localFilters} updateFilters={updateLocalFilters} />
-                        <FacilityCheckbox label="Golf Club Rental" filterKey="filter_clubRental" filters={localFilters} updateFilters={updateLocalFilters} />
-                      </>
-                    )}
-                    
-                    {/* Toggle Button */}
-                    <button
-                      onClick={() => setShowAllFacilities(!showAllFacilities)}
-                      className="text-xs text-blue-600 hover:text-blue-800 pt-1"
-                    >
-                      {showAllFacilities ? 'Show Less' : 'Show More'}
-                    </button>
-                </div>
+                  <label className="block text-sm font-medium mb-1.5">Minimum Walkability Rating</label>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Poor</span>
+                    <span className="text-xs text-gray-500">Excellent</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={localFilters.walkabilityRating_overall_min}
+                    onChange={e => updateLocalFilters({ walkabilityRating_overall_min: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="text-center text-sm font-medium mt-1">
+                    {localFilters.walkabilityRating_overall_min === 0 ? 'Any' : localFilters.walkabilityRating_overall_min.toFixed(1)}
+                  </div>
                 </div>
               </div>
               {/* === NEW FILTER UI SECTION END === */} 
@@ -258,19 +241,38 @@ export function FilterBottomSheet({
                   <div key={option.value} className="flex items-center space-x-2">
                     <Checkbox
                       id={`clubType_${option.value}_bottomsheet`}
-                      checked={localFilters.clubTypes?.includes(option.value) ?? false}
+                      checked={
+                        // If clubTypes is empty, show all as checked (= "all")
+                        // If clubTypes has values, check only those included
+                        (localFilters.clubTypes?.length === 0) || (localFilters.clubTypes?.includes(option.value) ?? false)
+                      }
                       onCheckedChange={checked => {
+                        const allOptions = ['Public', 'Semi-Private', 'Resort', 'Private', 'Military', 'University'];
                         const prev = localFilters.clubTypes || [];
-                        updateLocalFilters({
-                          clubTypes: checked
+                        
+                        let newClubTypes: string[];
+                        if (prev.length === 0) {
+                          // Currently showing "all", if unchecking one item, show all others
+                          newClubTypes = checked ? allOptions : allOptions.filter(v => v !== option.value);
+                        } else {
+                          // Normal add/remove logic
+                          newClubTypes = checked
                             ? [...prev, option.value]
-                            : prev.filter(v => v !== option.value),
-                        });
+                            : prev.filter(v => v !== option.value);
+                        }
+                        
+                        // If all options are selected, use empty array (= "all")
+                        if (newClubTypes.length === allOptions.length) {
+                          newClubTypes = [];
+                        }
+                        
+                        updateLocalFilters({ clubTypes: newClubTypes });
+                        
                         if (typeof window !== 'undefined' && window.gtag) {
                           window.gtag('event', 'ClubTypeChanged', {
                             event_category: 'MapFilters',
-                            event_label: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).join(','),
-                            value: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).length,
+                            event_label: newClubTypes.length === 0 ? 'All' : newClubTypes.join(','),
+                            value: newClubTypes.length === 0 ? 'All' : newClubTypes.length,
                           });
                         }
                       }}
@@ -296,13 +298,13 @@ export function FilterBottomSheet({
                       id={`courseHoles_${option.label}_bottomsheet`}
                       checked={
                         option.value === 'any'
-                          ? !localFilters.courseHoles || localFilters.courseHoles.length === 0
-                          : localFilters.courseHoles?.includes(option.value as number) ?? false
+                          ? (localFilters.courseHoles?.length === 0) // Any is checked only when array is empty
+                          : (localFilters.courseHoles?.includes(option.value as number) ?? false) // 9 or 18 checked if included in array
                       }
                       onCheckedChange={checked => {
                         let newHoles: number[] = localFilters.courseHoles ? [...localFilters.courseHoles] : [];
                         if (option.value === 'any') {
-                          newHoles = [];
+                          newHoles = []; // Set to empty array for "Any"
                         } else {
                           if (checked) {
                             newHoles = Array.from(new Set([...newHoles, option.value as number]));
@@ -344,34 +346,3 @@ export function FilterBottomSheet({
     </BottomSheet>
   );
 } 
-
-// Copied Helper component for Facility Checkboxes
-const FacilityCheckbox: React.FC<{
-  label: string;
-  filterKey: keyof Pick<CourseFilters, 
-    'filter_drivingRange' | 'filter_golfCarts' | 'filter_pushCarts' | 'filter_restaurant' | 
-    'filter_proShop' | 'filter_puttingGreen' | 'filter_chippingGreen' | 'filter_practiceBunker' | 
-    'filter_caddies' | 'filter_clubRental'
-  >;
-  filters: CourseFilters;
-  updateFilters: (updates: Partial<CourseFilters>) => void;
-}> = ({ label, filterKey, filters, updateFilters }) => {
-  // Use unique IDs for bottom sheet context
-  const id = `${filterKey}_bottomsheet`; 
-  return (
-    <div className="flex items-center space-x-2">
-      <Checkbox
-        id={id}
-        // Provide default for checked state
-        checked={filters[filterKey] === true} 
-        onCheckedChange={(checked) => {
-          // Ensure boolean type for update
-          updateFilters({ [filterKey]: !!checked }); 
-        }}
-      />
-      <label htmlFor={id} className="text-sm">
-        {label}
-      </label>
-    </div>
-  );
-};

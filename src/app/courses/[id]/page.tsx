@@ -35,7 +35,7 @@ import BackToSearchButton from './components/BackToSearchButton'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
   const course: GolfCourse | null = await getCourseById(id);
 
   if (!course) {
@@ -136,7 +136,7 @@ function serializeDates(obj: unknown): unknown {
 
 // Provide inline type for the destructured params
 export default async function CourseDetailsPage({ params }: { params: { id: string } }): Promise<JSX.Element> {
-  const { id } = params;
+  const { id } = await params;
   
   // Fetch course and reviews in parallel
   const [courseResult, reviewsResult] = await Promise.all([
