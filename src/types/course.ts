@@ -26,6 +26,7 @@ export interface GolfCourse {
   // Club Details (related to the overall club/facility)
   club_totalHoles: number;
   club_name: string;
+  club_type: string;
   
   // Location (flat)
   location_address1: string;
@@ -126,19 +127,16 @@ export interface CourseFilters {
   state?: string | undefined;
   mapBounds?: MapBounds;
   simpleSearch?: boolean;
-  
-  // ADDED: New boolean filters (optional, default handled by consumer)
+
+  // Add walkable filter for map UI
   filter_isWalkable?: boolean;
-  filter_drivingRange?: boolean;
-  filter_golfCarts?: boolean;
-  filter_pushCarts?: boolean;
-  filter_restaurant?: boolean;
-  filter_proShop?: boolean;
-  filter_puttingGreen?: boolean;
-  filter_chippingGreen?: boolean;
-  filter_practiceBunker?: boolean;
-  filter_caddies?: boolean;
-  filter_clubRental?: boolean;
+
+  // Club type filter (multi-select, e.g. ["Public", "Resort"])
+  clubTypes?: string[];
+
+  // Course holes filter (multi-select, e.g. [9, 18])
+  // If empty or undefined, show all ("Any")
+  courseHoles?: number[];
 }
 
 export interface MapBounds {

@@ -251,64 +251,37 @@ export const getCoursesForMap = onCall(
       // --- APPLY IN-MEMORY FILTERING (excluding geo, which is done) ---
       const coursesPassingInMemoryFilters =
         coursesMatchingGeo.filter((course) => {
-          // Apply boolean filters
-          // Note: course_isWalkable is handled differently now
-          if (filters.filter_isWalkable === false) {
-            // If checkbox is OFF (default): Show walkable (true) and unknown (null/undefined)
-            // Hide un-walkable (false)
+          // Club type filter
+          if (filters.clubTypes && filters.clubTypes.length > 0) {
+            if (!filters.clubTypes.includes(course.club_type)) {
+              return false;
+            }
+          }
+          // Course holes filter
+          if (filters.courseHoles && filters.courseHoles.length > 0) {
+            if (!filters.courseHoles.includes(course.course_holes)) {
+              return false;
+            }
+          }
+          // Walkability filter (Include un-walkable courses)
+          // If filter_isWalkable is false or undefined, only include walkable (true) or unknown (null/undefined)
+          // If filter_isWalkable is true, include all
+          if (!filters.filter_isWalkable) {
             if (course.course_isWalkable === false) {
               return false;
             }
           }
-          // If filters.filter_isWalkable is true (checkbox is ON): Include all, so no filtering on course_isWalkable here.
-
-          if (filters.filter_drivingRange && !course.facilities_drivingRange) {
-            return false;
-          }
-          if (filters.filter_golfCarts && !course.facilities_golfCarts) {
-            return false;
-          }
-          if (filters.filter_pushCarts && !course.facilities_pushCarts) {
-            return false;
-          }
-          if (filters.filter_restaurant && !course.facilities_restaurant) {
-            return false;
-          }
-          if (filters.filter_proShop && !course.facilities_proShop) {
-            return false;
-          }
-          if (filters.filter_puttingGreen && !course.facilities_puttingGreen) {
-            return false;
-          }
-          if (
-            filters.filter_chippingGreen &&
-               !course.facilities_chippingGreen
-          ) {
-            return false;
-          }
-          if (
-            filters.filter_practiceBunker &&
-               !course.facilities_practiceBunker
-          ) {
-            return false;
-          }
-          if (filters.filter_caddies && !course.facilities_caddies) {
-            return false;
-          }
-          if (filters.filter_clubRental && !course.facilities_clubRental) {
-            return false;
-          }
-          // Apply rating filter
+          // Walkability rating filter
           const minRating = filters.walkabilityRating_overall_min;
           const currentRating = course.walkabilityRating_overall;
           if (
             minRating != null &&
-         minRating > 0 &&
-         (currentRating == null || currentRating < minRating)
+            minRating > 0 &&
+            (currentRating == null || currentRating < minRating)
           ) {
             return false;
           }
-          // Apply search query filter (if applicable)
+          // Search query filter (if applicable)
           const query = filters.searchQuery?.trim();
           if (query) {
             const searchTerm = query.toLowerCase();
@@ -317,7 +290,6 @@ export const getCoursesForMap = onCall(
               return false;
             }
           }
-
           return true; // Course passes all active in-memory filters
         });
 

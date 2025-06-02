@@ -119,85 +119,43 @@ export function buildFilterSortConstraints(filters: CourseFilters): QueryConstra
   // Default sort order if not specified in filters
   const sortDirection = filters.sortOrder || 'desc'; 
 
-  // --- Add clauses for active boolean filters ---
-  // If "Include un-walkable courses" is UNCHECKED (default), then filter out un-walkable courses.
-  // This means we only want courses where course_isWalkable is true or null.
-  if (filters.filter_isWalkable === false) {
-    constraints.push(where('course_isWalkable', '!=', false));
+  // --- Add clause for club type filter ---
+  if (filters.clubTypes && filters.clubTypes.length > 0) {
+    constraints.push(where('club_type', 'in', filters.clubTypes));
   }
-  // If filters.filter_isWalkable is true (box is checked), we include all courses, so no constraint is added for walkability.
-  
-  if (filters.filter_drivingRange === true) {
-    constraints.push(where('facilities_drivingRange', '==', true));
+
+  // --- Add clause for course holes filter ---
+  if (filters.courseHoles && filters.courseHoles.length > 0) {
+    constraints.push(where('course_holes', 'in', filters.courseHoles));
   }
-  if (filters.filter_golfCarts === true) {
-    constraints.push(where('facilities_golfCarts', '==', true));
-  }
-  if (filters.filter_pushCarts === true) {
-    constraints.push(where('facilities_pushCarts', '==', true));
-  }
-  if (filters.filter_restaurant === true) {
-    constraints.push(where('facilities_restaurant', '==', true));
-  }
-  if (filters.filter_proShop === true) {
-    constraints.push(where('facilities_proShop', '==', true));
-  }
-  if (filters.filter_puttingGreen === true) {
-    constraints.push(where('facilities_puttingGreen', '==', true));
-  }
-  if (filters.filter_chippingGreen === true) {
-    constraints.push(where('facilities_chippingGreen', '==', true));
-  }
-  if (filters.filter_practiceBunker === true) {
-    constraints.push(where('facilities_practiceBunker', '==', true));
-  }
-  if (filters.filter_caddies === true) {
-    constraints.push(where('amenities_caddies', '==', true)); // Assuming schema uses amenities_
-  }
-  if (filters.filter_clubRental === true) {
-    constraints.push(where('amenities_clubRental', '==', true)); // Assuming schema uses amenities_
-  }
-  // Add other boolean filters similarly...
 
   // --- Add clause for walkability rating ---
-  // Ensure min rating is a number and greater than 0
   if (typeof filters.walkabilityRating_overall_min === 'number' && filters.walkabilityRating_overall_min > 0) {
     constraints.push(where('walkabilityRating_overall', '>=', filters.walkabilityRating_overall_min));
-    // Set default sort if filtering by rating and no other sort is primary yet
     if (!firstOrderByField) {
-       firstOrderByField = 'walkabilityRating_overall';
+      firstOrderByField = 'walkabilityRating_overall';
     }
   }
-  
+
   // --- Add clause for search query ---
   if (filters.searchQuery?.trim()) {
     const searchTerm = filters.searchQuery.trim().toLowerCase();
     constraints.push(where('searchableTerms', 'array-contains', searchTerm));
-    // Adjust default sort if searching and no other sort is primary yet
     if (!firstOrderByField) {
-        firstOrderByField = 'courseName'; // Default sort for search is by name asc
+      firstOrderByField = 'courseName';
     }
   }
 
   // --- Apply default or explicit sorting ---
-  // Use the explicit sortBy from filters if available, otherwise use the determined firstOrderByField, 
-  // or fall back to 'walkabilityRating_overall'
   const finalSortField = filters.sortBy || firstOrderByField || 'walkabilityRating_overall';
-  
-  // Determine sort direction for the primary field
-  // If sorting by name (usually from search), default to ascending, otherwise use filter setting or default desc
   const primarySortDirection = (finalSortField === 'courseName' && !filters.sortBy) ? 'asc' : sortDirection; 
-  
   constraints.push(orderBy(finalSortField, primarySortDirection));
-  
-  // --- Add final sort for stable pagination/results ---
-  // Add __name__ sort unless it was already the primary sort field
   if (finalSortField !== '__name__') {
-     constraints.push(orderBy('__name__', primarySortDirection)); 
+    constraints.push(orderBy('__name__', primarySortDirection)); 
   }
 
   console.log('[buildFilterSortConstraints LOG] Generated Constraints (without pagination):', constraints); 
-  return constraints; // Return constraints without pagination
+  return constraints;
 }
 
 /**

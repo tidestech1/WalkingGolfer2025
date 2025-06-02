@@ -30,23 +30,14 @@ const MapComponent = dynamic(
 
 // UPDATED Default Filters - Omit optional fields instead of using undefined
 const DEFAULT_FILTERS: CourseFilters = {
-  walkabilityRating_overall_min: 0, 
-  filter_isWalkable: false, 
-  filter_drivingRange: false,
-  filter_golfCarts: false,
-  filter_pushCarts: false,
-  filter_restaurant: false,
-  filter_proShop: false,
-  filter_puttingGreen: false,
-  filter_chippingGreen: false,
-  filter_practiceBunker: false,
-  filter_caddies: false,
-  filter_clubRental: false,
+  walkabilityRating_overall_min: 0,
+  clubTypes: ['Public', 'Semi-Private', 'Resort'],
+  courseHoles: [18],
   sortBy: 'walkabilityRating_overall',
   sortOrder: 'desc',
   // searchQuery: undefined, // OMIT
   // state: undefined, // OMIT
-  // mapBounds: undefined, // OMIT 
+  // mapBounds: undefined, // OMIT
   // simpleSearch: undefined, // OMIT
 };
 
@@ -450,7 +441,7 @@ export default function MapPage(): JSX.Element {
                 <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(75, 85, 99, 0.85)' }}> {/* Dark Grey */}
                   {/* No icon for unwalkable, so no span here, or an empty one if needed for alignment */}
                 </div>
-                <span className="text-xs">Unwalkable Courses {filters.filter_isWalkable ? '(Shown)' : '(Hidden)'}</span>
+                <span className="text-xs">Unwalkable Courses</span>
               </div>
               {/* Selected Course */}
               <div className="flex items-center gap-2">

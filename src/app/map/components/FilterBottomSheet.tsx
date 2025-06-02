@@ -27,20 +27,9 @@ export function FilterBottomSheet({
 }: FilterBottomSheetProps): JSX.Element {
   // Track local filter state
   const [localFilters, setLocalFilters] = useState<CourseFilters>(() => ({
-    // Initialize with valid defaults, respecting incoming props if available
     walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
-    filter_isWalkable: filters.filter_isWalkable ?? false, 
-    filter_drivingRange: filters.filter_drivingRange ?? false,
-    filter_golfCarts: filters.filter_golfCarts ?? false,
-    filter_pushCarts: filters.filter_pushCarts ?? false,
-    filter_restaurant: filters.filter_restaurant ?? false,
-    filter_proShop: filters.filter_proShop ?? false,
-    filter_puttingGreen: filters.filter_puttingGreen ?? false,
-    filter_chippingGreen: filters.filter_chippingGreen ?? false,
-    filter_practiceBunker: filters.filter_practiceBunker ?? false,
-    filter_caddies: filters.filter_caddies ?? false,
-    filter_clubRental: filters.filter_clubRental ?? false,
-    // Handle optional fields carefully
+    clubTypes: filters.clubTypes ?? ['Public', 'Semi-Private', 'Resort'],
+    courseHoles: filters.courseHoles ?? [18],
     ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
     ...(filters.state && { state: filters.state }),
     ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
@@ -51,22 +40,11 @@ export function FilterBottomSheet({
 
   // Update local filters: This sync logic needs to be more robust
   useEffect(() => {
-    if (isOpen) { 
-      // Create a new state object based on incoming filters
+    if (isOpen) {
       const newState: CourseFilters = {
         walkabilityRating_overall_min: filters.walkabilityRating_overall_min ?? 0,
-        filter_isWalkable: filters.filter_isWalkable ?? false,
-        filter_drivingRange: filters.filter_drivingRange ?? false,
-        filter_golfCarts: filters.filter_golfCarts ?? false,
-        filter_pushCarts: filters.filter_pushCarts ?? false,
-        filter_restaurant: filters.filter_restaurant ?? false,
-        filter_proShop: filters.filter_proShop ?? false,
-        filter_puttingGreen: filters.filter_puttingGreen ?? false,
-        filter_chippingGreen: filters.filter_chippingGreen ?? false,
-        filter_practiceBunker: filters.filter_practiceBunker ?? false,
-        filter_caddies: filters.filter_caddies ?? false,
-        filter_clubRental: filters.filter_clubRental ?? false,
-        // Only include optional fields if they exist in the incoming filters
+        clubTypes: filters.clubTypes ?? ['Public', 'Semi-Private', 'Resort'],
+        courseHoles: filters.courseHoles ?? [18],
         ...(filters.searchQuery && { searchQuery: filters.searchQuery }),
         ...(filters.state && { state: filters.state }),
         ...(filters.mapBounds && { mapBounds: filters.mapBounds }),
@@ -89,19 +67,10 @@ export function FilterBottomSheet({
   };
 
   // Check if any NEW filters are active
-  const hasActiveFilters = 
+  const hasActiveFilters =
     localFilters.walkabilityRating_overall_min > 0 ||
-    localFilters.filter_isWalkable === true ||
-    localFilters.filter_drivingRange === true ||
-    localFilters.filter_golfCarts === true ||
-    localFilters.filter_pushCarts === true ||
-    localFilters.filter_restaurant === true ||
-    localFilters.filter_proShop === true ||
-    localFilters.filter_puttingGreen === true ||
-    localFilters.filter_chippingGreen === true ||
-    localFilters.filter_practiceBunker === true ||
-    localFilters.filter_caddies === true ||
-    localFilters.filter_clubRental === true ||
+    (localFilters.clubTypes && localFilters.clubTypes.length > 0 && localFilters.clubTypes.length !== 6) ||
+    (localFilters.courseHoles && localFilters.courseHoles.length > 0) ||
     !!localFilters.searchQuery ||
     !!localFilters.state ||
     !!localFilters.mapBounds ||
@@ -112,17 +81,8 @@ export function FilterBottomSheet({
   // Count active NEW filters
   const activeFilterCount = [
     localFilters.walkabilityRating_overall_min > 0,
-    localFilters.filter_isWalkable === true,
-    localFilters.filter_drivingRange === true,
-    localFilters.filter_golfCarts === true,
-    localFilters.filter_pushCarts === true,
-    localFilters.filter_restaurant === true,
-    localFilters.filter_proShop === true,
-    localFilters.filter_puttingGreen === true,
-    localFilters.filter_chippingGreen === true,
-    localFilters.filter_practiceBunker === true,
-    localFilters.filter_caddies === true,
-    localFilters.filter_clubRental === true,
+    localFilters.clubTypes && localFilters.clubTypes.length > 0 && localFilters.clubTypes.length !== 6,
+    localFilters.courseHoles && localFilters.courseHoles.length > 0,
     !!localFilters.searchQuery,
     !!localFilters.state,
     !!localFilters.mapBounds,
@@ -158,26 +118,9 @@ export function FilterBottomSheet({
               {hasActiveFilters && (
                 <button
                   onClick={() => setLocalFilters({
-                    // Reset: Only specify fields being reset to defaults
-                    // Omit optional fields entirely when resetting
                     walkabilityRating_overall_min: 0,
-                    filter_isWalkable: false, 
-                    filter_drivingRange: false,
-                    filter_golfCarts: false,
-                    filter_pushCarts: false,
-                    filter_restaurant: false,
-                    filter_proShop: false,
-                    filter_puttingGreen: false,
-                    filter_chippingGreen: false,
-                    filter_practiceBunker: false,
-                    filter_caddies: false,
-                    filter_clubRental: false,
-                    // searchQuery: undefined, // OMIT
-                    // state: undefined, // OMIT
-                    // mapBounds: undefined, // OMIT
-                    // sortBy: undefined, // OMIT
-                    // sortOrder: undefined, // OMIT
-                    // simpleSearch: undefined, // OMIT
+                    clubTypes: ['Public', 'Semi-Private', 'Resort'],
+                    courseHoles: [18],
                   })}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
@@ -229,24 +172,26 @@ export function FilterBottomSheet({
                 </div>
               </div>
 
+              {/* After walkability rating, before club type */}
+              <div className="pt-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isWalkableFilter_bottomsheet"
+                    checked={localFilters.filter_isWalkable === true}
+                    onCheckedChange={checked => {
+                      updateLocalFilters({ filter_isWalkable: !!checked });
+                    }}
+                  />
+                  <label htmlFor="isWalkableFilter_bottomsheet" className="text-sm font-medium">
+                    Include un-walkable courses
+                  </label>
+                </div>
+              </div>
+
               {/* === NEW FILTER UI SECTION START === */} 
               {/* Replace old Course Types/Categories/Price sections */}
               <div className="space-y-3 border-t pt-4">
                 
-                {/* Walkable Checkbox */} 
-                <div className="flex items-center space-x-2">
-                      <Checkbox
-                    id="filter_isWalkable_bottomsheet"
-                    checked={localFilters.filter_isWalkable ?? false}
-                        onCheckedChange={(checked) => {
-                      updateLocalFilters({ filter_isWalkable: !!checked }); 
-                        }}
-                      />
-                  <label htmlFor="filter_isWalkable_bottomsheet" className="text-sm font-medium">
-                    Include un-walkable courses
-                      </label>
-              </div>
-
                 {/* Facilities Section */} 
                 <div className="pt-2">
                   <label className="block text-sm font-medium mb-1.5">Facilities</label>
@@ -295,6 +240,90 @@ export function FilterBottomSheet({
               {/* Simple Search */} 
               {/* ... existing Checkbox ... */}
               
+            </div>
+
+            <div className="pt-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Club Type</label>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Public', value: 'Public' },
+                  { label: 'Semi-Private', value: 'Semi-Private' },
+                  { label: 'Resort', value: 'Resort' },
+                  { label: 'Private', value: 'Private' },
+                  { label: 'Military', value: 'Military' },
+                  { label: 'University', value: 'University' },
+                ].map(option => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`clubType_${option.value}_bottomsheet`}
+                      checked={localFilters.clubTypes?.includes(option.value) ?? false}
+                      onCheckedChange={checked => {
+                        const prev = localFilters.clubTypes || [];
+                        updateLocalFilters({
+                          clubTypes: checked
+                            ? [...prev, option.value]
+                            : prev.filter(v => v !== option.value),
+                        });
+                        if (typeof window !== 'undefined' && window.gtag) {
+                          window.gtag('event', 'ClubTypeChanged', {
+                            event_category: 'MapFilters',
+                            event_label: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).join(','),
+                            value: (checked ? [...prev, option.value] : prev.filter(v => v !== option.value)).length,
+                          });
+                        }
+                      }}
+                    />
+                    <label htmlFor={`clubType_${option.value}_bottomsheet`} className="text-sm">{option.label}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Course Holes</label>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { label: '9', value: 9 },
+                  { label: '18', value: 18 },
+                  { label: 'Any', value: 'any' },
+                ].map(option => (
+                  <div key={option.label} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`courseHoles_${option.label}_bottomsheet`}
+                      checked={
+                        option.value === 'any'
+                          ? !localFilters.courseHoles || localFilters.courseHoles.length === 0
+                          : localFilters.courseHoles?.includes(option.value as number) ?? false
+                      }
+                      onCheckedChange={checked => {
+                        let newHoles: number[] = localFilters.courseHoles ? [...localFilters.courseHoles] : [];
+                        if (option.value === 'any') {
+                          newHoles = [];
+                        } else {
+                          if (checked) {
+                            newHoles = Array.from(new Set([...newHoles, option.value as number]));
+                          } else {
+                            newHoles = newHoles.filter(h => h !== option.value);
+                          }
+                        }
+                        updateLocalFilters({ courseHoles: newHoles });
+                        if (typeof window !== 'undefined' && window.gtag) {
+                          window.gtag('event', 'CourseHolesChanged', {
+                            event_category: 'MapFilters',
+                            event_label: newHoles.length === 0 ? 'Any' : newHoles.join(','),
+                            value: newHoles.length === 0 ? 'Any' : newHoles.length,
+                          });
+                        }
+                      }}
+                    />
+                    <label htmlFor={`courseHoles_${option.label}_bottomsheet`} className="text-sm">{option.label}</label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
