@@ -223,19 +223,35 @@ export default function Map({
     // Check zoom level DIRECTLY before deciding to show markers
     if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
       console.log(`[MapComponent LOG] updateVisibleMarkers: Zoom (${currentZoom}) <= threshold, clearing markers.`);
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
-      }
+      // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
+      // if (clustererRef.current) {
+      //   clustererRef.current.clearMarkers();
+      // }
+      
+      // Clear markers directly from map
+      markersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      markersRef.current = [];
+      
       setSelectedInfoWindowCourse(null);
       return;
     }
 
     if (!courses || courses.length === 0) {
       console.log('[MapComponent LOG] updateVisibleMarkers: No courses or empty array, clearing markers and returning.');
-      if (clustererRef.current && markersRef.current.length > 0) {
-          clustererRef.current.clearMarkers();
-          markersRef.current = [];
-      }
+      // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
+      // if (clustererRef.current && markersRef.current.length > 0) {
+      //     clustererRef.current.clearMarkers();
+      //     markersRef.current = [];
+      // }
+      
+      // Clear markers directly from map
+      markersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      markersRef.current = [];
+      
       setSelectedInfoWindowCourse(null);
       return;
     }
@@ -243,9 +259,17 @@ export default function Map({
     console.log('[MapComponent LOG] updateVisibleMarkers: Proceeding to marker creation/update.');
     if (markersRef.current.length === 0 || markersRef.current.length !== courses.length) {
       console.log(`[MapComponent LOG] updateVisibleMarkers: Recreating markers. Initial courses count: ${courses.length}`);
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
-      }
+      
+      // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
+      // if (clustererRef.current) {
+      //   clustererRef.current.clearMarkers();
+      // }
+      
+      // Clear existing markers directly from map
+      markersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      
       setSelectedInfoWindowCourse(null);
 
       const validCourses = courses
@@ -261,6 +285,7 @@ export default function Map({
 
       const newMarkers = validCourses.map(course => {
         const marker = new google.maps.marker.AdvancedMarkerElement({
+          map: map, // Add marker directly to map instead of clusterer
           position: {
             lat: course.location_coordinates_latitude,
             lng: course.location_coordinates_longitude
@@ -281,13 +306,15 @@ export default function Map({
 
       console.log(`[MapComponent LOG] updateVisibleMarkers: Created ${newMarkers.length} marker elements.`);
 
-      if (clustererRef.current && newMarkers.length > 0) {
-        console.log(`[MapComponent LOG] updateVisibleMarkers: Adding ${newMarkers.length} markers to clusterer...`);
-        clustererRef.current.addMarkers(newMarkers);
-        console.log(`[MapComponent LOG] updateVisibleMarkers: Finished adding markers to clusterer.`);
-      } else {
-        console.log("[MapComponent LOG] updateVisibleMarkers: No clusterer available or no valid markers to add.");
-      }
+      // CLUSTERING DISABLED - Markers are already added directly to map above
+      // if (clustererRef.current && newMarkers.length > 0) {
+      //   console.log(`[MapComponent LOG] updateVisibleMarkers: Adding ${newMarkers.length} markers to clusterer...`);
+      //   clustererRef.current.addMarkers(newMarkers);
+      //   console.log(`[MapComponent LOG] updateVisibleMarkers: Finished adding markers to clusterer.`);
+      // } else {
+      //   console.log("[MapComponent LOG] updateVisibleMarkers: No clusterer available or no valid markers to add.");
+      // }
+      
       markersRef.current = newMarkers;
     } else {
       markersRef.current.forEach((marker, index) => {
@@ -302,9 +329,10 @@ export default function Map({
     mapRef.current = map;
     onMapLoad(map);
     
-    if (!clustererRef.current) {
-      clustererRef.current = createClusterer(map);
-    }
+    // CLUSTERING DISABLED FOR TESTING - Comment out cluster creation
+    // if (!clustererRef.current) {
+    //   clustererRef.current = createClusterer(map);
+    // }
 
     map.addListener('bounds_changed', () => {
       const bounds = map.getBounds();
@@ -502,70 +530,71 @@ export default function Map({
   );
 }
 
-const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {
-  return new GoogleMarkerClusterer({
-    map,
-    algorithm: new SuperClusterAlgorithm({
-      radius: 100,
-      maxZoom: 12,
-      minPoints: 3
-    }),
-    renderer: {
-      render: ({ count, position }) => {
-        const size = Math.min(Math.max(40, Math.log2(count) * 12), 70);
+// CLUSTERING DISABLED - Comment out the createClusterer function
+// const createClusterer = (map: google.maps.Map): GoogleMarkerClusterer => {
+//   return new GoogleMarkerClusterer({
+//     map,
+//     algorithm: new SuperClusterAlgorithm({
+//       radius: 100,
+//       maxZoom: 12,
+//       minPoints: 3
+//     }),
+//     renderer: {
+//       render: ({ count, position }) => {
+//         const size = Math.min(Math.max(40, Math.log2(count) * 12), 70);
         
-        const outerDiv = document.createElement('div');
-        outerDiv.style.position = 'relative';
+//         const outerDiv = document.createElement('div');
+//         outerDiv.style.position = 'relative';
         
-        const div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.left = '50%';
-        div.style.top = '50%';
-        div.style.transform = 'translate(-50%, -50%)';
-        div.style.width = `${size}px`;
-        div.style.height = `${size}px`;
-        div.style.borderRadius = '50%';
-        div.style.background = MARKER_COLORS.cluster;
-        div.style.border = '3px solid rgba(255, 255, 255, 0.9)';
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.justifyContent = 'center';
-        div.style.color = 'white';
-        div.style.fontSize = `${Math.max(14, Math.min(size/2.2, 20))}px`;
-        div.style.fontWeight = '500';
-        div.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-        div.style.transition = 'all 0.2s ease';
-        div.textContent = String(count);
+//         const div = document.createElement('div');
+//         div.style.position = 'absolute';
+//         div.style.left = '50%';
+//         div.style.top = '50%';
+//         div.style.transform = 'translate(-50%, -50%)';
+//         div.style.width = `${size}px`;
+//         div.style.height = `${size}px`;
+//         div.style.borderRadius = '50%';
+//         div.style.background = MARKER_COLORS.cluster;
+//         div.style.border = '3px solid rgba(255, 255, 255, 0.9)';
+//         div.style.display = 'flex';
+//         div.style.alignItems = 'center';
+//         div.style.justifyContent = 'center';
+//         div.style.color = 'white';
+//         div.style.fontSize = `${Math.max(14, Math.min(size/2.2, 20))}px`;
+//         div.style.fontWeight = '500';
+//         div.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+//         div.style.transition = 'all 0.2s ease';
+//         div.textContent = String(count);
 
-        if (count > 10) {
-          div.style.animation = 'pulse 2s infinite';
-          const style = document.createElement('style');
-          style.textContent = `
-            @keyframes pulse {
-              0% { transform: translate(-50%, -50%) scale(1); }
-              50% { transform: translate(-50%, -50%) scale(1.05); }
-              100% { transform: translate(-50%, -50%) scale(1); }
-            }
-          `;
-          outerDiv.appendChild(style);
-        }
+//         if (count > 10) {
+//           div.style.animation = 'pulse 2s infinite';
+//           const style = document.createElement('style');
+//           style.textContent = `
+//             @keyframes pulse {
+//               0% { transform: translate(-50%, -50%) scale(1); }
+//               50% { transform: translate(-50%, -50%) scale(1.05); }
+//               100% { transform: translate(-50%, -50%) scale(1); }
+//             }
+//           `;
+//           outerDiv.appendChild(style);
+//         }
 
-        div.onmouseenter = () => {
-          div.style.transform = 'translate(-50%, -50%) scale(1.1)';
-          div.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
-        };
-        div.onmouseleave = () => {
-          div.style.transform = 'translate(-50%, -50%) scale(1)';
-          div.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-        };
+//         div.onmouseenter = () => {
+//           div.style.transform = 'translate(-50%, -50%) scale(1.1)';
+//           div.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
+//         };
+//         div.onmouseleave = () => {
+//           div.style.transform = 'translate(-50%, -50%) scale(1)';
+//           div.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+//         };
 
-        outerDiv.appendChild(div);
-        return new google.maps.marker.AdvancedMarkerElement({
-          position,
-          content: outerDiv
-        });
-      }
-    }
-  });
-};
+//         outerDiv.appendChild(div);
+//         return new google.maps.marker.AdvancedMarkerElement({
+//           position,
+//           content: outerDiv
+//         });
+//       }
+//     }
+//   });
+// };
 
