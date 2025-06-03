@@ -259,8 +259,27 @@ export const getCoursesForMap = onCall(
           }
           // Course holes filter
           if (filters.courseHoles && filters.courseHoles.length > 0) {
-            if (!filters.courseHoles.includes(course.course_holes)) {
-              return false;
+            // Convert discrete values to ranges
+            // 9 = 9-17 holes, 18 = 18+ holes
+            const has9Range = filters.courseHoles.includes(9);
+            const has18Range = filters.courseHoles.includes(18);
+            const courseHoles = course.club_totalHoles;
+            
+            if (has9Range && has18Range) {
+              // Both ranges selected = 9+ holes
+              if (courseHoles < 9) {
+                return false;
+              }
+            } else if (has9Range) {
+              // Only 9-17 holes
+              if (courseHoles < 9 || courseHoles > 17) {
+                return false;
+              }
+            } else if (has18Range) {
+              // Only 18+ holes
+              if (courseHoles < 18) {
+                return false;
+              }
             }
           }
           // Walkability filter (Include un-walkable courses)

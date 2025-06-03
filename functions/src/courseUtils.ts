@@ -32,7 +32,22 @@ export function buildFilterSortConstraints(filters: CourseFilters): AdminQueryCo
 
   // Course holes filter
   if (filters.courseHoles && filters.courseHoles.length > 0) {
-    constraints.push({fieldPath: "course_holes", opStr: "in", value: filters.courseHoles});
+    // Convert discrete values to ranges
+    // 9 = 9-17 holes, 18 = 18+ holes
+    const has9Range = filters.courseHoles.includes(9);
+    const has18Range = filters.courseHoles.includes(18);
+    
+    if (has9Range && has18Range) {
+      // Both ranges selected = 9+ holes (essentially no filtering)
+      constraints.push({fieldPath: "club_totalHoles", opStr: ">=", value: 9});
+    } else if (has9Range) {
+      // Only 9-17 holes
+      constraints.push({fieldPath: "club_totalHoles", opStr: ">=", value: 9});
+      constraints.push({fieldPath: "club_totalHoles", opStr: "<=", value: 17});
+    } else if (has18Range) {
+      // Only 18+ holes
+      constraints.push({fieldPath: "club_totalHoles", opStr: ">=", value: 18});
+    }
   }
 
   // Walkability rating filter

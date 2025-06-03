@@ -250,12 +250,12 @@ export default function Sidebar({
 
           <div className="pt-3 lg:pt-0">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium">Course Holes</label>
+              <label className="block text-xs font-medium">Number of Holes</label>
             </div>
             <div className="space-y-1.5">
               {[
                 { label: '9', value: 9 },
-                { label: '18', value: 18 },
+                { label: '18+', value: 18 },
                 { label: 'Any', value: 'any' },
               ].map(option => (
                 <div key={option.label} className="flex items-center space-x-2">
