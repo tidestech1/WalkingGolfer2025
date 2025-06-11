@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 
-import { MarkerClusterer as GoogleMarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import { GoogleMap, useLoadScript, Libraries, InfoWindow } from '@react-google-maps/api';
 import { Star } from 'lucide-react';
 import Link from 'next/link';
@@ -60,16 +59,6 @@ const convertToMapBounds = (bounds: google.maps.LatLngBounds): MapBounds => {
   };
 };
 
-const MARKER_COLORS = {
-  walkable: 'rgba(5, 150, 105, 0.85)',    // Darker green with transparency
-  default: 'rgba(30, 64, 175, 0.85)',     // Darker blue (blue-800) with transparency
-  unwalkable: 'rgba(75, 85, 99, 0.85)', // Dark grey (Tailwind gray-500) with transparency
-  selectedBackground: '#DC2626',         // Red for selected background (e.g., Tailwind red-600)
-  selectedBorder: '#1A202C',             // Dark Gray for selected border (Gray 900 from brand guide)
-  defaultBorder: 'rgba(0, 0, 0, 0.8)',   // Darker border for better contrast
-  cluster: 'rgba(37, 99, 235, 0.95)'      // Cluster blue
-};
-
 export default function Map({
   courses,
   selectedCourseId,
@@ -86,7 +75,6 @@ export default function Map({
   const [currentMapZoom, setCurrentMapZoom] = useState<number>(DEFAULT_ZOOM);
   const [selectedInfoWindowCourse, setSelectedInfoWindowCourse] = useState<GolfCourse | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const clustererRef = useRef<GoogleMarkerClusterer | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env['NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'] || '',
@@ -136,7 +124,7 @@ export default function Map({
   }, [isLoaded]);
 
   // Function to calculate marker scale based on zoom level and selection state
-  const getMarkerScale = useCallback((isSelected: boolean, hasRating: boolean): number => {
+  const getMarkerScale = useCallback((isSelected: boolean, isUnwalkable: boolean): number => {
     // Return default scale if map isn't ready yet
     let baseScale: number;
     if (!mapRef.current) {
@@ -147,7 +135,7 @@ export default function Map({
       if (!currentZoom) {
         baseScale = isSelected ? 1.5 : 1.0; // Adjusted default selected scale
       } else if (currentZoom <= 8) {
-        baseScale = isSelected ? 1.2 : 0.7; // Slightly larger selected at far zoom
+        baseScale = isSelected ? 1.2 : 0.8; // Updated: Normal increased from 0.7x to 0.8x
       } else if (currentZoom <= 10) {
         baseScale = isSelected ? 1.4 : 0.9; // Larger selected at medium zoom
       } else {
@@ -155,57 +143,73 @@ export default function Map({
         baseScale = isSelected ? 1.5 : 1.0;
       }
     }
-    // Apply 20% increase for rated courses ONLY if they are NOT selected
-    if (hasRating && !isSelected) {
+    
+    // Apply 20% increase for walkable courses (rated + unrated) ONLY if they are NOT selected
+    // Only unwalkable courses stay at base scale
+    if (!isUnwalkable && !isSelected) {
       return baseScale * 1.2;
     }
-    return baseScale; // Otherwise, use the base scale (selected or not rated)
+    return baseScale; // Selected courses or unwalkable courses use base scale
   }, []);
 
-  // Function to create marker icon for individual courses
-  const createMarkerIcon = useCallback((course: GolfCourse, isSelected: boolean): google.maps.marker.PinElement => {
-    const isActuallyWalkable = course.course_isWalkable === true;
-    const isUnknownWalkability = course.course_isWalkable === null || course.course_isWalkable === undefined;
+  // Function to determine which marker icon to use based on course data
+  const getMarkerIconPath = useCallback((course: GolfCourse): string => {
     const isExplicitlyUnwalkable = course.course_isWalkable === false;
     const hasWalkabilityRating = typeof course.walkabilityRating_overall === 'number' && course.walkabilityRating_overall > 0;
 
-    const scale = getMarkerScale(isSelected, hasWalkabilityRating);
-    const pinGlyph = document.createElement("span");
-    pinGlyph.className = 'material-symbols-outlined';
-    pinGlyph.style.fontFamily = '\'Material Symbols Outlined\'';
-    pinGlyph.style.fontSize = '16px'; // Adjust size as needed
-
-    let backgroundColor = MARKER_COLORS.default; // Fallback
-    let glyphContent: string | null = null;
-
+    // If explicitly marked as unwalkable (cart-only), use unwalkable marker
     if (isExplicitlyUnwalkable) {
-      backgroundColor = MARKER_COLORS.unwalkable;
-      glyphContent = null; // No icon for unwalkable courses
-    } else if (isActuallyWalkable || isUnknownWalkability) {
-      backgroundColor = MARKER_COLORS.walkable;
-      glyphContent = 'directions_walk'; // Walker icon for walkable or unknown
-      pinGlyph.style.color = '#FFFFFF';
-      pinGlyph.style.fontVariationSettings = "'FILL' 0";
+      return '/images/map/map-marker-unwalkable.svg';
     }
 
+    // If course has a rating (1-5), use appropriate numbered marker
     if (hasWalkabilityRating) {
-      backgroundColor = isActuallyWalkable || isUnknownWalkability ? MARKER_COLORS.walkable : MARKER_COLORS.unwalkable;
-      glyphContent = 'star';
-      pinGlyph.style.fontVariationSettings = "'FILL' 1"; // Ensure star is filled
-      pinGlyph.style.color = isSelected ? '#FFFFFF' : '#FBBF24'; // White star when selected, Yellow otherwise
+      const rating = Math.round(course.walkabilityRating_overall!);
+      const clampedRating = Math.min(Math.max(rating, 1), 5); // Ensure rating is between 1-5
+      return `/images/map/map-marker-${clampedRating}star.svg`;
     }
+
+    // If no rating but walkable or unknown walkability, use unrated marker
+    return '/images/map/map-marker-unrated.svg';
+  }, []);
+
+  // Function to create marker content for individual courses using custom images
+  const createMarkerContent = useCallback((course: GolfCourse, isSelected: boolean): HTMLElement => {
+    const container = document.createElement('div');
+    container.style.position = 'relative';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+
+    // Get the appropriate marker icon
+    const iconPath = getMarkerIconPath(course);
     
-    pinGlyph.textContent = glyphContent;
+    // Create the marker image
+    const markerImg = document.createElement('img');
+    markerImg.src = iconPath;
+    markerImg.style.width = '32px'; // Base size - will be scaled by AdvancedMarkerElement
+    markerImg.style.height = '32px';
+    markerImg.style.display = 'block';
+    
+    // Add subtle selection indicator if selected
+    if (isSelected) {
+      // Apply subtle red drop shadow to the marker image itself
+      markerImg.style.filter = 'drop-shadow(0 0 8px rgba(220, 38, 38, 0.8)) drop-shadow(0 0 16px rgba(220, 38, 38, 0.4))';
+      markerImg.style.transition = 'filter 0.2s ease';
+    }
 
-    const pinElement = new google.maps.marker.PinElement({
-      background: isSelected ? MARKER_COLORS.selectedBackground : backgroundColor,
-      borderColor: isSelected ? MARKER_COLORS.selectedBorder : MARKER_COLORS.defaultBorder,
-      scale: scale,
-      glyph: glyphContent ? pinGlyph : null, // Pass glyph if content exists, else null
-    });
+    container.appendChild(markerImg);
+    return container;
+  }, [getMarkerIconPath]);
 
-    return pinElement;
-  }, [getMarkerScale]); // Dependencies remain the same
+  // Function to create marker icon for individual courses - UPDATED FOR CUSTOM IMAGES
+  const createMarkerIcon = useCallback((course: GolfCourse, isSelected: boolean): { element: HTMLElement } => {
+    // This now returns an object with element property to maintain compatibility
+    // with the existing AdvancedMarkerElement content property
+    return {
+      element: createMarkerContent(course, isSelected)
+    };
+  }, [createMarkerContent]);
 
   const updateVisibleMarkers = useCallback((): void => {
     console.log('[MapComponent LOG] updateVisibleMarkers called.');
@@ -284,6 +288,10 @@ export default function Map({
       console.log(`[MapComponent LOG] updateVisibleMarkers: Found ${validCourses.length} courses with valid coordinates.`);
 
       const newMarkers = validCourses.map(course => {
+        const isExplicitlyUnwalkable = course.course_isWalkable === false;
+        const isSelected = course.id === selectedCourseId;
+        const scale = getMarkerScale(isSelected, isExplicitlyUnwalkable);
+        
         const marker = new google.maps.marker.AdvancedMarkerElement({
           map: map, // Add marker directly to map instead of clusterer
           position: {
@@ -291,8 +299,15 @@ export default function Map({
             lng: course.location_coordinates_longitude
           },
           title: course.courseName,
-          content: createMarkerIcon(course, course.id === selectedCourseId).element
+          content: createMarkerIcon(course, isSelected).element,
+          zIndex: isSelected ? 1000 : 1 // Ensure selected markers appear on top
         });
+
+        // Apply scaling to the marker content
+        if (marker.content instanceof HTMLElement) {
+          marker.content.style.transform = `scale(${scale})`;
+          marker.content.style.transformOrigin = 'center center';
+        }
 
         marker.addEventListener('click', (event: MouseEvent) => {
           event.stopPropagation();
@@ -319,7 +334,19 @@ export default function Map({
     } else {
       markersRef.current.forEach((marker, index) => {
         if (courses[index]) {
-          marker.content = createMarkerIcon(courses[index], courses[index].id === selectedCourseId).element;
+          const course = courses[index];
+          const isExplicitlyUnwalkable = course.course_isWalkable === false;
+          const isSelected = course.id === selectedCourseId;
+          const scale = getMarkerScale(isSelected, isExplicitlyUnwalkable);
+          
+          // Update marker content and scaling
+          marker.content = createMarkerIcon(course, isSelected).element;
+          marker.zIndex = isSelected ? 1000 : 1;
+          
+          if (marker.content instanceof HTMLElement) {
+            marker.content.style.transform = `scale(${scale})`;
+            marker.content.style.transformOrigin = 'center center';
+          }
         }
       });
     }
