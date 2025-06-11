@@ -13,6 +13,34 @@ import { SearchBox } from './SearchBox';
 import { useProgressiveLoading } from '../hooks/useProgressiveLoading';
 import {} from '@/lib/utils';
 
+/**
+ * MAP BOUNDS BUFFER SYSTEM
+ * 
+ * This component implements a "safe zone" buffer system for map bounds to ensure
+ * that golf courses are only considered "visible" when they're clearly within the
+ * viewable area, not just technically within the viewport bounds.
+ * 
+ * PROBLEM: 
+ * - Google Maps getBounds() returns exact viewport coordinates
+ * - Courses at the very edges might be cut off by UI elements or barely visible
+ * - Users expect to see courses that are clearly visible and actionable
+ * 
+ * SOLUTION:
+ * - Apply a buffer percentage (default 10%) to shrink the "effective" bounds
+ * - Only courses within this safe zone are considered "in bounds"
+ * - Navigation and exact bounds still use raw viewport for precision
+ * 
+ * CONFIGURATION:
+ * - boundsBufferPercent prop controls the buffer size (0.1 = 10%)
+ * - Higher values = smaller safe zone = more conservative filtering
+ * - Lower values = larger safe zone = more courses included
+ * 
+ * USAGE:
+ * - convertToMapBounds() applies buffer by default for course filtering
+ * - getRawMapBounds() provides exact bounds for navigation/URLs
+ * - applyBoundsBuffer() utility for custom buffer applications
+ */
+
 const MIN_ZOOM_FOR_MARKERS = 7.5;
 const DEFAULT_ZOOM = 8;
 
@@ -28,6 +56,11 @@ interface MapProps {
   onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
   targetBounds?: MapBounds | null;
   onZoomStatusChange: (isZoomedOut: boolean) => void;
+  /**
+   * Buffer percentage for bounds safe zone (default: 0.1 = 10%)
+   * Higher values create a smaller "safe zone" for course visibility
+   */
+  boundsBufferPercent?: number;
 }
 
 const defaultCenter = {
@@ -48,15 +81,47 @@ const isValidCoordinate = (lat: number, lng: number): boolean => {
   );
 };
 
-const convertToMapBounds = (bounds: google.maps.LatLngBounds): MapBounds => {
+/**
+ * Apply a buffer to map bounds to create a "safe zone" for visible courses
+ * This ensures courses near the edges aren't technically in bounds but practically invisible
+ * @param bounds Original map bounds
+ * @param bufferPercent Percentage of the view to buffer (default 10% = 0.1)
+ * @returns Bounds with buffer applied (smaller visible area)
+ */
+const applyBoundsBuffer = (bounds: MapBounds, bufferPercent: number): MapBounds => {
+  const latRange = bounds.north - bounds.south;
+  const lngRange = bounds.east - bounds.west;
+  
+  const latBuffer = latRange * bufferPercent;
+  const lngBuffer = lngRange * bufferPercent;
+  
+  return {
+    north: bounds.north - latBuffer,
+    south: bounds.south + latBuffer,
+    east: bounds.east - lngBuffer,
+    west: bounds.west + lngBuffer
+  };
+};
+
+const convertToMapBounds = (bounds: google.maps.LatLngBounds, applyBuffer: boolean = true, bufferPercent: number = 0.1): MapBounds => {
   const ne = bounds.getNorthEast();
   const sw = bounds.getSouthWest();
-  return {
+  const rawBounds: MapBounds = {
     north: ne.lat(),
     south: sw.lat(),
     east: ne.lng(),
     west: sw.lng()
   };
+  
+  // Apply buffer to create safe zone for course visibility
+  return applyBuffer ? applyBoundsBuffer(rawBounds, bufferPercent) : rawBounds;
+};
+
+/**
+ * Get raw map bounds without buffer for cases where exact viewport is needed
+ */
+const getRawMapBounds = (bounds: google.maps.LatLngBounds): MapBounds => {
+  return convertToMapBounds(bounds, false);
 };
 
 export default function Map({
@@ -69,6 +134,7 @@ export default function Map({
   onPlaceSelect,
   targetBounds,
   onZoomStatusChange,
+  boundsBufferPercent = 0.1,
 }: MapProps): JSX.Element | React.ReactNode {
   const [showZoomMessage, setShowZoomMessage] = useState<boolean>(false);
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
@@ -364,7 +430,7 @@ export default function Map({
     map.addListener('bounds_changed', () => {
       const bounds = map.getBounds();
       if (bounds) {
-        onBoundsChanged(convertToMapBounds(bounds));
+        onBoundsChanged(convertToMapBounds(bounds, true, boundsBufferPercent));
         // Check zoom level on bounds_changed and update state/notify parent
         const currentZoom = map.getZoom();
         if (typeof currentZoom === 'number') {
@@ -374,7 +440,7 @@ export default function Map({
           console.log(`[MapComponent LOG] useEffect[bounds_changed]: fitBounds complete. New zoom=${currentZoom}, isNowZoomedOut=${isZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
           setShowZoomMessage(isZoomedOut);
           onZoomStatusChange(isZoomedOut);
-          setCurrentBounds(convertToMapBounds(bounds));
+          setCurrentBounds(convertToMapBounds(bounds, true, boundsBufferPercent));
         } else {
            console.warn('[MapComponent LOG] useEffect[bounds_changed]: Could not get zoom after fitBounds.');
         }
@@ -394,7 +460,7 @@ export default function Map({
       const bounds = map.getBounds();
       if (bounds) {
         // Directly call onBoundsChanged with converted bounds
-        onBoundsChanged(convertToMapBounds(bounds));
+        onBoundsChanged(convertToMapBounds(bounds, true, boundsBufferPercent));
         // Check zoom level on bounds_changed and update state/notify parent
         const currentZoom = map.getZoom();
         if (typeof currentZoom === 'number') {
@@ -404,7 +470,7 @@ export default function Map({
           console.log(`[MapComponent LOG] bounds_changed listener: zoom=${currentZoom}, isZoomedOut=${isZoomedOut}. Current state showZoomMessage=${showZoomMessage}. Calling setShowZoomMessage(${isZoomedOut})`);
           setShowZoomMessage(isZoomedOut);
           onZoomStatusChange(isZoomedOut);
-          setCurrentBounds(convertToMapBounds(bounds));
+          setCurrentBounds(convertToMapBounds(bounds, true, boundsBufferPercent));
         } else {
           console.warn('[MapComponent LOG] bounds_changed listener: Could not get zoom.');
         }
@@ -446,7 +512,7 @@ export default function Map({
         onZoomStatusChange(isNowZoomedOut); // Notify parent immediately
         const bounds = map.getBounds();
         if (bounds) {
-          setCurrentBounds(convertToMapBounds(bounds));
+          setCurrentBounds(convertToMapBounds(bounds, true, boundsBufferPercent));
         }
       } else {
          console.warn('[MapComponent LOG] useEffect[targetBounds]: Could not get zoom after fitBounds.');
@@ -538,12 +604,9 @@ export default function Map({
                 </span>
               </div>
               <Link
-                href={`/courses/${selectedInfoWindowCourse.id}?from=map&bounds=${encodeURIComponent(JSON.stringify({
-                  north: mapRef.current?.getBounds()?.getNorthEast().lat(),
-                  south: mapRef.current?.getBounds()?.getSouthWest().lat(),
-                  east: mapRef.current?.getBounds()?.getNorthEast().lng(),
-                  west: mapRef.current?.getBounds()?.getSouthWest().lng()
-                }))}`}
+                href={`/courses/${selectedInfoWindowCourse.id}?from=map&bounds=${encodeURIComponent(JSON.stringify(
+                  mapRef.current?.getBounds() ? getRawMapBounds(mapRef.current.getBounds()!) : {}
+                ))}`}
                 className="text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium"
                 onClick={(e) => e.stopPropagation()}
               >

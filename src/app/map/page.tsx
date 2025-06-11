@@ -22,6 +22,11 @@ import Sidebar from './components/Sidebar';
 const LOCATION_PROMPT_SEEN_KEY = 'walkingGolfer_hasSeenLocationPrompt';
 const MIN_ZOOM_FOR_MARKERS = 7.5;
 
+// Configuration for map bounds buffer (safe zone)
+// 0.1 = 10% buffer, 0.15 = 15% buffer, etc.
+// Higher values create a smaller "safe zone" for course visibility
+const MAP_BOUNDS_BUFFER_PERCENT = 0.1;
+
 // Dynamically import the Map component with no SSR
 const MapComponent = dynamic(
   () => import('./components/Map'),
@@ -338,6 +343,7 @@ export default function MapPage(): JSX.Element {
             onPlaceSelect={handlePlaceSelect}
             targetBounds={targetMapBounds}
             onZoomStatusChange={handleZoomStatusChange}
+            boundsBufferPercent={MAP_BOUNDS_BUFFER_PERCENT}
           />
           {/* Render LocationPrompt overlay here for mobile */}
           {mapLoaded && !userLocation && showLocationPrompt && (
@@ -489,6 +495,7 @@ export default function MapPage(): JSX.Element {
             onPlaceSelect={handlePlaceSelect}
             targetBounds={targetMapBounds}
             onZoomStatusChange={handleZoomStatusChange}
+            boundsBufferPercent={MAP_BOUNDS_BUFFER_PERCENT}
           />
           {/* Render LocationPrompt overlay here for desktop */}
           {mapLoaded && !userLocation && showLocationPrompt && (

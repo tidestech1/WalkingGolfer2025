@@ -27,6 +27,78 @@ interface SidebarProps {
   currentZoom: number | null;
 }
 
+/**
+ * Animated Course Count Component
+ * Displays the course count with typewriter effect and highlight animation
+ */
+function AnimatedCourseCount({ count }: { count: number }): JSX.Element {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showHighlight, setShowHighlight] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const prevCountRef = useRef<number | null>(null);
+  
+  const fullText = `Showing ${count} within the map bounds`;
+  
+  useEffect(() => {
+    // Initial load - show immediately
+    if (!isInitialized) {
+      setDisplayedText(fullText);
+      setIsInitialized(true);
+      prevCountRef.current = count;
+      return;
+    }
+    
+    // Only animate if count actually changed
+    if (prevCountRef.current !== null && prevCountRef.current !== count) {
+      console.log('Starting animation:', prevCountRef.current, '->', count);
+      
+      // Reset states
+      setDisplayedText('');
+      setIsTyping(true);
+      setShowHighlight(true);
+      
+      // Start typing animation
+      let charIndex = 0;
+      const typingInterval = setInterval(() => {
+        charIndex++;
+        setDisplayedText(fullText.substring(0, charIndex));
+        
+        if (charIndex >= fullText.length) {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+          
+          // Remove highlight after delay
+          setTimeout(() => {
+            setShowHighlight(false);
+          }, 1200);
+        }
+      }, 60); // Slower for more visible effect
+      
+      prevCountRef.current = count;
+      
+      // Cleanup function
+      return () => {
+        clearInterval(typingInterval);
+      };
+    }
+  }, [count, fullText, isInitialized]);
+  
+  return (
+    <p 
+      className={cn(
+        "text-sm transition-all duration-500",
+        showHighlight 
+          ? "text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200" 
+          : "text-gray-600"
+      )}
+    >
+      {displayedText}
+      {isTyping && <span className="text-blue-500 animate-pulse ml-1">|</span>}
+    </p>
+  );
+}
+
 export default function Sidebar({
   courses,
   filters,
@@ -309,9 +381,7 @@ export default function Sidebar({
             {isZoomedOut ? (
               <p className="text-sm text-gray-600">Zoom in or search to find courses</p>
             ) : (
-              <p className="text-sm text-gray-600">
-                Showing {courses.length} within the map bounds
-              </p>
+              <AnimatedCourseCount count={courses.length} />
             )}
           </div>
           <Input 
