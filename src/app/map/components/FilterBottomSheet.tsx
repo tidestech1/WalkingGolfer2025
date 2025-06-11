@@ -182,47 +182,6 @@ export function FilterBottomSheet({
                 </div>
               </div>
 
-              {/* === NEW FILTER UI SECTION START === */} 
-              {/* Replace old Course Types/Categories/Price sections */}
-              <div className="space-y-3 border-t pt-4">
-                
-                {/* Walkability Rating Section - moved from bottom */}
-                <div className="pt-2">
-                  <label className="block text-sm font-medium mb-1.5">Minimum Walkability Rating</label>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Poor</span>
-                    <span className="text-xs text-gray-500">Excellent</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    value={localFilters.walkabilityRating_overall_min}
-                    onChange={e => updateLocalFilters({ walkabilityRating_overall_min: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="text-center text-sm font-medium mt-1">
-                    {localFilters.walkabilityRating_overall_min === 0 ? 'Any' : localFilters.walkabilityRating_overall_min.toFixed(1)}
-                  </div>
-                </div>
-              </div>
-              {/* === NEW FILTER UI SECTION END === */} 
-
-              {/* Keep other filter inputs like Search Query, State, etc. below */}
-              {/* Search Query */} 
-              {/* ... existing Input ... */}
-              {/* State */} 
-              {/* ... existing Input ... */}
-              {/* Map Bounds */} 
-              {/* ... existing Input ... */}
-              {/* Sort By */} 
-              {/* ... existing Input ... */}
-              {/* Sort Order */} 
-              {/* ... existing Input ... */}
-              {/* Simple Search */} 
-              {/* ... existing Checkbox ... */}
-              
             </div>
 
             <div className="pt-3">
