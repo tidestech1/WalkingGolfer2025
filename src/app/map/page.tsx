@@ -65,6 +65,7 @@ export default function MapPage(): JSX.Element {
   const [targetMapBounds, setTargetMapBounds] = useState<MapBounds | null>(null);
   const [targetMapZoom, setTargetMapZoom] = useState<number | null>(null);
   const [isZoomedOut, setIsZoomedOut] = useState<boolean>(false);
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
 
   // Initialize showLocationPrompt state based on sessionStorage
   const [showLocationPrompt, setShowLocationPrompt] = useState<boolean>(() => {
@@ -225,13 +226,16 @@ export default function MapPage(): JSX.Element {
   }, []);
 
   // Handle view changes from BottomNav
-  const handleViewChange = useCallback((view: 'map' | 'list' | 'filters') => {
+  const handleViewChange = useCallback((view: 'map' | 'list' | 'filters' | 'key') => {
     if (view === 'filters') {
       setFilterSheetOpen(true);
-      // Keep the underlying map/list view state as is
+    } else if (view === 'key') {
+      setKeyModalOpen(true);
+      // Don't change the underlying view when showing key modal
     } else {
       setActiveMobileView(view);
-      setFilterSheetOpen(false); // Close filter sheet when switching main views
+      setFilterSheetOpen(false);
+      setKeyModalOpen(false); // Close key modal when switching views
     }
   }, []);
 
@@ -345,6 +349,9 @@ export default function MapPage(): JSX.Element {
             onZoomStatusChange={handleZoomStatusChange}
             boundsBufferPercent={MAP_BOUNDS_BUFFER_PERCENT}
           />
+
+
+
           {/* Render LocationPrompt overlay here for mobile */}
           {mapLoaded && !userLocation && showLocationPrompt && (
             <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
@@ -400,7 +407,7 @@ export default function MapPage(): JSX.Element {
 
         {/* Bottom Navigation */}
         <BottomNav
-          activeView={filterSheetOpen ? 'filters' : activeMobileView}
+          activeView={keyModalOpen ? 'key' : (filterSheetOpen ? 'filters' : activeMobileView)}
           onViewChange={handleViewChange}
           totalCourses={filteredCourses.length}
         />
@@ -428,32 +435,48 @@ export default function MapPage(): JSX.Element {
           <div className="p-4 mt-4 border-t">
             <h4 className="font-semibold text-sm mb-2">Marker Key</h4>
             <div className="space-y-1.5">
-              {/* Rated Course */}
+              {/* 5-Star Course */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}> {/* Green */}
-                  <span className="material-symbols-outlined" style={{ color: '#FBBF24', fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>star</span>
-                </div>
-                <span className="text-xs">Rated Courses</span>
+                <img src="/images/map/map-marker-5star.svg" alt="5-star marker" className="w-4 h-4" />
+                <span className="text-xs">5-Star Course</span>
               </div>
-              {/* Golf Courses (Walkable/Unknown) */}
+              {/* 4-Star Course */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(5, 150, 105, 0.85)' }}> {/* Green */}
-                  <span className="material-symbols-outlined text-white" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 0" }}>directions_walk</span>
-                </div>
-                <span className="text-xs">Golf Courses</span>
+                <img src="/images/map/map-marker-4star.svg" alt="4-star marker" className="w-4 h-4" />
+                <span className="text-xs">4-Star Course</span>
+              </div>
+              {/* 3-Star Course */}
+              <div className="flex items-center gap-2">
+                <img src="/images/map/map-marker-3star.svg" alt="3-star marker" className="w-4 h-4" />
+                <span className="text-xs">3-Star Course</span>
+              </div>
+              {/* 2-Star Course */}
+              <div className="flex items-center gap-2">
+                <img src="/images/map/map-marker-2star.svg" alt="2-star marker" className="w-4 h-4" />
+                <span className="text-xs">2-Star Course</span>
+              </div>
+              {/* 1-Star Course */}
+              <div className="flex items-center gap-2">
+                <img src="/images/map/map-marker-1star.svg" alt="1-star marker" className="w-4 h-4" />
+                <span className="text-xs">1-Star Course</span>
+              </div>
+              {/* Unrated Course */}
+              <div className="flex items-center gap-2">
+                <img src="/images/map/map-marker-unrated.svg" alt="unrated marker" className="w-4 h-4" />
+                <span className="text-xs">Unrated Course</span>
               </div>
               {/* Unwalkable Course */}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ backgroundColor: 'rgba(75, 85, 99, 0.85)' }}> {/* Dark Grey */}
-                  {/* No icon for unwalkable, so no span here, or an empty one if needed for alignment */}
-                </div>
-                <span className="text-xs">Unwalkable Courses</span>
+                <img src="/images/map/map-marker-unwalkable.svg" alt="unwalkable marker" className="w-4 h-4" />
+                <span className="text-xs">Unwalkable Course</span>
               </div>
-              {/* Selected Course */}
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: '#DC2626' }}></div>
-                <span className="text-xs">Selected Course</span>
-              </div>
+                             {/* Selected Course Indicator */}
+               <div className="flex items-center gap-2">
+                 <div className="relative w-4 h-4 flex items-center justify-center">
+                   <img src="/images/map/map-marker-5star.svg" alt="selected example" className="w-4 h-4" style={{filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))'}} />
+                 </div>
+                 <span className="text-xs">Selected Course (red glow)</span>
+               </div>
             </div>
           </div>
           {/* --- END: Marker Key Section --- */}
@@ -518,6 +541,79 @@ export default function MapPage(): JSX.Element {
           )}
         </div>
       </div>
+
+      {/* Key Modal - Show on top of everything */}
+      {keyModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[80vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Marker Key</h3>
+              <button
+                onClick={() => setKeyModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Modal Content - Same marker key as desktop */}
+            <div className="p-4">
+              <div className="space-y-3">
+                {/* 5-Star Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-5star.svg" alt="5-star marker" className="w-5 h-5" />
+                  <span className="text-sm">5-Star Course</span>
+                </div>
+                {/* 4-Star Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-4star.svg" alt="4-star marker" className="w-5 h-5" />
+                  <span className="text-sm">4-Star Course</span>
+                </div>
+                {/* 3-Star Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-3star.svg" alt="3-star marker" className="w-5 h-5" />
+                  <span className="text-sm">3-Star Course</span>
+                </div>
+                {/* 2-Star Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-2star.svg" alt="2-star marker" className="w-5 h-5" />
+                  <span className="text-sm">2-Star Course</span>
+                </div>
+                {/* 1-Star Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-1star.svg" alt="1-star marker" className="w-5 h-5" />
+                  <span className="text-sm">1-Star Course</span>
+                </div>
+                {/* Unrated Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-unrated.svg" alt="unrated marker" className="w-5 h-5" />
+                  <span className="text-sm">Unrated Course</span>
+                </div>
+                {/* Unwalkable Course */}
+                <div className="flex items-center gap-3">
+                  <img src="/images/map/map-marker-unwalkable.svg" alt="unwalkable marker" className="w-5 h-5" />
+                  <span className="text-sm">Unwalkable Course</span>
+                </div>
+                {/* Selected Course Indicator */}
+                <div className="flex items-center gap-3 pt-2 border-t border-gray-200">
+                  <div className="relative w-5 h-5 flex items-center justify-center">
+                    <img src="/images/map/map-marker-5star.svg" alt="selected example" className="w-5 h-5" style={{filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))'}} />
+                  </div>
+                  <span className="text-sm">Selected Course (red glow)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Tap outside to close */}
+          <div 
+            className="absolute inset-0 -z-10" 
+            onClick={() => setKeyModalOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 } 

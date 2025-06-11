@@ -1,10 +1,10 @@
-import { Map, List, SlidersHorizontal } from 'lucide-react';
+import { Map, List, SlidersHorizontal, HelpCircle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 interface BottomNavProps {
-  activeView: 'map' | 'list' | 'filters';
-  onViewChange: (view: 'map' | 'list' | 'filters') => void;
+  activeView: 'map' | 'list' | 'filters' | 'key';
+  onViewChange: (view: 'map' | 'list' | 'filters' | 'key') => void;
   activeFilterCount?: number;
   totalCourses?: number;
 }
@@ -25,7 +25,7 @@ export function BottomNav({
             activeView === 'map' ? 'text-blue-600' : 'text-gray-600'
           )}
         >
-          <Map className="w-6 h-6" />
+          <Map className="w-5 h-5" />
           <div className="flex flex-col items-center">
             <span className="text-xs">Map</span>
             {activeView === 'map' && (
@@ -41,7 +41,7 @@ export function BottomNav({
             activeView === 'list' ? 'text-blue-600' : 'text-gray-600'
           )}
         >
-          <List className="w-6 h-6" />
+          <List className="w-5 h-5" />
           <span className="text-xs mt-1">List</span>
         </button>
         
@@ -52,13 +52,24 @@ export function BottomNav({
             activeView === 'filters' ? 'text-blue-600' : 'text-gray-600'
           )}
         >
-          <SlidersHorizontal className="w-6 h-6" />
+          <SlidersHorizontal className="w-5 h-5" />
           <span className="text-xs mt-1">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="absolute top-2 right-8 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="absolute top-2 right-6 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {activeFilterCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => onViewChange('key')}
+          className={cn(
+            'flex flex-col items-center justify-center w-full h-full',
+            activeView === 'key' ? 'text-blue-600' : 'text-gray-600'
+          )}
+        >
+          <HelpCircle className="w-5 h-5" />
+          <span className="text-xs mt-1">Key</span>
         </button>
       </nav>
     </div>
