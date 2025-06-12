@@ -11,17 +11,28 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-[75vh] flex items-center">
         <div className="absolute inset-0 z-0">
+          {/* Mobile Image */}
           <Image
-            src="/backgrounds/hero-walking-couple.png"
-            alt="Man and woman walking on a scenic golf course"
+            src="/backgrounds/hero-mobile.webp"
+            alt="Golfers walking on a scenic golf course"
             fill
-            className="object-cover object-center brightness-[0.65]"
+            className="object-cover object-center brightness-[0.75] md:hidden"
+            priority
+            sizes="100vw"
+            quality={90}
+          />
+          {/* Desktop Image */}
+          <Image
+            src="/backgrounds/hero-desktop.webp"
+            alt="Golfers walking on a scenic golf course"
+            fill
+            className="object-cover object-center brightness-[0.75] hidden md:block"
             priority
             sizes="100vw"
             quality={90}
           />
         </div>
-        <div className="relative z-10 text-white px-4 sm:px-8 md:px-16 lg:px-24 max-w-3xl">
+        <div className="relative z-10 text-white px-4 sm:px-8 md:px-16 lg:px-24 max-w-3xl mt-8 md:mt-0">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
             Find the Best Walkable Golf Courses in the USA
           </h1>
