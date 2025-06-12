@@ -116,6 +116,7 @@ export interface CourseReview {
 /**
  * Interface for filtering and searching courses
  * Matches the new flat schema structure
+ * Focused on walking-related criteria only
  */
 export interface CourseFilters {
   walkabilityRating_overall_min: number;
@@ -128,7 +129,7 @@ export interface CourseFilters {
   mapBounds?: MapBounds;
   simpleSearch?: boolean;
 
-  // Add walkable filter for map UI
+  // Core walking-related filters
   filter_isWalkable?: boolean;
 
   // Club type filter (multi-select, e.g. ["Public", "Resort"])
