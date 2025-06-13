@@ -69,7 +69,7 @@ export function LocationPrompt({ onLocationSelect, onSkip }: LocationPromptProps
             <button
               onClick={handleLocationRequest}
               disabled={isLoading}
-              className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 
+              className="use-location-btn flex-1 bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 
                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (

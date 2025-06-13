@@ -242,6 +242,7 @@ export default function Map({
   // Function to create marker content for individual courses using custom images
   const createMarkerContent = useCallback((course: GolfCourse, isSelected: boolean): HTMLElement => {
     const container = document.createElement('div');
+    container.className = 'map-marker';
     container.style.position = 'relative';
     container.style.display = 'flex';
     container.style.alignItems = 'center';
@@ -630,7 +631,7 @@ export default function Map({
               zIndex: 100
             }}
           >
-            <div className="p-1 font-sans w-48">
+            <div className="course-preview p-1 font-sans w-48">
               <h3 className="text-base font-semibold mb-0.5 text-gray-800 leading-tight">
                 <span>{selectedInfoWindowCourse.courseName}</span>
                 {selectedInfoWindowCourse.course_holes ? (

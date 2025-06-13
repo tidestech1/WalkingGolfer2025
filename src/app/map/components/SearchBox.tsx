@@ -62,7 +62,7 @@ export function SearchBox({ onPlaceSelect }: SearchBoxProps) {
           type="text"
           placeholder="Set the map search area (state, city, etc.)"
           className={cn(
-            "w-full pl-10 pr-12 py-3 rounded-lg shadow-lg border border-gray-300",
+            "search-bar w-full pl-10 pr-12 py-3 rounded-lg shadow-lg border border-gray-300",
             "focus:outline-none focus:ring-2 focus:ring-blue-500",
             "text-base placeholder-gray-400 bg-white/95",
             "transition-colors duration-200"

@@ -211,7 +211,7 @@ export default function Sidebar({
         </div>
         
         <div className={cn(
-          "overflow-y-auto",
+          "filter-controls overflow-y-auto",
           "lg:px-3 lg:space-y-3",
           "px-4 space-y-6 lg:space-y-3"
         )}>

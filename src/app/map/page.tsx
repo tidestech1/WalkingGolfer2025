@@ -8,6 +8,8 @@ import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
 
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { MapTourProvider } from '@/components/ui/MapTourProvider';
+import { MapTour } from '@/components/ui/MapTour';
 import { buildFilterSortConstraints } from '@/lib/firebase/courseUtils';
 import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
 import { cn } from '@/lib/utils';
@@ -328,8 +330,12 @@ export default function MapPage(): JSX.Element {
   }
 
   return (
-    <div className="fixed inset-x-0 top-10 bottom-0 bg-white">
-      {/* Mobile Views */}
+    <MapTourProvider>
+      <div className="fixed inset-x-0 top-10 bottom-0 bg-white">
+        {/* Tour Component */}
+        <MapTour />
+        
+        {/* Mobile Views */}
       <div className="lg:hidden h-full">
         {/* Map View */}
         <div className={cn(
@@ -614,6 +620,7 @@ export default function MapPage(): JSX.Element {
           />
         </div>
       )}
-    </div>
+      </div>
+    </MapTourProvider>
   );
 } 
