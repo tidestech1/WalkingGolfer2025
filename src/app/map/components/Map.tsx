@@ -278,21 +278,17 @@ export default function Map({
   }, [createMarkerContent]);
 
   const updateVisibleMarkers = useCallback((): void => {
-    console.log('[MapComponent LOG] updateVisibleMarkers called.');
     const map = mapRef.current;
 
     if (!map || !isLoaded) {
-      console.log('[MapComponent LOG] updateVisibleMarkers exiting: map or isLoaded false.');
       return;
     }
 
     // Get zoom level directly inside the callback
     const currentZoom = map.getZoom();
-    console.log(`[MapComponent LOG] updateVisibleMarkers: Direct zoom check=${currentZoom}, courses.length=${courses?.length ?? 'undefined'}`);
 
     // Check zoom level DIRECTLY before deciding to show markers
     if (typeof currentZoom === 'number' && currentZoom <= MIN_ZOOM_FOR_MARKERS) {
-      console.log(`[MapComponent LOG] updateVisibleMarkers: Zoom (${currentZoom}) <= threshold, clearing markers.`);
       // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
       // if (clustererRef.current) {
       //   clustererRef.current.clearMarkers();
@@ -309,7 +305,6 @@ export default function Map({
     }
 
     if (!courses || courses.length === 0) {
-      console.log('[MapComponent LOG] updateVisibleMarkers: No courses or empty array, clearing markers and returning.');
       // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
       // if (clustererRef.current && markersRef.current.length > 0) {
       //     clustererRef.current.clearMarkers();
@@ -320,15 +315,13 @@ export default function Map({
       markersRef.current.forEach(marker => {
         marker.map = null;
       });
-      markersRef.current = [];
+          markersRef.current = [];
       
       setSelectedInfoWindowCourse(null);
       return;
     }
 
-    console.log('[MapComponent LOG] updateVisibleMarkers: Proceeding to marker creation/update.');
     if (markersRef.current.length === 0 || markersRef.current.length !== courses.length) {
-      console.log(`[MapComponent LOG] updateVisibleMarkers: Recreating markers. Initial courses count: ${courses.length}`);
       
       // CLUSTERING DISABLED - Clear markers directly instead of through clusterer
       // if (clustererRef.current) {
@@ -351,22 +344,19 @@ export default function Map({
           return valid;
         });
 
-      console.log(`[MapComponent LOG] updateVisibleMarkers: Found ${validCourses.length} courses with valid coordinates.`);
-
       const newMarkers = validCourses.map(course => {
         const isExplicitlyUnwalkable = course.course_isWalkable === false;
         const isSelected = course.id === selectedCourseId;
         const scale = getMarkerScale(isSelected, isExplicitlyUnwalkable);
+        const zIndex = getMarkerZIndex(course, isSelected);
+        const position = applyLocationOffset(course, validCourses);
         
         const marker = new google.maps.marker.AdvancedMarkerElement({
           map: map, // Add marker directly to map instead of clusterer
-          position: {
-            lat: course.location_coordinates_latitude,
-            lng: course.location_coordinates_longitude
-          },
+          position: position,
           title: course.courseName,
           content: createMarkerIcon(course, isSelected).element,
-          zIndex: isSelected ? 1000 : 1 // Ensure selected markers appear on top
+          zIndex: zIndex // Use calculated z-index for proper layering
         });
 
         // Apply scaling to the marker content
@@ -377,15 +367,12 @@ export default function Map({
 
         marker.addEventListener('click', (event: MouseEvent) => {
           event.stopPropagation();
-          console.debug(`Marker clicked: ${course.courseName} (ID: ${course.id})`); 
           onCourseSelect(course);
           setSelectedInfoWindowCourse(course);
         });
 
         return marker;
       });
-
-      console.log(`[MapComponent LOG] updateVisibleMarkers: Created ${newMarkers.length} marker elements.`);
 
       // CLUSTERING DISABLED - Markers are already added directly to map above
       // if (clustererRef.current && newMarkers.length > 0) {
@@ -404,10 +391,13 @@ export default function Map({
           const isExplicitlyUnwalkable = course.course_isWalkable === false;
           const isSelected = course.id === selectedCourseId;
           const scale = getMarkerScale(isSelected, isExplicitlyUnwalkable);
+          const zIndex = getMarkerZIndex(course, isSelected);
+          const position = applyLocationOffset(course, courses);
           
-          // Update marker content and scaling
+          // Update marker content, position, and layering
           marker.content = createMarkerIcon(course, isSelected).element;
-          marker.zIndex = isSelected ? 1000 : 1;
+          marker.position = position;
+          marker.zIndex = zIndex; // Update z-index for proper layering
           
           if (marker.content instanceof HTMLElement) {
             marker.content.style.transform = `scale(${scale})`;
@@ -435,11 +425,10 @@ export default function Map({
         const currentZoom = map.getZoom();
         if (typeof currentZoom === 'number') {
           setCurrentMapZoom(currentZoom);
-          const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
-          // Always update state and notify parent on bounds_changed
-          console.log(`[MapComponent LOG] useEffect[bounds_changed]: fitBounds complete. New zoom=${currentZoom}, isNowZoomedOut=${isZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
-          setShowZoomMessage(isZoomedOut);
-          onZoomStatusChange(isZoomedOut);
+                  const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
+        // Always update state and notify parent on bounds_changed
+        setShowZoomMessage(isZoomedOut);
+        onZoomStatusChange(isZoomedOut);
           setCurrentBounds(convertToMapBounds(bounds, true, boundsBufferPercent));
         } else {
            console.warn('[MapComponent LOG] useEffect[bounds_changed]: Could not get zoom after fitBounds.');
@@ -467,7 +456,6 @@ export default function Map({
           setCurrentMapZoom(currentZoom);
           const isZoomedOut = currentZoom <= MIN_ZOOM_FOR_MARKERS;
           // Always update state and notify parent on bounds_changed
-          console.log(`[MapComponent LOG] bounds_changed listener: zoom=${currentZoom}, isZoomedOut=${isZoomedOut}. Current state showZoomMessage=${showZoomMessage}. Calling setShowZoomMessage(${isZoomedOut})`);
           setShowZoomMessage(isZoomedOut);
           onZoomStatusChange(isZoomedOut);
           setCurrentBounds(convertToMapBounds(bounds, true, boundsBufferPercent));
@@ -507,7 +495,6 @@ export default function Map({
       if (typeof newZoom === 'number') {
         setCurrentMapZoom(newZoom); // Update zoom state for display
         const isNowZoomedOut = newZoom <= MIN_ZOOM_FOR_MARKERS;
-        console.log(`[MapComponent LOG] useEffect[targetBounds]: fitBounds complete. New zoom=${newZoom}, isNowZoomedOut=${isNowZoomedOut}. Calling setShowZoomMessage & onZoomStatusChange.`);
         setShowZoomMessage(isNowZoomedOut);
         onZoomStatusChange(isNowZoomedOut); // Notify parent immediately
         const bounds = map.getBounds();
@@ -520,13 +507,80 @@ export default function Map({
     }
   }, [targetBounds, mapRef.current, onZoomStatusChange, setShowZoomMessage, setCurrentMapZoom]);
 
+  // Function to determine marker z-index based on course rating and selection
+  const getMarkerZIndex = useCallback((course: GolfCourse, isSelected: boolean): number => {
+    // Selected courses always on top
+    if (isSelected) {
+      return 1000;
+    }
+
+    // Determine rating for z-index calculation
+    const isExplicitlyUnwalkable = course.course_isWalkable === false;
+    const hasWalkabilityRating = typeof course.walkabilityRating_overall === 'number' && course.walkabilityRating_overall > 0;
+
+    if (isExplicitlyUnwalkable) {
+      return 1; // Unwalkable courses at bottom
+    }
+
+    if (hasWalkabilityRating) {
+      const rating = Math.round(course.walkabilityRating_overall!);
+      const clampedRating = Math.min(Math.max(rating, 1), 5);
+      return clampedRating * 10; // 5-star = 50, 4-star = 40, etc.
+    }
+
+    return 5; // Unrated courses above unwalkable but below rated
+  }, []);
+
+  // Function to apply small offsets to courses at the same location
+  const applyLocationOffset = useCallback((course: GolfCourse, allCourses: GolfCourse[]): { lat: number; lng: number } => {
+    // Find other courses at the same location
+    const sameLocationCourses = allCourses.filter(otherCourse => 
+      otherCourse.id !== course.id &&
+      Math.abs(otherCourse.location_coordinates_latitude - course.location_coordinates_latitude) < 0.000001 &&
+      Math.abs(otherCourse.location_coordinates_longitude - course.location_coordinates_longitude) < 0.000001
+    );
+
+    if (sameLocationCourses.length === 0) {
+      // No other courses at this location
+      return {
+        lat: course.location_coordinates_latitude,
+        lng: course.location_coordinates_longitude
+      };
+    }
+
+    // Calculate dynamic offset radius based on current zoom level
+    const currentZoom = mapRef.current?.getZoom() || DEFAULT_ZOOM;
+    
+    // Much more aggressive offset for medium zoom visibility:
+    // - Zoom 7: Very large offset (~4.4km)
+    // - Zoom 8: Large offset (~2.2km) 
+    // - Zoom 9: Large offset (~1.1km)
+    // - Zoom 10: Medium offset (~550m)
+    // - Zoom 12: Small offset (~140m)
+    // - Zoom 14+: Minimal offset (~35m)
+    const baseOffset = 0.02; // Doubled again for much better visibility
+    const zoomFactor = Math.max(6, currentZoom); // Start scaling from zoom 6
+    const offsetRadius = Math.max(0.001, baseOffset / Math.pow(2, zoomFactor - 6)); // Higher minimum too
+    
+    // Apply small circular offset based on course ID for consistency
+    const allCoursesAtLocation = [course, ...sameLocationCourses].sort((a, b) => a.id.localeCompare(b.id));
+    const courseIndex = allCoursesAtLocation.findIndex(c => c.id === course.id);
+    const totalCourses = allCoursesAtLocation.length;
+    
+    const angle = (courseIndex / totalCourses) * 2 * Math.PI;
+    
+    return {
+      lat: course.location_coordinates_latitude + offsetRadius * Math.cos(angle),
+      lng: course.location_coordinates_longitude + offsetRadius * Math.sin(angle)
+    };
+  }, []);
+
   if (loadError) {
     console.error("Google Maps Load Error:", loadError);
     return <div>Error loading maps. Please check console or API key.</div>;
   }
 
   if (!isLoaded) {
-    console.debug("Google Maps script loading...");
     return <div>Loading Map Script...</div>;
   }
 

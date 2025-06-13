@@ -264,6 +264,11 @@ export const getCoursesForMap = onCall(
             const has9Range = filters.courseHoles.includes(9);
             const has18Range = filters.courseHoles.includes(18);
             const courseHoles = course.club_totalHoles;
+
+            // Debug logging for hole filtering
+            if (course.courseName?.includes("Stone Creek") || course.club_name?.includes("Stone Creek")) {
+              logger.info(`[HOLES DEBUG] Course: ${course.courseName}, club_totalHoles: ${courseHoles} (type: ${typeof courseHoles}), has9: ${has9Range}, has18: ${has18Range}`);
+            }
             
             if (has9Range && has18Range) {
               // Both ranges selected = 9+ holes
@@ -278,6 +283,9 @@ export const getCoursesForMap = onCall(
             } else if (has18Range) {
               // Only 18+ holes
               if (courseHoles < 18) {
+                if (course.courseName?.includes("Stone Creek") || course.club_name?.includes("Stone Creek")) {
+                  logger.info(`[HOLES DEBUG] Filtering out ${course.courseName}: ${courseHoles} < 18`);
+                }
                 return false;
               }
             }

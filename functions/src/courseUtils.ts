@@ -36,7 +36,7 @@ export function buildFilterSortConstraints(filters: CourseFilters): AdminQueryCo
     // 9 = 9-17 holes, 18 = 18+ holes
     const has9Range = filters.courseHoles.includes(9);
     const has18Range = filters.courseHoles.includes(18);
-    
+
     if (has9Range && has18Range) {
       // Both ranges selected = 9+ holes (essentially no filtering)
       constraints.push({fieldPath: "club_totalHoles", opStr: ">=", value: 9});

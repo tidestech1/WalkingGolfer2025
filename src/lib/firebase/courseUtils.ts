@@ -18,12 +18,12 @@ import {
   QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { FieldValue, Transaction } from 'firebase-admin/firestore';
- 
+
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 import { CourseReview } from '@/types/review';
 
 // Client-side Firestore instance
-import { db, isFirebaseAvailable } from './firebase'; 
+import { db, isFirebaseAvailable } from './firebase';
 // Server-side Firestore instance (Admin SDK)
 import { getAdminFirestore } from './firebaseAdmin';
 
@@ -77,11 +77,11 @@ export async function getCourseById(id: string): Promise<GolfCourse | null> {
  * Build query constraints based on filters
  */
 export function buildFilterSortConstraints(filters: CourseFilters): QueryConstraint[] {
-  console.log('[buildFilterSortConstraints LOG] Input Filters:', JSON.stringify(filters, null, 2)); 
+  console.log('[buildFilterSortConstraints LOG] Input Filters:', JSON.stringify(filters, null, 2));
   const constraints: QueryConstraint[] = [];
   let firstOrderByField: string | null = null;
   // Default sort order if not specified in filters
-  const sortDirection = filters.sortOrder || 'desc'; 
+  const sortDirection = filters.sortOrder || 'desc';
 
   // --- Add clause for club type filter ---
   if (filters.clubTypes && filters.clubTypes.length > 0) {
