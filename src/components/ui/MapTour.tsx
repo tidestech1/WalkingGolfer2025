@@ -34,10 +34,12 @@ export const MapTour: React.FC = () => {
   const { setIsOpen, setSteps } = useTour()
 
   useEffect(() => {
-    // Only run on client side
+    // Only run on client side and desktop devices
     if (typeof window !== 'undefined' && setIsOpen && setSteps) {
+      const isDesktop = window.innerWidth >= 1024 // lg breakpoint
       const alreadySeen = localStorage.getItem(TOUR_STORAGE_KEY)
-      if (!alreadySeen) {
+      
+      if (isDesktop && !alreadySeen) {
         // Set the tour steps
         setSteps(steps)
         // Small delay to ensure elements are loaded

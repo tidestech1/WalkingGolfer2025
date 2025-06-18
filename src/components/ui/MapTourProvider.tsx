@@ -3,6 +3,7 @@
 import React from 'react'
 import { TourProvider } from '@reactour/tour'
 import { handleTourComplete } from './MapTour'
+import { handleMobileTourComplete } from './MapTourMobile'
 
 interface MapTourProviderProps {
   children: React.ReactNode
@@ -14,14 +15,26 @@ export const MapTourProvider: React.FC<MapTourProviderProps> = ({ children }) =>
       steps={[]}
       onClickMask={({ setCurrentStep, currentStep, steps, setIsOpen }) => {
         if (steps && currentStep === steps.length - 1) {
-          handleTourComplete()
+          // Detect device and call appropriate completion handler
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+          if (isMobile) {
+            handleMobileTourComplete()
+          } else {
+            handleTourComplete()
+          }
           setIsOpen(false)
         } else {
           setCurrentStep((s) => (s === steps!.length - 1 ? 0 : s + 1))
         }
       }}
       onClickClose={({ setIsOpen }) => {
-        handleTourComplete()
+        // Detect device and call appropriate completion handler
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+        if (isMobile) {
+          handleMobileTourComplete()
+        } else {
+          handleTourComplete()
+        }
         setIsOpen(false)
       }}
       styles={{
@@ -99,7 +112,13 @@ export const MapTourProvider: React.FC<MapTourProviderProps> = ({ children }) =>
         <button
           onClick={() => {
             if (currentStep === stepsLength - 1) {
-              handleTourComplete()
+              // Detect device and call appropriate completion handler
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+              if (isMobile) {
+                handleMobileTourComplete()
+              } else {
+                handleTourComplete()
+              }
               setIsOpen(false)
             } else {
               setCurrentStep(currentStep + 1)

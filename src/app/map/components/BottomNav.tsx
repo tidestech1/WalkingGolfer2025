@@ -20,6 +20,7 @@ export function BottomNav({
       <nav className="flex justify-around items-center h-16">
         <button
           onClick={() => onViewChange('map')}
+          data-tab="map"
           className={cn(
             'flex flex-col items-center justify-center w-full h-full relative',
             activeView === 'map' ? 'text-blue-600' : 'text-gray-600'
@@ -36,6 +37,7 @@ export function BottomNav({
         
         <button
           onClick={() => onViewChange('list')}
+          data-tab="list"
           className={cn(
             'flex flex-col items-center justify-center w-full h-full',
             activeView === 'list' ? 'text-blue-600' : 'text-gray-600'
@@ -47,6 +49,7 @@ export function BottomNav({
         
         <button
           onClick={() => onViewChange('filters')}
+          data-tab="filters"
           className={cn(
             'flex flex-col items-center justify-center w-full h-full relative',
             activeView === 'filters' ? 'text-blue-600' : 'text-gray-600'

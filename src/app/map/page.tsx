@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { MapTourProvider } from '@/components/ui/MapTourProvider';
 import { MapTour } from '@/components/ui/MapTour';
+import { MapTourMobile } from '@/components/ui/MapTourMobile';
 import { buildFilterSortConstraints } from '@/lib/firebase/courseUtils';
 import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
 import { cn } from '@/lib/utils';
@@ -332,8 +333,9 @@ export default function MapPage(): JSX.Element {
   return (
     <MapTourProvider>
       <div className="fixed inset-x-0 top-10 bottom-0 bg-white">
-        {/* Tour Component */}
+        {/* Tour Components - Desktop and Mobile */}
         <MapTour />
+        <MapTourMobile />
         
         {/* Mobile Views */}
       <div className="lg:hidden h-full">
