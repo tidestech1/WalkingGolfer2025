@@ -6,64 +6,80 @@ import { useTour } from '@reactour/tour'
 const MOBILE_TOUR_STORAGE_KEY = 'mapTourMobileCompleted'
 
 // Mobile-specific tour steps that account for tabbed interface
-const mobileSteps = [
+const steps = [
+  {
+    selector: '.tour-target',
+    content: 'Start by using your current location to automatically show nearby walkable golf courses or use the search bar to look up a specific location.',
+    doMask: true, // Try enabling mask with the tour-target class
+    action: () => {
+      // Auto-switch to Map tab if not already there
+      setTimeout(() => {
+        const mapTab = document.querySelector('[data-tab="map"]') as HTMLElement;
+        if (mapTab) mapTab.click();
+      }, 500);
+    },
+  },
   {
     selector: '.search-bar',
-    content: 'Start by searching for a location to find walkable golf courses in that area.',
+    content: 'Use this search bar to search for a specific location by state or city to focus the map on courses in that area.',
+    doMask: true, // This element should always exist
     action: () => {
-      // Ensure we're on the map tab
-      const mapButton = document.querySelector('[data-tab="map"]') as HTMLElement
-      if (mapButton) mapButton.click()
-    }
-  },
-  {
-    selector: '.use-location-btn',
-    content: 'Or tap here to use your current location to find nearby courses.',
-  },
-  {
-    selector: '[data-tab="filters"]',
-    content: 'Tap here to access filters for walkability rating, course type, and more.',
-    action: () => {
-      // Switch to filters tab for next step
-      const filtersButton = document.querySelector('[data-tab="filters"]') as HTMLElement
-      if (filtersButton) {
-        setTimeout(() => filtersButton.click(), 500)
-      }
-    }
-  },
-  {
-    selector: '.filter-controls',
-    content: 'Use these filters to find exactly the type of walking golf experience you want.',
-    action: () => {
-      // Go back to map tab for marker demo
-      const mapButton = document.querySelector('[data-tab="map"]') as HTMLElement
-      if (mapButton) {
-        setTimeout(() => mapButton.click(), 500)
-      }
-    }
-  },
-  {
-    selector: '.map-marker',
-    content: 'Tap any course marker to see walkability ratings and reviews from other golfers.',
+      // Auto-switch to Map tab if not already there
+      setTimeout(() => {
+        const mapTab = document.querySelector('[data-tab="map"]') as HTMLElement;
+        if (mapTab) mapTab.click();
+      }, 500);
+    },
   },
   {
     selector: '[data-tab="list"]',
-    content: 'Switch to list view to see course details in a scrollable format.',
+    content: 'Switch to the List tab to browse all courses in the area and apply filters.',
+    doMask: true, // This element should always exist
     action: () => {
-      // Show list view
-      const listButton = document.querySelector('[data-tab="list"]') as HTMLElement
-      if (listButton) {
-        setTimeout(() => listButton.click(), 500)
-      }
-    }
+      // Auto-switch to List tab
+      setTimeout(() => {
+        const listTab = document.querySelector('[data-tab="list"]') as HTMLElement;
+        if (listTab) listTab.click();
+      }, 500);
+    },
+  },
+  {
+    selector: '.filter-controls',
+    content: 'Use filters to narrow your search by walkability rating, course type, or number of holes at the club.',
+    doMask: true, // This element should always exist
+    action: () => {
+      // Auto-switch to Filters tab
+      setTimeout(() => {
+        const filtersTab = document.querySelector('[data-tab="filters"]') as HTMLElement;
+        if (filtersTab) filtersTab.click();
+      }, 500);
+    },
+  },
+  {
+    selector: '[data-tab="map"]',
+    content: 'Switch back to the Map tab to see course markers on the interactive map.',
+    doMask: true, // This element should always exist
+    action: () => {
+      // Auto-switch to Map tab
+      setTimeout(() => {
+        const mapTab = document.querySelector('[data-tab="map"]') as HTMLElement;
+        if (mapTab) mapTab.click();
+      }, 1000); // Longer delay for loading
+    },
+  },
+  {
+    selector: '.map-marker',
+    content: 'Click on any course marker to see details, walkability ratings, and reviews from other golfers.',
+    doMask: false, // These are dynamically created and might not exist
   },
   {
     selector: '.course-preview',
-    content: 'Tap any course to see full details, reviews, and plan your walking golf experience.',
+    content: 'Here you will see course information, walkability scores, and can read reviews to help plan your walking golf experience.',
+    doMask: false, // This only exists when InfoWindow is open
   },
 ]
 
-export const MobileTourSteps = mobileSteps
+export const MobileTourSteps = steps
 
 export const MapTourMobile: React.FC = () => {
   const { setIsOpen, setSteps } = useTour()
@@ -76,11 +92,27 @@ export const MapTourMobile: React.FC = () => {
       
       if (isMobile && !alreadySeen) {
         // Set the mobile tour steps
-        setSteps(mobileSteps)
-        // Small delay to ensure elements are loaded
+        setSteps(steps)
+        
+        // Wait for location prompt to be dismissed AND search bar to be available
+        const checkElementsAndStart = () => {
+          const searchBar = document.querySelector('.search-bar')
+          const locationPrompt = document.querySelector('.location-prompt-overlay')
+          
+          // Only start tour when location prompt is gone and search bar is available
+          if (searchBar && !locationPrompt) {
+            setIsOpen(true)
+          } else {
+            // Retry after a short delay
+            setTimeout(checkElementsAndStart, 500)
+          }
+        }
+        
+        // Initial delay to allow map to load, then check for elements
         const timer = setTimeout(() => {
-          setIsOpen(true)
-        }, 2000) // Slightly longer delay for mobile
+          checkElementsAndStart()
+        }, 3000) // Longer delay for mobile + map loading
+        
         return () => clearTimeout(timer)
       }
     }

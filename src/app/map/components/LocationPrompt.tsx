@@ -48,7 +48,7 @@ export function LocationPrompt({ onLocationSelect, onSkip }: LocationPromptProps
   };
 
   return (
-    <div className="absolute bottom-20 lg:bottom-24 left-4 right-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[400px] bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+    <div className="location-prompt tour-target absolute bottom-20 lg:bottom-24 left-4 right-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[400px] bg-white rounded-lg shadow-lg p-4 border border-gray-200">
       <div className="flex items-start space-x-4">
         <div className="bg-blue-50 rounded-full p-2">
           <Navigation className="w-6 h-6 text-blue-500" />

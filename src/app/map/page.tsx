@@ -358,11 +358,9 @@ export default function MapPage(): JSX.Element {
             boundsBufferPercent={MAP_BOUNDS_BUFFER_PERCENT}
           />
 
-
-
           {/* Render LocationPrompt overlay here for mobile */}
           {mapLoaded && !userLocation && showLocationPrompt && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
+            <div className="location-prompt-overlay absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
               <LocationPrompt 
                 onLocationSelect={handleLocationSelect} 
                 onSkip={handleSkipLocation} 
@@ -440,7 +438,7 @@ export default function MapPage(): JSX.Element {
           />
           
           {/* --- START: Marker Key Section --- */}
-          <div className="p-4 mt-4 border-t">
+          <div className="marker-key p-4 mt-4 border-t">
             <h4 className="font-semibold text-sm mb-2">Marker Key</h4>
             <div className="space-y-1.5">
               {/* 5-Star Course */}
@@ -491,7 +489,7 @@ export default function MapPage(): JSX.Element {
         </div>
 
         {/* Middle Column - Course Listings */}
-        <div className="w-[300px] border-r">
+        <div className="filter-course-list w-[300px] border-r">
           {/* Conditionally render sidebar based on zoom */}
           {!isZoomedOut ? (
             <Sidebar
@@ -530,7 +528,7 @@ export default function MapPage(): JSX.Element {
           />
           {/* Render LocationPrompt overlay here for desktop */}
           {mapLoaded && !userLocation && showLocationPrompt && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm"> 
+            <div className="location-prompt-overlay absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm"> 
               <LocationPrompt 
                 onLocationSelect={handleLocationSelect} 
                 onSkip={handleSkipLocation} 

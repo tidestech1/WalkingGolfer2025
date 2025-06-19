@@ -49,6 +49,7 @@ export const MapTourProvider: React.FC<MapTourProviderProps> = ({ children }) =>
           lineHeight: '1.4',
           maxWidth: '280px',
           width: '280px',
+          zIndex: 10000,
         }),
         maskArea: (base) => ({
           ...base,
@@ -57,6 +58,7 @@ export const MapTourProvider: React.FC<MapTourProviderProps> = ({ children }) =>
         maskWrapper: (base) => ({
           ...base,
           color: '#0A3357',
+          zIndex: 9999,
         }),
         badge: (base) => ({
           ...base,
