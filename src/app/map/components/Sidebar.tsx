@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 
-import { MapPin, ArrowLeft, X} from 'lucide-react';
+import { MapPin, ArrowLeft, X, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
@@ -383,13 +383,38 @@ export default function Sidebar({
               <AnimatedCourseCount count={courses.length} />
             )}
           </div>
+          
+          {/* Search Input */}
           <Input 
             type="text"
             placeholder="Type to filter results by name or city"
             value={filters.searchQuery || ''}
             onChange={(e) => updateFilters({ searchQuery: e.target.value })}
-            className="w-full"
+            className="w-full mb-3"
           />
+          
+          {/* Sort Control */}
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-gray-700">Sort by:</label>
+            <div className="relative">
+              <select
+                value={filters.sortBy || 'walkabilityRating_overall'}
+                onChange={(e) => {
+                  const newSortBy = e.target.value;
+                  const newSortOrder = newSortBy === 'courseName' ? 'asc' : 'desc';
+                  updateFilters({ 
+                    sortBy: newSortBy,
+                    sortOrder: newSortOrder
+                  });
+                }}
+                className="appearance-none bg-white border border-gray-300 rounded px-3 py-1.5 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="walkabilityRating_overall">Rating</option>
+                <option value="courseName">Name (A-Z)</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
         </div>
       )}
 
