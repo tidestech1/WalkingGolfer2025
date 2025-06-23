@@ -14,6 +14,7 @@ import { AuthProvider } from '@/lib/contexts/AuthContext'
 import { MobileMenuProvider } from '@/lib/contexts/MobileMenuContext'
 
 import NavbarWrapper from './components/NavbarWrapper'
+import WelcomeModal from './components/WelcomeModal'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -56,6 +57,7 @@ export default function RootLayout({
             <main>{children}</main>
             <ScrollToTop />
             <FooterWrapper />
+            <WelcomeModal />
             <Toaster richColors position="top-right" />
           </AuthProvider>
         </MobileMenuProvider>

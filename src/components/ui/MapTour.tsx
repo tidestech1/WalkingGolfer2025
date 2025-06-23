@@ -13,7 +13,7 @@ const steps: StepType[] = [
   },
   {
     selector: '.marker-key',
-    content: 'Use the marker key to see the different types of courses on the map.',
+    content: 'Use the marker key to identify the different types and ratings of courses on the map.',
   },
   {
     selector: '.filter-controls',
@@ -21,7 +21,7 @@ const steps: StepType[] = [
   },
   {
     selector: '.filter-course-list',
-    content: 'If you are looking for a specific course in the search area, type the name (or part if it) in this box.',
+    content: 'If you are looking for a specific course in the search area, type the name (or part of it) in this box.',
   },
   {
     selector: '.map-marker',
