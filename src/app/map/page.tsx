@@ -69,6 +69,7 @@ export default function MapPage(): JSX.Element {
   const [targetMapZoom, setTargetMapZoom] = useState<number | null>(null);
   const [isZoomedOut, setIsZoomedOut] = useState<boolean>(false);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   // Initialize showLocationPrompt state based on sessionStorage
   const [showLocationPrompt, setShowLocationPrompt] = useState<boolean>(() => {
@@ -79,6 +80,10 @@ export default function MapPage(): JSX.Element {
     // Default to true if not in browser (e.g., SSR, though this page is client-side)
     return true; 
   });
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Define mapRef here in MapPage
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -359,8 +364,8 @@ export default function MapPage(): JSX.Element {
           />
 
           {/* Render LocationPrompt overlay here for mobile */}
-          {mapLoaded && !userLocation && showLocationPrompt && (
-            <div className="location-prompt-overlay absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
+          {hasMounted && mapLoaded && !userLocation && showLocationPrompt && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
               <LocationPrompt 
                 onLocationSelect={handleLocationSelect} 
                 onSkip={handleSkipLocation} 
@@ -526,9 +531,10 @@ export default function MapPage(): JSX.Element {
             onZoomStatusChange={handleZoomStatusChange}
             boundsBufferPercent={MAP_BOUNDS_BUFFER_PERCENT}
           />
-          {/* Render LocationPrompt overlay here for desktop */}
-          {mapLoaded && !userLocation && showLocationPrompt && (
-            <div className="location-prompt-overlay absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm"> 
+
+          {/* Location Prompt for Desktop */}
+          {hasMounted && mapLoaded && !userLocation && showLocationPrompt && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-sm">
               <LocationPrompt 
                 onLocationSelect={handleLocationSelect} 
                 onSkip={handleSkipLocation} 
