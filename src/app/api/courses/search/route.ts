@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   const includeUnwalkableParam = searchParams.get('includeUnwalkable');
   const clubTypesParam = searchParams.get('clubTypes');
   const courseHolesParam = searchParams.get('courseHoles');
+  const sortByParam = searchParams.get('sortBy');
+  const sortOrderParam = searchParams.get('sortOrder');
   
   if (!isFirebaseAvailable() || !db) {
     return NextResponse.json({ error: 'Firebase is not available' }, { status: 503 });
@@ -29,6 +31,10 @@ export async function GET(request: NextRequest) {
   const includeUnwalkable = includeUnwalkableParam === 'true';
   const clubTypes = clubTypesParam ? clubTypesParam.split(',') : ['Public', 'Semi-Private', 'Resort'];
   const courseHoles = courseHolesParam ? courseHolesParam.split(',').map(h => parseInt(h, 10)) : [18];
+  
+  // Sorting parameters
+  const sortBy = sortByParam || 'walkabilityRating_overall';
+  const sortOrder = (sortOrderParam === 'asc' || sortOrderParam === 'desc') ? sortOrderParam : 'desc';
   
   // Check if filters differ from defaults
   const hasClubTypeFilter = clubTypes.length !== 3 || !clubTypes.includes('Public') || !clubTypes.includes('Semi-Private') || !clubTypes.includes('Resort');
@@ -85,16 +91,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add sorting (requires composite indexes)
-    if (hasSearchTerm) {
-        constraints.push(orderBy('courseName', 'asc'));
-    } else if (hasRatingFilter) {
-        // Sort by rating descending if filtering by rating but not searching text
-        constraints.push(orderBy('walkabilityRating_overall', 'desc'));
-        constraints.push(orderBy('courseName', 'asc')); // Secondary sort
+    // Add dynamic sorting
+    if (sortBy === 'course_name') {
+      constraints.push(orderBy('courseName', sortOrder));
+    } else if (sortBy === 'walkabilityRating_overall') {
+      constraints.push(orderBy('walkabilityRating_overall', sortOrder));
+      // Add secondary sort by course name for consistent ordering
+      constraints.push(orderBy('courseName', 'asc'));
     } else {
-        // Default sort by name
-        constraints.push(orderBy('courseName', 'asc'));
+      // Default fallback
+      constraints.push(orderBy('courseName', 'asc'));
     }
 
     // Limit the results

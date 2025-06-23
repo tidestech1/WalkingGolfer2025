@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin } from 'lucide-react';
+import { MapPin, ChevronDown } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,6 +46,10 @@ function CourseSearchPage() {
   
   // Course holes filter state  
   const [courseHoles, setCourseHoles] = useState<number[]>([18]); // Default to 18-hole courses
+
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>('walkabilityRating_overall');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const [results, setResults] = useState<SearchResultCourse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,8 +68,10 @@ function CourseSearchPage() {
     const includeUnwalkableParam = searchParams.get('includeUnwalkable') === 'true';
     const clubTypesParam = searchParams.get('clubTypes');
     const courseHolesParam = searchParams.get('courseHoles');
+    const sortByParam = searchParams.get('sortBy');
+    const sortOrderParam = searchParams.get('sortOrder');
     
-    if (q || minRatingParam || includeUnwalkableParam || clubTypesParam || courseHolesParam) {
+    if (q || minRatingParam || includeUnwalkableParam || clubTypesParam || courseHolesParam || sortByParam || sortOrderParam) {
       setSearchTerm(q);
       setMinRating(minRatingParam ? parseInt(minRatingParam, 10) : 0);
       setIncludeUnwalkable(includeUnwalkableParam);
@@ -76,6 +82,14 @@ function CourseSearchPage() {
       
       if (courseHolesParam) {
         setCourseHoles(courseHolesParam.split(',').map(h => parseInt(h, 10)));
+      }
+
+      if (sortByParam) {
+        setSortBy(sortByParam);
+      }
+
+      if (sortOrderParam && (sortOrderParam === 'asc' || sortOrderParam === 'desc')) {
+        setSortOrder(sortOrderParam);
       }
       
       restoredFromUrl.current = true;
@@ -100,7 +114,7 @@ function CourseSearchPage() {
       hasRestoredAndSearched.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, minRating, includeUnwalkable, clubTypes, courseHoles]);
+  }, [searchTerm, minRating, includeUnwalkable, clubTypes, courseHoles, sortBy, sortOrder]);
 
   const performSearch = useCallback(async () => {
     const query = searchTerm;
@@ -140,6 +154,9 @@ function CourseSearchPage() {
     if (hasCourseHolesFilter) {
         params.append('courseHoles', courseHoles.join(','));
     }
+    // Add sorting parameters
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder);
     
     const queryString = params.toString();
 
@@ -159,7 +176,7 @@ function CourseSearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, minRating, includeUnwalkable, clubTypes, courseHoles]);
+  }, [searchTerm, minRating, includeUnwalkable, clubTypes, courseHoles, sortBy, sortOrder]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -209,6 +226,14 @@ function CourseSearchPage() {
     setIncludeUnwalkable(false);
     setClubTypes(['Public', 'Semi-Private', 'Resort']);
     setCourseHoles([18]);
+    setSortBy('walkabilityRating_overall');
+    setSortOrder('desc');
+  };
+
+  // Handle sorting change
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortBy === 'course_name' ? 'asc' : 'desc');
   };
 
   // Check if any filters (excluding search term) are active
@@ -217,9 +242,11 @@ function CourseSearchPage() {
       minRating > 0 || 
       includeUnwalkable || 
       clubTypes.length !== 3 || !clubTypes.includes('Public') || !clubTypes.includes('Semi-Private') || !clubTypes.includes('Resort') ||
-      courseHoles.length !== 1 || !courseHoles.includes(18)
+      courseHoles.length !== 1 || !courseHoles.includes(18) ||
+      sortBy !== 'walkabilityRating_overall' ||
+      sortOrder !== 'desc'
     );
-  }, [minRating, includeUnwalkable, clubTypes, courseHoles]);
+  }, [minRating, includeUnwalkable, clubTypes, courseHoles, sortBy, sortOrder]);
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -240,6 +267,22 @@ function CourseSearchPage() {
             onKeyDown={handleKeyDown}
             className="mt-1"
           />
+        </div>
+
+        {/* Sort Control */}
+        <div className="mb-4 flex items-center justify-between">
+          <Label className="text-sm font-medium">Sort by:</Label>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="appearance-none bg-white border border-gray-300 rounded px-3 py-1.5 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="walkabilityRating_overall">Rating</option>
+              <option value="course_name">Name (A-Z)</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
         </div>
 
         {/* Filters Section */}
@@ -421,6 +464,12 @@ function CourseSearchPage() {
             }
             if (courseHoles.length !== 1 || !courseHoles.includes(18)) {
               params.append('courseHoles', courseHoles.join(','));
+            }
+            if (sortBy !== 'walkabilityRating_overall') {
+              params.append('sortBy', sortBy);
+            }
+            if (sortOrder !== 'desc') {
+              params.append('sortOrder', sortOrder);
             }
             const queryString = params.toString();
             const courseHref = `/courses/${course.id}${queryString ? `?${queryString}` : ''}`;
