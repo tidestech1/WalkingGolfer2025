@@ -2,17 +2,16 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions"; 
 import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
+import { useTour } from '@reactour/tour';
 
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { MapTourProvider } from '@/components/ui/MapTourProvider';
 import { MapTour } from '@/components/ui/MapTour';
 import { MapTourMobile } from '@/components/ui/MapTourMobile';
-import { buildFilterSortConstraints } from '@/lib/firebase/courseUtils';
-import { db, isFirebaseAvailable } from '@/lib/firebase/firebase';
+import { isFirebaseAvailable } from '@/lib/firebase/firebase';
 import { cn } from '@/lib/utils';
 import { GolfCourse, CourseFilters, MapBounds } from '@/types/course';
 
@@ -20,6 +19,7 @@ import { BottomNav } from './components/BottomNav';
 import { FilterBottomSheet } from './components/FilterBottomSheet';
 import { LocationPrompt } from './components/LocationPrompt';
 import Sidebar from './components/Sidebar';
+import { PlayCircle } from 'lucide-react';
 
 // Constants
 const LOCATION_PROMPT_SEEN_KEY = 'walkingGolfer_hasSeenLocationPrompt';
@@ -52,6 +52,9 @@ const DEFAULT_FILTERS: CourseFilters = {
 // Import Firebase Functions SDK
 
 export default function MapPage(): JSX.Element {
+  const { setIsOpen, setCurrentStep, setSteps } = useTour();
+  const [isManualTourRestart, setIsManualTourRestart] = useState(false);
+  const [tourKey, setTourKey] = useState(0); // Force re-render of tour
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -336,11 +339,11 @@ export default function MapPage(): JSX.Element {
   }
 
   return (
-    <MapTourProvider>
+    <MapTourProvider key={tourKey}>
       <div className="fixed inset-x-0 top-10 bottom-0 bg-white">
-        {/* Tour Components - Desktop and Mobile */}
-        <MapTour />
-        <MapTourMobile />
+        {/* Tour Components - Desktop and Mobile - Only render if not manually restarting */}
+        {!isManualTourRestart && <MapTour />}
+        {!isManualTourRestart && <MapTourMobile />}
         
         {/* Mobile Views */}
       <div className="lg:hidden h-full">
@@ -481,13 +484,87 @@ export default function MapPage(): JSX.Element {
                 <img src="/images/map/map-marker-unwalkable.svg" alt="unwalkable marker" className="w-4 h-4" />
                 <span className="text-xs">Unwalkable Course</span>
               </div>
-                             {/* Selected Course Indicator */}
+              {/* Selected Course Indicator */}
                <div className="flex items-center gap-2">
                  <div className="relative w-4 h-4 flex items-center justify-center">
                    <img src="/images/map/map-marker-5star.svg" alt="selected example" className="w-4 h-4" style={{filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))'}} />
                  </div>
                  <span className="text-xs">Selected Course (red glow)</span>
                </div>
+            </div>
+            <hr className="my-4" />
+            <div>
+              <button
+                onClick={async () => {
+                  // Check if tour functions are available
+                  if (!setSteps || !setCurrentStep || !setIsOpen) {
+                    console.warn('Tour functions not available');
+                    return;
+                  }
+                  
+                  console.log('Restart tour clicked');
+                  
+                  // Set manual restart flag to prevent automatic tour components from interfering
+                  setIsManualTourRestart(true);
+                  
+                  // Force complete re-render of tour provider
+                  setTourKey(prev => prev + 1);
+                  console.log('Forcing tour provider re-render');
+                  
+                  // Clear the tour completion flags
+                  localStorage.removeItem('mapTourCompleted');
+                  localStorage.removeItem('mapTourMobileCompleted');
+                  console.log('Cleared localStorage flags');
+                  
+                  // Determine if mobile or desktop and set appropriate steps
+                  const isMobile = window.innerWidth < 1024;
+                  console.log('Device type:', isMobile ? 'mobile' : 'desktop');
+                  
+                  // Import the appropriate steps
+                  const steps = isMobile 
+                    ? (await import('@/components/ui/MapTourMobile')).MobileTourSteps
+                    : (await import('@/components/ui/MapTour')).MapTourSteps;
+                  
+                  console.log('Loaded steps:', steps.length);
+                  
+                  // Debug: Check if selectors exist and filter out missing ones
+                  const availableSteps = steps.filter((step, index) => {
+                    const selector = typeof step.selector === 'string' ? step.selector : step.selector?.toString() || 'unknown';
+                    const element = document.querySelector(selector);
+                    const found = !!element;
+                    console.log(`Step ${index + 1} selector "${selector}":`, found ? 'FOUND' : 'NOT FOUND');
+                    return found;
+                  });
+                  
+                  console.log(`Using ${availableSteps.length} out of ${steps.length} steps`);
+                  
+                  // Wait for tour provider to re-render, then start fresh
+                  setTimeout(() => {
+                    console.log('Setting up fresh tour');
+                    
+                    // Set the available steps and start from beginning
+                    setSteps(availableSteps);
+                    setCurrentStep(0);
+                    
+                    console.log('Set steps to', availableSteps.length, 'steps and current step to 0');
+                    
+                    // Small delay then open the tour
+                    setTimeout(() => {
+                      console.log('Opening fresh tour');
+                      setIsOpen(true);
+                      
+                      // Reset the manual restart flag after tour starts
+                      setTimeout(() => {
+                        setIsManualTourRestart(false);
+                      }, 1000);
+                    }, 100);
+                  }, 300);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1.5 w-full"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>Restart Tour</span>
+              </button>
             </div>
           </div>
           {/* --- END: Marker Key Section --- */}

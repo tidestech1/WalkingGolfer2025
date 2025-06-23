@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 
-import { MapPin, ArrowLeft, X } from 'lucide-react';
+import { MapPin, ArrowLeft, X} from 'lucide-react';
 import Link from 'next/link';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
@@ -105,7 +105,7 @@ export default function Sidebar({
   onFilterChange,
   onCourseSelect,
   selectedCourseId,
-  totalInBounds,
+  totalInBounds: _totalInBounds,
   filtersOnly = false,
   onClose,
   selectedCourseIndex,
@@ -113,6 +113,7 @@ export default function Sidebar({
   currentBounds,
   currentZoom
 }: SidebarProps) {
+  // Remove unused destructured variables from useTour
   const updateFilters = (updates: Partial<CourseFilters>) => {
     onFilterChange({ ...filters, ...updates });
   };
@@ -129,8 +130,6 @@ export default function Sidebar({
       });
     }
   }, [selectedCourseIndex]);
-
-  const [showAllFacilities, setShowAllFacilities] = useState(false);
 
   if (filtersOnly) {
     // Calculate active filter count (matching mobile logic)
@@ -443,7 +442,7 @@ function CourseCard({ course, isSelected, onSelect, currentBounds, currentZoom }
   // Get current map bounds from window.location.search if available
   const searchParams = new URLSearchParams(window.location.search);
   const boundsParam = searchParams.get('bounds');
-  const bounds = boundsParam ? JSON.parse(decodeURIComponent(boundsParam)) : null;
+  const _bounds = boundsParam ? JSON.parse(decodeURIComponent(boundsParam)) : null;
 
   // Helper to format the hole count string
   const holeText = course_holes ? `(${course_holes} holes)` : '';
