@@ -30,7 +30,7 @@ const steps: StepType[] = [
   },
   {
     selector: '.course-preview',
-    content: 'Here you will see course information, walkability scores, and can read reviews to help plan your walking golf experience.',
+    content: 'Once you find a course, click the more course details link to view full course info, walkability scores, and reviews to help plan your next round.',
   },
 ]
 
@@ -62,4 +62,13 @@ export const MapTour: React.FC = () => {
 
 export const handleTourComplete = () => {
   localStorage.setItem(TOUR_STORAGE_KEY, 'true')
+  
+  // Re-show the location prompt after tour completion
+  // Clear the session storage flag so the prompt appears again
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('walkingGolfer_hasSeenLocationPrompt')
+    
+    // Trigger a custom event to notify the map page to show the prompt
+    window.dispatchEvent(new CustomEvent('showLocationPrompt'))
+  }
 }

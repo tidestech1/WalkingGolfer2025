@@ -86,6 +86,17 @@ export default function MapPage(): JSX.Element {
 
   useEffect(() => {
     setHasMounted(true);
+    
+    // Listen for tour completion to re-show location prompt
+    const handleShowLocationPrompt = () => {
+      setShowLocationPrompt(true);
+    };
+    
+    window.addEventListener('showLocationPrompt', handleShowLocationPrompt);
+    
+    return () => {
+      window.removeEventListener('showLocationPrompt', handleShowLocationPrompt);
+    };
   }, []);
 
   // Define mapRef here in MapPage
@@ -677,6 +688,68 @@ export default function MapPage(): JSX.Element {
                   </div>
                   <span className="text-sm">Selected Course (red glow)</span>
                 </div>
+              </div>
+              
+              {/* Restart Tour Section */}
+              <div className="p-4 border-t border-gray-200">
+                <button
+                  onClick={async () => {
+                    // Close the modal first
+                    setKeyModalOpen(false);
+                    
+                    // Check if tour functions are available
+                    if (!setSteps || !setCurrentStep || !setIsOpen) {
+                      console.warn('Tour functions not available');
+                      return;
+                    }
+                    
+                    // Set manual restart flag to prevent automatic tour components from interfering
+                    setIsManualTourRestart(true);
+                    
+                    // Force complete re-render of tour provider
+                    setTourKey(prev => prev + 1);
+                    
+                    // Clear the tour completion flags
+                    localStorage.removeItem('mapTourCompleted');
+                    localStorage.removeItem('mapTourMobileCompleted');
+                    
+                    // Determine if mobile or desktop and set appropriate steps
+                    const isMobile = window.innerWidth < 1024;
+                    
+                    // Import the appropriate steps
+                    const steps = isMobile 
+                      ? (await import('@/components/ui/MapTourMobile')).MobileTourSteps
+                      : (await import('@/components/ui/MapTour')).MapTourSteps;
+                    
+                    // Filter out steps with missing selectors
+                    const availableSteps = steps.filter((step) => {
+                      const selector = typeof step.selector === 'string' ? step.selector : step.selector?.toString() || 'unknown';
+                      const element = document.querySelector(selector);
+                      return !!element;
+                    });
+                    
+                    // Wait for tour provider to re-render, then start fresh
+                    setTimeout(() => {
+                      // Set the available steps and start from beginning
+                      setSteps(availableSteps);
+                      setCurrentStep(0);
+                      
+                      // Small delay then open the tour
+                      setTimeout(() => {
+                        setIsOpen(true);
+                        
+                        // Reset the manual restart flag after tour starts
+                        setTimeout(() => {
+                          setIsManualTourRestart(false);
+                        }, 1000);
+                      }, 100);
+                    }, 300);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2 w-full justify-center"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Restart Tour</span>
+                </button>
               </div>
             </div>
           </div>

@@ -72,7 +72,7 @@ export function BottomNav({
           )}
         >
           <HelpCircle className="w-5 h-5" />
-          <span className="text-xs mt-1">Key</span>
+          <span className="text-xs mt-1">Help</span>
         </button>
       </nav>
     </div>
