@@ -502,55 +502,39 @@ export default function MapPage(): JSX.Element {
                     return;
                   }
                   
-                  console.log('Restart tour clicked');
-                  
                   // Set manual restart flag to prevent automatic tour components from interfering
                   setIsManualTourRestart(true);
                   
                   // Force complete re-render of tour provider
                   setTourKey(prev => prev + 1);
-                  console.log('Forcing tour provider re-render');
                   
                   // Clear the tour completion flags
                   localStorage.removeItem('mapTourCompleted');
                   localStorage.removeItem('mapTourMobileCompleted');
-                  console.log('Cleared localStorage flags');
                   
                   // Determine if mobile or desktop and set appropriate steps
                   const isMobile = window.innerWidth < 1024;
-                  console.log('Device type:', isMobile ? 'mobile' : 'desktop');
                   
                   // Import the appropriate steps
                   const steps = isMobile 
                     ? (await import('@/components/ui/MapTourMobile')).MobileTourSteps
                     : (await import('@/components/ui/MapTour')).MapTourSteps;
                   
-                  console.log('Loaded steps:', steps.length);
-                  
-                  // Debug: Check if selectors exist and filter out missing ones
-                  const availableSteps = steps.filter((step, index) => {
+                  // Filter out steps with missing selectors
+                  const availableSteps = steps.filter((step) => {
                     const selector = typeof step.selector === 'string' ? step.selector : step.selector?.toString() || 'unknown';
                     const element = document.querySelector(selector);
-                    const found = !!element;
-                    console.log(`Step ${index + 1} selector "${selector}":`, found ? 'FOUND' : 'NOT FOUND');
-                    return found;
+                    return !!element;
                   });
-                  
-                  console.log(`Using ${availableSteps.length} out of ${steps.length} steps`);
                   
                   // Wait for tour provider to re-render, then start fresh
                   setTimeout(() => {
-                    console.log('Setting up fresh tour');
-                    
                     // Set the available steps and start from beginning
                     setSteps(availableSteps);
                     setCurrentStep(0);
                     
-                    console.log('Set steps to', availableSteps.length, 'steps and current step to 0');
-                    
                     // Small delay then open the tour
                     setTimeout(() => {
-                      console.log('Opening fresh tour');
                       setIsOpen(true);
                       
                       // Reset the manual restart flag after tour starts
