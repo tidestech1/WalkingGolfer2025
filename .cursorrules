@@ -37,3 +37,6 @@
 - Secrets are stored in Replit Secrets Manager
 - Deployment is through Replit (do not use `.env` files)
 - Cursor connects via SSH to Replit
+
+## agent_guidelines
+- Before performing significant file modifications or implementing new features, you MUST read and understand the project overview located at `docs/ARCHITECTURE.md`.
