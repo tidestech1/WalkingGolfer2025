@@ -245,22 +245,6 @@ export default function Sidebar({
           </div>
 
           <div className="pt-3 lg:pt-0">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isWalkableFilter"
-                checked={filters.filter_isWalkable === true}
-                onCheckedChange={checked => {
-                  updateFilters({ filter_isWalkable: !!checked });
-                }}
-                className="h-3.5 w-3.5"
-              />
-              <label htmlFor="isWalkableFilter" className="text-xs font-medium">
-                Include un-walkable courses
-              </label>
-            </div>
-          </div>
-
-          <div className="pt-3 lg:pt-0">
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-medium">Club Type</label>
             </div>
@@ -362,6 +346,22 @@ export default function Sidebar({
                   <label htmlFor={`courseHoles_${option.label}`} className="text-xs">{option.label}</label>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="pt-3 lg:pt-0">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isWalkableFilter"
+                checked={filters.filter_isWalkable === true}
+                onCheckedChange={checked => {
+                  updateFilters({ filter_isWalkable: !!checked });
+                }}
+                className="h-3.5 w-3.5"
+              />
+              <label htmlFor="isWalkableFilter" className="text-xs font-medium">
+                Include un-walkable courses
+              </label>
             </div>
           </div>
 

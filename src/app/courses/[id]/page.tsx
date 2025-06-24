@@ -26,12 +26,11 @@ import { getPublishedReviewsForCourse } from '@/lib/firebase/reviewUtils'
 import type { GolfCourse } from '@/types/course'
 import type { CourseReview } from '@/types/review'
 
-import BackToMapButton from './components/BackToMapButton'
 import CourseAnalytics from './CourseAnalytics'
 import CourseClientMap from './CourseClientMap'
 import ReviewItem from './ReviewItem'
 import ReviewsDisplay from './ReviewsDisplay'
-import BackToSearchButton from './components/BackToSearchButton'
+import CourseBreadcrumb from './components/CourseBreadcrumb'
 
 // Provide inline type for the destructured params
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -165,6 +164,9 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
     <div className="bg-gray-50 min-h-screen">
       <CourseAnalytics course={course} />
       
+      {/* Breadcrumb Navigation */}
+      <CourseBreadcrumb courseName={courseName} />
+      
       {/* Hero Section with Map Background - Reduced height */}
       <div className="relative h-64 md:h-72 w-full overflow-hidden"> 
         {/* Map Background - Positioned behind overlay */}
@@ -180,10 +182,7 @@ export default async function CourseDetailsPage({ params }: { params: { id: stri
         
         {/* Content Overlay - Above dark overlay */}
         <div className="absolute inset-0 z-20 text-white">
-          <BackToSearchButton />
           <div className="container mx-auto px-4 h-full flex flex-col md:flex-row md:justify-between md:items-start gap-4 pt-4 md:pt-6">
-            {/* Back Button - Now using client component */}
-            <BackToMapButton />
 
             {/* Combined Text Info Group (Top Left on desktop, Top on mobile) */}
             <div className="space-y-3 max-w-md lg:max-w-lg bg-black/70 rounded-md p-3"> 

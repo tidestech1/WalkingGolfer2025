@@ -238,15 +238,14 @@ function CourseSearchPage() {
 
   // Check if any filters (excluding search term) are active
   const hasActiveFilters = useMemo(() => {
-    return (
-      minRating > 0 || 
-      includeUnwalkable || 
-      clubTypes.length !== 3 || !clubTypes.includes('Public') || !clubTypes.includes('Semi-Private') || !clubTypes.includes('Resort') ||
-      courseHoles.length !== 1 || !courseHoles.includes(18) ||
-      sortBy !== 'walkabilityRating_overall' ||
-      sortOrder !== 'desc'
-    );
-  }, [minRating, includeUnwalkable, clubTypes, courseHoles, sortBy, sortOrder]);
+    const hasSearchTerm = searchTerm.trim().length >= 2;
+    const hasRatingFilter = minRating > 0;
+    const hasUnwalkableFilter = includeUnwalkable;
+    const hasNonDefaultClubTypes = clubTypes.length !== 3 || !clubTypes.includes('Public') || !clubTypes.includes('Semi-Private') || !clubTypes.includes('Resort');
+    const hasNonDefaultCourseHoles = courseHoles.length !== 1 || !courseHoles.includes(18);
+    
+    return hasSearchTerm || hasRatingFilter || hasUnwalkableFilter || hasNonDefaultClubTypes || hasNonDefaultCourseHoles;
+  }, [searchTerm, minRating, includeUnwalkable, clubTypes, courseHoles]);
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -269,39 +268,12 @@ function CourseSearchPage() {
           />
         </div>
 
-        {/* Sort Control */}
-        <div className="mb-4 flex items-center justify-between">
-          <Label className="text-sm font-medium">Sort by:</Label>
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="appearance-none bg-white border border-gray-300 rounded px-3 py-1.5 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="walkabilityRating_overall">Rating</option>
-              <option value="course_name">Name (A-Z)</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
+
 
         {/* Filters Section */}
         <div className="space-y-4 mb-4">
              {/* Walkability Filters */}
              <div className="space-y-3">
-                {/* Include Un-walkable Courses Checkbox */}
-                <div className="flex items-center space-x-2">
-                   <Checkbox 
-                     id="unwalkableFilter"
-                     checked={includeUnwalkable}
-                     onCheckedChange={handleUnwalkableChange}
-                     className="shrink-0"
-                   />
-                   <Label htmlFor="unwalkableFilter" className="text-sm font-medium cursor-pointer">
-                      Include un-walkable courses
-                   </Label>
-                </div>
-                
                 {/* Min Walkability Rating */}
                 <div className="flex items-center space-x-3">
                    <Label className="text-sm font-medium shrink-0">Min Walkability</Label> 
@@ -370,28 +342,61 @@ function CourseSearchPage() {
                   ))}
                 </div>
              </div>
+
+             {/* Include Un-walkable Courses - Moved to end */}
+             <div className="border-t pt-4">
+                <div className="flex items-center space-x-2">
+                   <Checkbox 
+                     id="unwalkableFilter"
+                     checked={includeUnwalkable}
+                     onCheckedChange={handleUnwalkableChange}
+                     className="shrink-0"
+                   />
+                   <Label htmlFor="unwalkableFilter" className="text-sm font-medium cursor-pointer">
+                      Include un-walkable courses
+                   </Label>
+                </div>
+             </div>
           </div>
         
-        <div className="mt-4 flex justify-between items-center border-t pt-4">
-          <div>
-             {hasActiveFilters && (
-               <Button 
-                 variant="ghost"
-                 onClick={handleResetFilters}
-                 disabled={isLoading}
-                 className="text-sm text-muted-foreground"
-               >
-                 Reset Filters
-               </Button>
-             )}
+        {/* Sort Control and Actions - Moved to bottom for better proximity to results */}
+        <div className="mt-4 border-t pt-4 space-y-4">
+          {/* Sort Control */}
+          <div className="flex items-center gap-3">
+            <Label className="text-sm font-medium shrink-0">Sort by:</Label>
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="walkabilityRating_overall">Rating</option>
+                <option value="course_name">Name (A-Z)</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-          <Button 
-             onClick={handleSearchClick} 
-             disabled={isLoading}
-             className="bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out"
-          >
-            {isLoading ? 'Searching...' : 'Search Courses'}
-          </Button>
+          
+          {/* Action Buttons */}
+          <div className="flex justify-end items-center gap-3">
+            {hasActiveFilters && (
+              <Button 
+                variant="outline"
+                onClick={handleResetFilters}
+                disabled={isLoading}
+                className="text-sm"
+              >
+                Reset Filters
+              </Button>
+            )}
+            <Button 
+               onClick={handleSearchClick} 
+               disabled={isLoading}
+               className="bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out"
+            >
+              {isLoading ? 'Searching...' : 'Search Courses'}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -493,7 +498,7 @@ function CourseSearchPage() {
                         </span>
                       )}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-2">Part of {course.club_name}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{course.club_name}</p>
                     
                     <div className="flex items-center text-sm text-muted-foreground mb-3">
                       <MapPin className="w-4 h-4 mr-1.5 shrink-0" />

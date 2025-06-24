@@ -638,12 +638,12 @@ export default function RatingForm({ course, user }: RatingFormProps) {
           }}
         >
           <DialogHeader className="pt-6 sm:pt-8 px-4 sm:px-8">
-            <DialogTitle className="text-lg sm:text-xl">How to Rate This Course</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">How to rate this course</DialogTitle>
           </DialogHeader>
 
           <DialogDescription asChild>
             <div className="space-y-4 text-left text-gray-700 flex-1 overflow-y-auto px-4 sm:px-8">
-              <p><b>Your feedback helps other walking golfers! Here's how to fill out the form:</b></p>
+              <p><b>Your feedback helps other golfers! Here's how to fill out the form:</b></p>
               <ul className="list-disc pl-5 space-y-2">
                 <li><b>Overall Walkability:</b> Is the course walkable? Rate how easy or challenging it is to walk the entire course.</li>
                 <li><b>Detailed Walkability Ratings:</b>
@@ -655,9 +655,9 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                   </ul>
                 </li>
                 <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
-                <li><b>Pros & Cons:</b> List what you liked and any challenges you faced while walking the course.</li>
-                <li><b>Additional Comments:</b> Share any extra details about your experience that might help other golfers.</li>
-                <li><b>Date Played:</b> Let us know when you played for context.</li>
+                <li><b>Pros & Cons:</b> (Optional) List what you liked and any challenges you faced while walking the course.</li>
+                <li><b>Additional Comments:</b> (Optional) Share any extra details about your experience that might help other golfers.</li>
+                <li><b>Date Played:</b> (Optional) Let us know when you played for context.</li>
               </ul>
               <p><b>Tips:</b></p>
               <ul className="list-disc pl-5 space-y-1">
