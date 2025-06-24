@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { AlertTriangle, MessageCircle } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -66,7 +67,7 @@ const WelcomeModal: React.FC = () => {
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li>New features and improvements being added regularly</li>
               <li>Occasional bugs as we refine the platform</li>
-              <li>Your feedback helping shape the future of the app</li>
+              <li>Feedback requests to help shape the future of the app</li>
             </ul>
           </div>
 
@@ -76,7 +77,15 @@ const WelcomeModal: React.FC = () => {
               <p className="font-medium mb-1">We'd Love Your Feedback!</p>
               <p>
                 Found a bug or have a suggestion? Your input is invaluable in 
-                making Walking Golfer the best platform for finding walkable courses.
+                making Walking Golfer the best platform for finding walkable 
+                courses so please do{' '}
+                <Link 
+                  href="/contact" 
+                  className="text-blue-700 underline hover:text-blue-900 font-medium"
+                >
+                  contact us
+                </Link>
+                .
               </p>
             </div>
           </div>

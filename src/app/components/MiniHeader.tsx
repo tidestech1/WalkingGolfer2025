@@ -41,7 +41,8 @@ export default function MiniHeader(): JSX.Element {
               <Link href="/about" className="hover:text-[#00FFFF]">About Us</Link>
               <Link href="/coursefinder" className="hover:text-[#00FFFF]">Course Finder</Link>
               <Link href="/news" className="hover:text-[#00FFFF]">News</Link>
-              <Link href="/shop" className="hover:text-[#00FFFF]">Shop</Link>
+              {/* Temporarily hidden for launch - uncomment when shop is ready */}
+              {/* <Link href="/shop" className="hover:text-[#00FFFF]">Shop</Link> */}
               {/* Login/Profile for desktop - styled as plain link */}
               {user ? (
                 <Link 
@@ -113,13 +114,14 @@ export default function MiniHeader(): JSX.Element {
             >
               News & Articles
             </Link>
-            <Link
+            {/* Temporarily hidden for launch - uncomment when shop is ready */}
+            {/* <Link
               href="/shop"
               className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
               onClick={() => toggleMenu()}
             >
               Shop
-            </Link>
+            </Link> */}
             
             {/* Mobile User Menu (no dropdown, just expanded menu items) */}
             {user ? (

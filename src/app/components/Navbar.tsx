@@ -133,9 +133,10 @@ export default function Navbar(): JSX.Element {
             <Link href="/news" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
               News & Articles
             </Link>
-            <Link href="/shop" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
+            {/* Temporarily hidden for launch - uncomment when shop is ready */}
+            {/* <Link href="/shop" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
               Shop
-            </Link>
+            </Link> */}
             {user ? (
               <div className="relative" data-user-menu>
                 <button
@@ -227,13 +228,14 @@ export default function Navbar(): JSX.Element {
             >
               News & Articles
             </Link>
-            <Link
+            {/* Temporarily hidden for launch - uncomment when shop is ready */}
+            {/* <Link
               href="/shop"
               className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
               onClick={() => toggleMenu()}
             >
               Shop
-            </Link>
+            </Link> */}
             
             {/* Mobile User Menu (no dropdown, just expanded menu items) */}
             {user ? (
