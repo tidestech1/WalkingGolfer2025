@@ -123,21 +123,6 @@ export default function ReviewCoursePage() {
           {/* Pass necessary course details for the confirming section */}
           <RatingForm course={course} user={user} /> 
         </div>
-
-        {/* Rating Guidelines (can remain as is) */}
-        <div className="mt-8 bg-blue-50 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-[#0A3357] mb-4">
-            Rating Guidelines
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium text-[#0A3357]">OverallWalkability (1-5 stars)</h3>
-              <p className="text-gray-600">
-                Consider terrain, distances between holes, path conditions, and overall walking experience.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

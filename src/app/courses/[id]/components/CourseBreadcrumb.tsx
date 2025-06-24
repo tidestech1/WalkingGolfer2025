@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Search, Map as MapIcon, ArrowLeft, Home } from 'lucide-react';
-import { Breadcrumb, BreadcrumbItem } from '@/components/ui/breadcrumb';
+import { BreadcrumbItem } from '@/components/ui/breadcrumb';
 
 interface CourseBreadcrumbProps {
   courseName: string;
