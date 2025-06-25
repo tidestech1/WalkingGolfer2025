@@ -1,38 +1,53 @@
 // Types for Klaviyo API
 export interface KlaviyoProfile {
   email: string;
-  first_name?: string | undefined;
-  last_name?: string | undefined;
-  phone_number?: string | undefined;
-  properties?: Record<string, any> | undefined;
+  properties?: {
+    first_name?: string;
+    last_name?: string;
+    zip?: string;
+    state?: string;
+    date_of_birth?: string;
+    golf_experience?: string;
+    preferred_carry_method?: string;
+    golf_handicap?: number;
+    favorite_states?: string[];
+    profile_completed?: boolean;
+    review_count?: number;
+    walking_golfer_member?: boolean;
+    signup_date?: string;
+    marketing_consent?: boolean;
+    [key: string]: any;
+  };
 }
 
 interface KlaviyoSubscriptionInfo {
-  marketing: {
-    consent: "SUBSCRIBED" | "UNSUBSCRIBED" | "NEVER_SUBSCRIBED"; // Added more specific consent types
-    // consent_timestamp?: string; // Optional: Klaviyo can set this
-    // method?: string; // Optional: e.g., 'WEBSITE_FORM'
-    // method_detail?: string; // Optional
-  };
+  email: string;
+  // consent_timestamp?: string; // Optional: Klaviyo can set this
 }
 
+// For profile updates, this allows us to update specific fields
+// without affecting the email subscription status
 interface KlaviyoProfileAttributesForUpdate extends Omit<KlaviyoProfile, 'properties' | 'email'> {
-  email?: string; // Email is optional for updates but good to include if available
-  subscriptions?: {
-    email?: KlaviyoSubscriptionInfo;
-    // sms?: KlaviyoSubscriptionInfo; // If handling SMS in the future
-  };
+  properties?: Omit<KlaviyoProfile['properties'], 'email'>;
+  email?: KlaviyoSubscriptionInfo;
+  // sms?: KlaviyoSubscriptionInfo; // If handling SMS in the future
 }
 
+// Type for tracking events in Klaviyo
 interface KlaviyoEvent {
+  unique_id?: string;
+  value?: number;
+  metric: {
+    name: string;
+  };
   profile: {
     email: string;
     [key: string]: any;
   };
-  metric: {
-    name: string;
+  properties?: {
+    [key: string]: any;
   };
-  properties?: Record<string, any> | undefined;
+  time?: string; // ISO 8601 timestamp
 }
 
 // Klaviyo API client class
@@ -44,255 +59,233 @@ class KlaviyoClient {
     this.apiKey = apiKey;
   }
 
-  // Attempts to create a profile. If duplicate (409), it updates attributes/properties only.
+  // Creates or updates a Klaviyo profile with enhanced data
   // Returns the Klaviyo Profile ID on success (either created or existing).
-  // Subscription is handled by a separate call to subscribeProfileToMarketing.
+  // Returns null on failure.
   async createOrUpdateProfileAttributes(profile: KlaviyoProfile): Promise<string | null> {
-    const payload = {
-      data: {
-        type: "profile",
-        attributes: {
-          email: profile.email,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          phone_number: profile.phone_number,
-          properties: profile.properties || {}
-        }
-      }
-    };
-
     try {
-      // Attempt to CREATE profile first
-      const createResponse = await fetch(
-        `${this.baseUrl}/profiles`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'revision': '2023-12-15'
-          },
-          body: JSON.stringify(payload)
+      // First, try to create the profile
+      const createPayload = {
+        data: {
+          type: 'profile',
+          attributes: {
+            email: profile.email,
+            ...profile.properties
+          }
         }
-      );
+      };
+
+      console.log('Klaviyo createProfile payload:', JSON.stringify(createPayload, null, 2));
+
+      const createResponse = await fetch(`${this.baseUrl}/profiles/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+          'revision': '2024-07-15'
+        },
+        body: JSON.stringify(createPayload)
+      });
 
       if (createResponse.ok) {
-        const responseData = await createResponse.json();
-        console.log("Profile created successfully:", responseData.data.id);
-        return responseData.data.id; // Return the new profile ID
+        const createResult = await createResponse.json();
+        console.log('Klaviyo profile created successfully:', createResult.data.id);
+        return createResult.data.id;
       }
 
+      // If creation failed with 409 (duplicate), get the existing profile ID and update it
       if (createResponse.status === 409) {
         const errorBody = await createResponse.json();
         console.warn('Klaviyo createProfile returned 409 (duplicate).', errorBody);
-        const duplicateProfileId = errorBody?.errors?.[0]?.meta?.duplicate_profile_id;
 
+        const duplicateProfileId = errorBody?.errors?.[0]?.meta?.duplicate_profile_id;
         if (duplicateProfileId) {
-          console.log(`Duplicate profile ID: ${duplicateProfileId}. Attempting to PATCH attributes/properties.`);
-          // Profile exists, so PATCH its attributes and properties (excluding subscription here)
-          const patchPayload = {
+          console.log(`Found duplicate profile ID: ${duplicateProfileId}. Attempting to update.`);
+          
+          // Update the existing profile
+          const updatePayload = {
             data: {
-              type: "profile",
+              type: 'profile',
               id: duplicateProfileId,
-              attributes: payload.data.attributes
+              attributes: profile.properties || {}
             }
           };
-          const updateResponse = await fetch(
-            `${this.baseUrl}/profiles/${duplicateProfileId}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-                'Content-Type': 'application/json',
-                'revision': '2023-12-15'
-              },
-              body: JSON.stringify(patchPayload)
-            }
-          );
+
+          const updateResponse = await fetch(`${this.baseUrl}/profiles/${duplicateProfileId}/`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+              'revision': '2024-07-15'
+            },
+            body: JSON.stringify(updatePayload)
+          });
 
           if (updateResponse.ok) {
-            console.log(`Successfully PATCHED attributes/properties for profile ${duplicateProfileId}.`);
-            return duplicateProfileId; // Return existing profile ID
+            console.log('Klaviyo profile updated successfully');
+            return duplicateProfileId;
           } else {
             const patchErrorBody = await updateResponse.text();
             console.error(`Klaviyo API Error Body (PATCH profile ${duplicateProfileId}):`, patchErrorBody);
-            throw new Error(`HTTP error! status: ${updateResponse.status} PATCHING profile ${duplicateProfileId}`);
           }
         } else {
+          const errorText = await createResponse.text();
           console.error('Klaviyo API Error: 409 received but no duplicate_profile_id found.', errorBody);
-          throw new Error(`HTTP error! status: ${createResponse.status}, msg: No duplicate_profile_id`);
         }
+      } else {
+        const errorText = await createResponse.text();
+        console.error('Klaviyo API Error Body (createProfile):', errorText);
       }
 
-      const errorText = await createResponse.text();
-      console.error('Klaviyo API Error Body (createProfile):', errorText);
-      throw new Error(`HTTP error! status: ${createResponse.status}`);
-
+      return null;
     } catch (error) {
-      console.error('Error in createOrUpdateProfileAttributes:', error);
+      console.error('Error in Klaviyo createOrUpdateProfileAttributes:', error);
       return null;
     }
   }
 
-  // Subscribes a profile to a specific list.
+  // Add profile to a Klaviyo list (for newsletter subscriptions)
   async subscribeProfileToList(profileId: string, listId: string): Promise<boolean> {
-    const payload = {
-      data: [
-        {
-          type: "profile",
-          id: profileId
-        }
-      ]
-    };
-
     try {
-      console.log(`Attempting to add profile ID: ${profileId} to list ID: ${listId}.`);
-      // Note: The endpoint for adding profiles to a list is typically /api/lists/{LIST_ID}/relationships/profiles/
+      const payload = {
+        data: [
+          {
+            type: 'profile',
+            id: profileId
+          }
+        ]
+      };
+
       // The Klaviyo API has different ways to manage subscriptions (profile level, list level, bulk jobs).
-      // This targets adding/subscribing to a specific list.
-      const response = await fetch(
-        `${this.baseUrl}/lists/${listId}/relationships/profiles/`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'revision': '2023-12-15'
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      // This endpoint is specifically for adding profiles to lists.
+      // See: https://developers.klaviyo.com/en/reference/subscribe_profiles
+      const response = await fetch(`${this.baseUrl}/lists/${listId}/relationships/profiles/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+          'revision': '2024-07-15'
+        },
+        body: JSON.stringify(payload)
+      });
 
       // According to Klaviyo docs, a successful add to list returns 204 No Content
       if (response.status === 204) {
-        console.log(`Successfully added profile ${profileId} to list ${listId}.`);
-        return true;
-      } else if (response.ok) {
-        // Handle other success statuses if Klaviyo API returns them (e.g., 200, 202 for jobs)
-        // For direct list add, 204 is most common.
-        console.log(`Profile ${profileId} processed for list ${listId} with status ${response.status}.`);
+        console.log(`Profile ${profileId} added to list ${listId} successfully`);
         return true;
       }
-      else {
-        const errorBody = await response.text();
-        console.error(`Klaviyo API Error Body (add profile ${profileId} to list ${listId}):`, errorBody);
-        throw new Error(`HTTP error! status: ${response.status} adding profile ${profileId} to list ${listId}`);
+
+      // Handle other success statuses if Klaviyo API returns them (e.g., 200, 202 for jobs)
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`Profile ${profileId} added to list ${listId}:`, result);
+        return true;
       }
+
+      const errorBody = await response.text();
+      console.error(`Klaviyo API Error Body (add profile ${profileId} to list ${listId}):`, errorBody);
+      return false;
     } catch (error) {
       console.error(`Error adding profile ${profileId} to list ${listId}:`, error);
       return false;
     }
   }
 
-  // Sets the general marketing consent for a profile.
-  async setProfileMarketingConsent(profileId: string, email: string): Promise<boolean> {
-    const payload = {
-      data: {
-        type: "profile-subscription-bulk-create-job", // Using the bulk job endpoint for general subscription
-        attributes: {
-          // No list_id here, for general subscription
-          profiles: {
-            data: [
-              {
-                type: "profile",
-                attributes: {
-                  email: email,
-                  // We could also pass profileId here if the API supports it as an identifier for the job
-                  // but email is a primary identifier for subscription jobs.
-                },
-                // Optionally, define subscription channels and consent status if needed
-                // e.g., meta: { patch_profile_attributes: { subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } } } }
-                // For now, relying on the endpoint to set default email marketing consent.
-              }
-            ]
+  // Set email marketing consent for a profile
+  async setProfileMarketingConsent(email: string, consented: boolean): Promise<boolean> {
+    try {
+      const payload = {
+        data: {
+          type: 'profile',
+          attributes: {
+            email: email,
+            properties: {
+              email_marketing_consent: consented ? 'opted_in' : 'opted_out',
+              email_marketing_consent_timestamp: new Date().toISOString()
+            }
           }
         }
-      }
-    };
+      };
 
-    try {
-      console.log(`Attempting to set general marketing consent for email: ${email} (Profile ID: ${profileId}).`);
-      const response = await fetch(
-        `${this.baseUrl}/profile-subscription-bulk-create-jobs/`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'revision': '2023-12-15'
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      const response = await fetch(`${this.baseUrl}/profiles/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+          'revision': '2024-07-15'
+        },
+        body: JSON.stringify(payload)
+      });
 
-      if (response.status === 202 || response.ok) { // 202 Accepted for jobs
-        console.log(`Marketing consent job submitted for email ${email}. Status: ${response.status}`);
+      if (response.ok || response.status === 409) {
+        console.log(`Marketing consent for ${email} set to: ${consented}`);
         return true;
-      } else {
-        const errorBody = await response.text();
-        console.error(`Klaviyo API Error Body (setProfileMarketingConsent for ${email}):`, errorBody);
-        throw new Error(`HTTP error! status: ${response.status} setting marketing consent for ${email}`);
       }
+
+      const errorBody = await response.text();
+      console.error(`Klaviyo API Error Body (setProfileMarketingConsent for ${email}):`, errorBody);
+      return false;
     } catch (error) {
       console.error(`Error setting marketing consent for ${email}:`, error);
       return false;
     }
   }
 
-  // Track an event using the v2 API
-  async trackEvent(eventName: string, email: string, properties?: Record<string, any>): Promise<void> {
+  // Track events (like course reviews, profile completions, etc.)
+  async trackEvent(event: KlaviyoEvent): Promise<void> {
     if (!this.apiKey) {
       throw new Error('Klaviyo API key not found in Replit Secrets');
     }
+
+    console.log('Tracking Klaviyo event:', event.metric.name);
+
+    // Ensure the event has a timestamp
+    if (!event.time) {
+      event.time = new Date().toISOString();
+    }
+
     const payload = {
       data: {
-        type: "event",
-        attributes: {
-          profile: {
-            data: {
-              type: "profile",
-              attributes: {
-                email: email
-              }
-            }
-          },
-          metric: {
-            data: {
-              type: "metric",
-              attributes: {
-                name: eventName
-              }
-            }
-          },
-          properties: properties || {}
-        }
+        type: 'event',
+        attributes: event
       }
     };
+
     const response = await fetch('https://a.klaviyo.com/api/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'revision': '2023-12-15',
+        'Accept': 'application/json',
         'Authorization': `Klaviyo-API-Key ${this.apiKey}`
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Klaviyo API error:', errorText);
       throw new Error(`Klaviyo API error! status: ${response.status}, message: ${errorText}`);
     }
   }
+}
 
-  // Track a metric (simplified event tracking)
-  async trackMetric(metricName: string, email: string, properties?: Record<string, any>): Promise<void> {
-    const event: KlaviyoEvent = {
-      profile: { email },
-      metric: { name: metricName },
-      properties: properties || undefined
-    };
-    await this.trackEvent(event.metric.name, event.profile.email, event.properties);
-  }
+// Create a Klaviyo event object
+export function createKlaviyoEvent(eventName: string, email: string, properties: Record<string, any> = {}): KlaviyoEvent {
+  const event: KlaviyoEvent = {
+    metric: {
+      name: eventName
+    },
+    profile: {
+      email: email
+    },
+    properties: properties,
+    time: new Date().toISOString()
+  };
+  return event;
 }
 
 // Helper function to get Klaviyo client instance
@@ -304,25 +297,38 @@ export function getKlaviyoClient(): KlaviyoClient {
   return new KlaviyoClient(apiKey);
 }
 
-// Predefined event names
+// Event names for tracking
 export const KlaviyoEvents = {
-  SIGNED_UP: 'Signed Up',
-  EMAIL_VERIFIED: 'Email Verified',
-  REVIEW_SUBMITTED: 'Review Submitted',
-  REVIEW_VERIFIED: 'Review Verified',
-  REVIEW_PUBLISHED: 'Review Published',
-  CONTACT_FORM_SUBMITTED: 'Contact Form Submitted'
+  REVIEW_SUBMITTED: 'Course Review Submitted',
+  PROFILE_COMPLETED: 'Profile Completed',
+  PROFILE_UPDATED: 'Profile Updated',
+  NEWSLETTER_SIGNUP: 'Newsletter Signup',
+  CONTACT_FORM_SUBMITTED: 'Contact Form Submitted',
+  COURSE_SEARCHED: 'Course Searched',
+  USER_REGISTERED: 'User Registered',
 } as const;
 
-// Helper function to create a profile from user data
-export function createKlaviyoProfile(email: string, displayName?: string): KlaviyoProfile {
-  const [firstName, lastName] = (displayName || '').split(' ');
+// Helper function to create a Klaviyo profile from user data
+export function createKlaviyoProfile(email: string, displayName?: string, userProfile?: any): KlaviyoProfile {
+  const [firstName, lastName] = displayName ? displayName.split(' ') : ['', ''];
+  
   return {
-    email,
-    first_name: firstName || undefined,
-    last_name: lastName || undefined,
+    email: email,
     properties: {
-      signup_source: 'walkinggolfer.com'
+      first_name: userProfile?.firstName || firstName || undefined,
+      last_name: userProfile?.lastName || lastName || undefined,
+      zip: userProfile?.zipcode || undefined,
+      state: userProfile?.homeState || undefined,
+      date_of_birth: userProfile?.dateOfBirth || undefined,
+      golf_experience: userProfile?.golfingExperience || undefined,
+      preferred_carry_method: userProfile?.preferredCarryMethod || undefined,
+      golf_handicap: userProfile?.golfHandicap || undefined,
+      favorite_states: userProfile?.favoriteStates || undefined,
+      profile_completed: userProfile?.profileCompleted || false,
+      review_count: userProfile?.reviewCount || 0,
+      walking_golfer_member: true,
+      signup_date: userProfile?.createdAt || new Date().toISOString(),
+      marketing_consent: userProfile?.marketingConsent || false,
     }
   };
 } 

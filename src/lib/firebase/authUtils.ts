@@ -56,6 +56,34 @@ export async function signUpWithEmail(
 
       // Create the user profile document in Firestore
       await createUserProfile(userCredential.user);
+
+      // Track user registration in Klaviyo (non-blocking)
+      try {
+        const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents, createKlaviyoEvent } = await import('@/lib/klaviyo');
+        const klaviyoClient = getKlaviyoClient();
+        
+        // Create basic Klaviyo profile
+        const klaviyoProfile = createKlaviyoProfile(email, displayName);
+        await klaviyoClient.createOrUpdateProfileAttributes(klaviyoProfile);
+        
+        // Track registration event
+        const registrationEvent = createKlaviyoEvent(
+          KlaviyoEvents.USER_REGISTERED,
+          email,
+          {
+            display_name: displayName,
+            registration_date: new Date().toISOString(),
+            registration_source: 'email_signup',
+            email_verification_sent: true
+          }
+        );
+        
+        await klaviyoClient.trackEvent(registrationEvent);
+        console.log('Successfully tracked user registration in Klaviyo');
+      } catch (klaviyoError) {
+        console.warn('Failed to track user registration in Klaviyo:', klaviyoError);
+        // Don't fail the signup for Klaviyo issues
+      }
     }
 
     return { user: userCredential.user };
