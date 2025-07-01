@@ -19,6 +19,7 @@ import WelcomeModal from './components/WelcomeModal'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://www.walkinggolfer.com'),
   title: 'Walking Golfer',
   description: 'Find and review walkable golf courses',
   icons: {

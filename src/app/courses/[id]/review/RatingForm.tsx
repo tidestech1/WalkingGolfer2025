@@ -127,6 +127,19 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   }, [user]);
   // --- End useEffect ---
 
+  // Help modal state - moved here to prevent React Hooks rules violation
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpDismissed, setHelpDismissed] = useState(false);
+
+  // Show help on first load unless dismissed - moved here to prevent React Hooks rules violation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem('walkgolf_help_dismissed');
+      if (!dismissed) setShowHelp(true);
+      setHelpDismissed(!!dismissed);
+    }
+  }, []);
+
   // --- START: Extracted Authenticated Submission Logic ---
   interface AuthenticatedReviewSubmitData {
     courseId: string;
@@ -606,18 +619,6 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     );
   }
   // --- End conditional rendering ---
-
-  const [showHelp, setShowHelp] = useState(false);
-  const [helpDismissed, setHelpDismissed] = useState(false);
-
-  // Show help on first load unless dismissed
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const dismissed = localStorage.getItem('walkgolf_help_dismissed');
-      if (!dismissed) setShowHelp(true);
-      setHelpDismissed(!!dismissed);
-    }
-  }, []);
 
   const handleHelpClose = () => {
     setShowHelp(false);

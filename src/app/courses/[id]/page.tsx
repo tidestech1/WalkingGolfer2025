@@ -33,7 +33,7 @@ import ReviewsDisplay from './ReviewsDisplay'
 import CourseBreadcrumb from './components/CourseBreadcrumb'
 
 // Provide inline type for the destructured params
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const course: GolfCourse | null = await getCourseById(id);
 
@@ -134,7 +134,7 @@ function serializeDates(obj: unknown): unknown {
 }
 
 // Provide inline type for the destructured params
-export default async function CourseDetailsPage({ params }: { params: { id: string } }): Promise<JSX.Element> {
+export default async function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }): Promise<JSX.Element> {
   const { id } = await params;
   
   // Fetch course and reviews in parallel

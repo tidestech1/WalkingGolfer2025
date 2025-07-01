@@ -16,23 +16,49 @@
  * - Any component importing Firebase Admin code uses the 'use server' directive
  */
 const nextConfig = {
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // Use this ONLY if blocked by a suspected Next.js bug like the PageProps issue.
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+  // Removed dangerous ignore settings - now properly validating TypeScript and ESLint
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
   // Allow Replit's development environment
   allowedDevOrigins: [
     'a33281ec-5c44-4565-8d75-65e2cd2cc533-00-10fziv3cz1fuc.worf.replit.dev'
   ],
+  
+  // Add security headers for production
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
+          }
+        ]
+      }
+    ]
+  },
+  
   images: {
     remotePatterns: [
       {
@@ -65,14 +91,7 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "https://api.openai.com/:path*",
-      },
-    ];
-  },
+  
   webpack: (config, { isServer }) => {
     // Client-side specific configurations
     if (!isServer) {

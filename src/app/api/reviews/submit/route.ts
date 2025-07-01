@@ -10,6 +10,9 @@ import { getAdminFirestore, getAdminAuth } from '@/lib/firebase/firebaseAdmin';
 import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review'; // Removed CreateReviewInput as we use Zod type now
 import crypto from 'crypto';
 import { getKlaviyoClient, KlaviyoEvents } from '@/lib/klaviyo';
+import { rateLimit, getRateLimitHeaders } from '@/lib/utils/rateLimiter';
+import { shouldBypassRateLimit } from '@/lib/utils/adminWhitelist';
+import { logger, ErrorSeverity } from '@/lib/utils/errorLogger';
 
 // Get Firestore and Auth instances using the getter functions
 // This also handles initialization internally
@@ -46,13 +49,34 @@ export async function POST(request: NextRequest) {
   try {
     const rawData = await request.json();
 
-    // Validate input data
+    // Validate input data first to get email for bypass check
     const validationResult = submitReviewSchema.safeParse(rawData);
     if (!validationResult.success) {
       console.error("Validation Errors:", validationResult.error.errors);
       return NextResponse.json({ error: 'Invalid input data', details: validationResult.error.flatten() }, { status: 400 });
     }
     const data: SubmitReviewData = validationResult.data;
+
+    // Rate limiting with bypass for admin users
+    const clientIP = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown';
+    
+    if (!shouldBypassRateLimit(data.submittedEmail, undefined, clientIP)) {
+      // Flexible rate limits: 50/hour during soft-launch, 3/hour in production
+      const limit = process.env.SOFT_LAUNCH_MODE === 'true' ? 50 : 3;
+      const rateLimitResult = rateLimit(`review_submit_${clientIP}`, limit, 60 * 60 * 1000);
+      
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          { error: 'Too many review submissions. Please try again later.' }, 
+          { 
+            status: 429,
+            headers: getRateLimitHeaders(rateLimitResult)
+          }
+        );
+      }
+    }
 
     // Check if a user with this email already exists
     const usersRef = db.collection('users');
