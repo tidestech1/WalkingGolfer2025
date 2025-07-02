@@ -16,17 +16,8 @@
  * - Any component importing Firebase Admin code uses the 'use server' directive
  */
 const nextConfig = {
-  // Removed dangerous ignore settings - now properly validating TypeScript and ESLint
-  // typescript: {
-  //   ignoreBuildErrors: true,
-  // },
-  // eslint: {
-  //   ignoreDuringBuilds: true,
-  // },
-  // Allow Replit's development environment
-  allowedDevOrigins: [
-    'a33281ec-5c44-4565-8d75-65e2cd2cc533-00-10fziv3cz1fuc.worf.replit.dev'
-  ],
+  // Note: Removed experimental forceSwcTransforms flag as it was causing PostCSS issues
+  // Note: Removed allowedDevOrigins as it's not a valid Next.js option
   
   // Add security headers for production
   async headers() {
@@ -105,9 +96,9 @@ const nextConfig = {
       };
     }
     
-    // Add the transpilePackages option to handle node: imports in dependencies
     return config;
   },
+  
   // This option tells Next.js to properly transpile these packages
   transpilePackages: ['firebase-admin', 'google-auth-library', 'gcp-metadata', 'google-logging-utils']
 };

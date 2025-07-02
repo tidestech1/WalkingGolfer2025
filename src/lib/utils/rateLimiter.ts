@@ -16,9 +16,11 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 // Environment-based rate limiting configuration
 const getRateLimitConfig = () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const isSoftLaunch = process.env.SOFT_LAUNCH_MODE === 'true';
+  const isSoftLaunch = process.env.DEPLOYMENT_STAGE === 'soft-launch';
+  const isEarlyAccess = process.env.RATE_LIMIT_TIER === 'early-access';
   
-  if (!isProduction || isSoftLaunch) {
+  // Use lenient limits for development OR soft-launch/early-access modes
+  if (!isProduction || isSoftLaunch || isEarlyAccess) {
     // More lenient limits for development and soft-launch
     return {
       reviewSubmitPerIP: { limit: 50, window: 60 * 60 * 1000 }, // 50 per hour
