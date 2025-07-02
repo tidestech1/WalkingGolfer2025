@@ -19,6 +19,41 @@ const nextConfig = {
   // Note: Removed experimental forceSwcTransforms flag as it was causing PostCSS issues
   // Note: Removed allowedDevOrigins as it's not a valid Next.js option
   
+  // Add redirects to ensure all traffic goes to https://www.walkinggolfer.com
+  async redirects() {
+    return [
+      // Redirect non-www to www (HTTP and HTTPS)
+      {
+        source: '/(.*)',
+        has: [
+          {
+            type: 'host',
+            value: 'walkinggolfer.com',
+          },
+        ],
+        destination: 'https://www.walkinggolfer.com/:path*',
+        permanent: true,
+      },
+      // Redirect HTTP www to HTTPS www
+      {
+        source: '/(.*)',
+        has: [
+          {
+            type: 'header',
+            key: 'x-forwarded-proto',
+            value: 'http',
+          },
+          {
+            type: 'host',
+            value: 'www.walkinggolfer.com',
+          },
+        ],
+        destination: 'https://www.walkinggolfer.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
+
   // Add security headers for production
   async headers() {
     return [
