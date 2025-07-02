@@ -59,7 +59,7 @@ export default function WelcomePage() {
             </CardHeader>
             <CardContent>
               <Button asChild size="lg" className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#7fe673] rounded-lg transition duration-150 ease-in-out py-2 px-4">
-                <Link href="/courses">
+                <Link href="/add-review">
                   Find a Course to Review
                 </Link>
               </Button>
@@ -71,7 +71,7 @@ export default function WelcomePage() {
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-[#0A3357]">
                 <UserIcon className="w-5 h-5 mr-2" />
-                Your Profile & Reviews
+                Your Profile, Reviews & Ratings
               </CardTitle>
               <CardDescription className="text-gray-700 pt-1">
                 Manage your details and see your past contributions.
@@ -89,7 +89,7 @@ export default function WelcomePage() {
 
         <div className="mt-16 text-center">
           <p className="text-gray-600">
-            Need help? Visit our <Link href="/support" className="text-[#0A3357] hover:underline">Support Center</Link>.
+            Need help? Please <Link href="/contact" className="text-[#0A3357] hover:underline">contact us</Link>.
           </p>
         </div>
       </div>
