@@ -64,14 +64,6 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "www.presidio.gov",
-      },
-      {
-        protocol: "https",
-        hostname: "www.pebblebeach.com",
-      },
-      {
-        protocol: "https",
         hostname: "maps.googleapis.com",
       },
       {
