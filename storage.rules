@@ -53,8 +53,9 @@ service firebase.storage {
       allow write: if isAuthenticated() && 
                    request.auth.uid == userId && 
                    isValidImage() &&
-                   isValidPath(courseId) && // courseId should be a valid path segment
-                   isValidPath(userId);     // userId should also be a valid path segment (though matched by auth.uid)
+                   isValidPath(courseId); // courseId should be a valid path segment
+                   // userId is validated by matching request.auth.uid, no need for isValidPath
+                   // This allows for Google/Facebook UIDs that contain colons and other characters
                    // filename itself is generated and can contain various characters, so not checking with isValidPath
       allow delete: if isAuthenticated() && request.auth.uid == userId;
     }

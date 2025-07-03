@@ -15,8 +15,8 @@ export async function uploadReviewImages(
 ): Promise<{ urls: string[]; error?: string }> {
   try {
     const uploadPromises = files.map(file => {
-      const path = `reviews/${courseId}/${userId}/${Date.now()}-${file.name}`;
-      return uploadImage(file, path);
+      const folderPath = `reviews/${courseId}/${userId}`;
+      return uploadImage(file, folderPath);
     });
     const urls = await Promise.all(uploadPromises);
     return { urls };
