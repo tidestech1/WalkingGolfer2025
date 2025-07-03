@@ -56,6 +56,23 @@ const nextConfig = {
 
   // Add security headers for production
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    // Content Security Policy
+    const cspHeader = `
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://static.klaviyo.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com;
+      img-src 'self' data: blob: https://firebasestorage.googleapis.com https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com https://placehold.co https://www.googletagmanager.com https://www.google-analytics.com https://ssl.gstatic.com;
+      font-src 'self' https://fonts.gstatic.com;
+      connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://maps.googleapis.com https://www.google-analytics.com https://a.klaviyo.com https://fast.apify.com;
+      frame-src https://www.google.com https://www.recaptcha.net https://recaptcha.google.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      upgrade-insecure-requests;
+    `.replace(/\s{2,}/g, ' ').trim();
+    
     return [
       {
         source: '/(.*)',
@@ -79,6 +96,14 @@ const nextConfig = {
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: isDev ? '' : cspHeader
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=(), payment=()'
           }
         ]
       }
