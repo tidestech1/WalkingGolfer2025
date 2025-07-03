@@ -138,7 +138,7 @@ export default function NewsletterForm() {
               }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
-            <span className="text-gray-700">Walking Golf Tips</span>
+            <span className="text-gray-700">Walking Golfer Tips</span>
           </label>
 
           <label className="flex items-center space-x-3">
@@ -177,7 +177,7 @@ export default function NewsletterForm() {
       )}
 
       <p className="text-sm text-gray-500 text-center">
-        By subscribing, you agree to receive marketing emails from The Walking
+        By subscribing, you agree to receive marketing emails from the Walking
         Golfer. You can unsubscribe at any time.
       </p>
     </form>

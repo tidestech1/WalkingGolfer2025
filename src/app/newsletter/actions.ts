@@ -61,7 +61,7 @@ export async function subscribeToKlaviyo(
             ...preferences,
             klaviyo_profile_id: profileId,
           });
-          return { success: true, message: 'Successfully subscribed to newsletter.' };
+          return { success: true, message: 'Subscription request to newsletter received, please check your email to complete the process.' };
         } else {
           console.error(`Failed to set marketing consent for profile ${profileId}.`);
           // Profile created/updated & added to list, but general consent failed.
