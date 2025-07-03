@@ -111,7 +111,7 @@ export default function AboutPage(): JSX.Element {
                   <h3 className="font-semibold text-gray-900 mb-2">Community Building</h3>
                   <p className="text-gray-600">
                     Build a community of walking golfers and promote the health benefits
-                    of walking golf
+                    of walking the course
                   </p>
                 </div>
               </div>
