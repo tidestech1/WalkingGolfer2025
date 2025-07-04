@@ -90,7 +90,7 @@ export default function ReviewsDisplay({ reviews }: ReviewsDisplayProps): JSX.El
             </Link>
             
             <p className="text-xs text-gray-500 mt-3">
-              Takes 3-5 minutes • Help build the walking golf community
+              Takes 3-5 minutes • Help build the Walking Golfer community
             </p>
           </CardContent>
         </Card>

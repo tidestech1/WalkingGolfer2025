@@ -14,7 +14,7 @@ export default function CourseFinderPage() {
           Find a Walking-Friendly Golf Course
         </h1>
         <p className="text-gray-600 md:text-lg">
-          Choose how you'd like to discover great walking golf experiences across the USA.
+          Choose how you'd like to discover great walking-friendly golf experiences across the USA.
         </p>
       </div>
 

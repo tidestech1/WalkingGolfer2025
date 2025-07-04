@@ -21,7 +21,7 @@ export default function WelcomePage() {
             Welcome, {displayName}!
           </h1>
           <p className="text-lg text-gray-900">
-            Ready to discover and share the best walking golf experiences?
+            Ready to discover and share the best walkable courses in the USA?
           </p>
         </div>
 

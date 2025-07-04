@@ -4,7 +4,7 @@ import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: 'About Us | Walking Golfer',
-  description: 'Learn about the Walking Golfer community and our mission to promote walking golf across the United States.',
+  description: 'Learn about the Walking Golfer community and our mission to support golfers who appreciate the physical, mental, and strategic benefits of walking the course.',
 }
 
 export default function AboutPage(): JSX.Element {
@@ -73,8 +73,7 @@ export default function AboutPage(): JSX.Element {
             <div className="max-w-xl text-white">
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
               <p className="text-lg leading-relaxed">
-                The Walking Golfer is dedicated to promoting and preserving the tradition
-                of walking golf across the United States, enhancing the connection between
+                The Walking Golfer is dedicated to preserving the tradition of experiencing the course on foot across the United States, enhancing the connection between
                 players, the course, and the game&apos;s rich history.
               </p>
             </div>
@@ -110,8 +109,7 @@ export default function AboutPage(): JSX.Element {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Community Building</h3>
                   <p className="text-gray-600">
-                    Build a community of walking golfers and promote the health benefits
-                    of walking the course
+                    Build a community of golfers who appreciate the many benefits of walking the course
                   </p>
                 </div>
               </div>
@@ -144,8 +142,7 @@ export default function AboutPage(): JSX.Element {
             <div className="lg:col-span-2">
               <p className="text-lg leading-relaxed mb-6">
                 We&apos;re proud to partner with Stewart Golf, a company that shares our
-                passion for walking golf. Together, we&apos;re working to make walking golf
-                more accessible and enjoyable for players of all skill levels.
+                passion for walking the course. Together, we&apos;re working to make playing the traditional game more enjoyable for players of all skill levels.
               </p>
               <a 
                 href="https://www.stewartgolfusa.com/"

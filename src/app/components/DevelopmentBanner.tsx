@@ -28,7 +28,7 @@ const DevelopmentBanner: React.FC = () => {
         <div className="flex items-center gap-2 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <span>
-            <strong>Early Development:</strong> You're using an early version of Walking Golfer. 
+            <strong>Early Development:</strong> You're using an early version of the Walking Golfer. 
             Expect bugs and changes as we improve. We'd love your feedback!
           </span>
         </div>

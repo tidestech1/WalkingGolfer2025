@@ -80,7 +80,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-10 sm:mb-16 text-[#0A3357]">
-            Why walk when you golf?
+            Why walk the course?
           </h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
             <div className="text-center">
@@ -102,9 +102,9 @@ export default function Home() {
                   strokeWidth={1.5}
                 />
               </div>
-              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Walk the Course</h3>
+              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Play the Course</h3>
               <p className="text-gray-600 text-lg">
-              Experience golf the way it was meant to be - one step at a time.
+              Experience golf the authentic way - one step at a time.
               </p>
             </div>
             <div className="text-center">
@@ -127,10 +127,10 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-[#0A3357]/5">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-[#0A3357]">
-            Join Our Walking Golfers Community
+            Join the Walking Golfers community
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto">
-            Discover walking-friendly courses, share your insights to help others, and support a growing community of golfers that celebrates walking the game.
+            Discover walking-friendly courses, share insights to help others, and support a growing community of golfers who embrace the game on foot.
           </p>
           <Link 
             href="/signup" 

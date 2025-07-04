@@ -64,8 +64,8 @@ export default function NewsPage() {
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <p className="text-gray-700 leading-relaxed">
-              Stay up-to-date with the latest news, trends, and updates from the walking golf community. 
-              Our articles cover course reviews, equipment recommendations, walking tips, and more to enhance your walking golf experience.
+              Stay up-to-date with the latest news, trends, and updates from the Walking Golfer community. 
+              Our articles cover course reviews, equipment recommendations, walking tips, and more to enhance your golf experience.
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
@@ -86,8 +86,8 @@ export default function NewsPage() {
         
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <p className="text-gray-700 leading-relaxed">
-            Stay up-to-date with the latest news, trends, and updates from the walking golf community. 
-            Our articles cover course reviews, equipment recommendations, walking tips, and more to enhance your walking golf experience.
+            Stay up-to-date with the latest news, trends, and updates from the Walking Golfer community. 
+            Our articles cover course reviews, equipment recommendations, walking tips, and more to enhance your golf experience.
           </p>
         </div>
 
