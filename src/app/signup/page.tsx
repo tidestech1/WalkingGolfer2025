@@ -170,6 +170,7 @@ export default function SignUpPage() {
                       required
                       disabled={loading}
                       className="mt-1"
+                      autoComplete="given-name"
                     />
                   </div>
                   <div>
@@ -182,6 +183,7 @@ export default function SignUpPage() {
                       required
                       disabled={loading}
                       className="mt-1"
+                      autoComplete="family-name"
                     />
                   </div>
                 </div>
@@ -197,6 +199,7 @@ export default function SignUpPage() {
                     required
                     disabled={loading}
                     className="mt-1"
+                    autoComplete="email"
                   />
                 </div>
 
@@ -211,6 +214,7 @@ export default function SignUpPage() {
                     required
                     disabled={loading}
                     className="mt-1"
+                    autoComplete="new-password"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Must be at least 6 characters
@@ -230,6 +234,7 @@ export default function SignUpPage() {
                     disabled={loading}
                     className="mt-1"
                     maxLength={5}
+                    autoComplete="postal-code"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     We'll use this to recommend nearby courses
