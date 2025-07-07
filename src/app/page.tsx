@@ -1,9 +1,45 @@
 import { Heart, Leaf, DollarSign, Star, ArrowRight } from 'lucide-react'
+import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { IMAGES } from '@/lib/constants/images'
+
+export const metadata: Metadata = {
+  title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+  description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers, and join our community of walking golfers.',
+  keywords: ['walkable golf courses', 'golf courses USA', 'walkable courses', 'golf course reviews', 'no cart golf', 'walking golfer', 'golf course finder'],
+  openGraph: {
+    title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+    description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers, and join our community of walking golfers.',
+    url: '/',
+    siteName: 'Walking Golfer',
+    images: [
+      {
+        url: '/images/og-home.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Walking Golfer - Find walkable golf courses across the USA',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+    description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers.',
+    images: ['/images/og-home.jpg'],
+  },
+  alternates: {
+    canonical: '/',
+  },
+  other: {
+    'geo.region': 'US',
+    'geo.placename': 'United States',
+  },
+}
 
 export default function Home() {
   return (

@@ -16,5 +16,5 @@ Disallow: /forgot-password/
 Disallow: /complete-profile/
 Disallow: /verify-email/
 
-# Point to the sitemap (UPDATE WITH YOUR ACTUAL DOMAIN)
+# Point to the dynamic sitemap
 Sitemap: https://www.walkinggolfer.com/sitemap.xml 

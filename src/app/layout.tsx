@@ -7,6 +7,7 @@ import { Toaster } from 'sonner'
 import './globals.css'
 import FooterWrapper from '@/app/components/FooterWrapper'
 import GoogleAnalytics from '@/app/components/GoogleAnalytics'
+import SchemaMarkup from '@/app/components/SchemaMarkup'
 import ScrollToTop from '@/app/components/ScrollToTop'
 import FirebaseInitializer from '@/components/FirebaseInitializer'
 import { GA_MEASUREMENT_ID } from '@/lib/constants/analytics'
@@ -49,6 +50,8 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         />
+        <SchemaMarkup type="organization" />
+        <SchemaMarkup type="website" />
       </head>
       <body className={inter.className}>
         <FirebaseInitializer />

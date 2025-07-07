@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Metadata } from 'next'
 
 import { Newspaper } from 'lucide-react'
 
@@ -8,6 +9,7 @@ import NewsCard from '@/app/components/NewsCard'
 import { getNewsArticles } from '@/lib/firebase/newsUtils'
 import type { NewsArticle } from '@/types/news'
 
+// This metadata will be handled by the layout file
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([])

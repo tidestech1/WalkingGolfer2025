@@ -1,10 +1,40 @@
-'use client'; // Assuming client components for potential future interactive elements or hooks
-
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { MapPin, Search } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+  description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search to discover your next walkable golf experience.',
+  keywords: ['golf course finder', 'walkable golf courses', 'golf course search', 'golf course map', 'find golf courses'],
+  openGraph: {
+    title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+    description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search to discover your next walkable golf experience.',
+    url: '/coursefinder',
+    siteName: 'Walking Golfer',
+    images: [
+      {
+        url: '/images/og-coursefinder.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Walking Golfer Course Finder',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+    description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search.',
+    images: ['/images/og-coursefinder.jpg'],
+  },
+  alternates: {
+    canonical: '/coursefinder',
+  },
+}
 
 export default function CourseFinderPage() {
   return (
