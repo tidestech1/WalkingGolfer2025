@@ -50,34 +50,44 @@ export default function AboutPage(): JSX.Element {
           </div>
 
           {/* Our Story Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            <div className="bg-white rounded-xl shadow-md p-8">
-              <h2 className="text-3xl font-bold text-[#0A3357] mb-6">Our Story</h2>
-              <div className="prose prose-lg space-y-6">
-                <p className="text-gray-600">
-                  The Walking Golfer was founded by <span className="font-semibold">Rob Rigg</span>, 
-                  an avid golfer with a vision to celebrate the traditional walking 
-                  experience in golf. What began as a passionate personal project has 
-                  evolved into a thriving community dedicated to preserving and promoting 
-                  the walking tradition in golf.
-                </p>
-                <p className="text-gray-600">
+          <div className="bg-white rounded-xl shadow-md p-8 mb-24">
+            <h2 className="text-3xl font-bold text-[#0A3357] mb-8">Our Story</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+              <div className="lg:col-span-2">
+                <div className="prose prose-lg space-y-6">
+                  <p className="text-gray-600">
+                    The Walking Golfer was founded by <span className="font-semibold">Rob Rigg</span>, 
+                    an avid golfer with a vision to celebrate the traditional walking 
+                    experience in golf. What began as a passionate personal project has 
+                    evolved into a thriving community dedicated to preserving and promoting 
+                    the walking tradition in golf.
+                  </p>
+                  <blockquote className="border-l-4 border-blue-600 pl-6 italic text-gray-700">
+                    "Rob's vision was simple yet profound: create a platform where walking golfers could connect..."
+                  </blockquote>
+                  <p className="text-gray-600">
                   Rob&apos;s vision was simple yet profound: create a platform where walking 
                   golfers could connect, share experiences, and discover courses designed 
                   with walkers in mind. Today, The Walking Golfer serves as the definitive 
                   resource for thousands of players across the United States who believe 
                   that golf is best enjoyed one step at a time.
+                  </p>
+                </div>
+              </div>
+              <div>
+                <div className="relative h-[280px] rounded-lg overflow-hidden border-2 border-gray-100">
+                  <Image
+                    src="/images/about-page/Rob-at-BB.jpg"
+                    alt="Rob Rigg, founder of The Walking Golfer"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 text-center mt-2">
+                  Rob Rigg, Founder
                 </p>
               </div>
-            </div>
-            <div className="relative h-[500px] rounded-xl overflow-hidden shadow-lg">
-              <Image
-                src="https://placehold.co/1000x1200/0A3357/FFFFFF?text=Image+Placeholder%0ARob+Rigg%0AFounder+of+The+Walking+Golfer"
-                alt="Rob Rigg, founder of The Walking Golfer"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
             </div>
           </div>
 
@@ -142,7 +152,7 @@ export default function AboutPage(): JSX.Element {
                   </div>
                 </div>
               </div>
-              <div className="relative rounded-lg overflow-hidden h-[300px]">
+              <div className="relative rounded-lg overflow-hidden h-[300px] border-2 border-gray-100">
                 <Image
                   src="/images/about-page/course-info-page.png"
                   alt="Course Info Page"
