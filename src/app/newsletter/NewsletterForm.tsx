@@ -18,10 +18,9 @@ export default function NewsletterForm() {
   const [status, setStatus] = useState<SubmissionStatus>({ success: null, message: null })
 
   const [preferences, setPreferences] = useState({
+    golfTips: true,
     courseUpdates: true,
-    newsArticles: true,
-    tips: true,
-    offers: false,
+    weeklyDigest: false,
   })
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -114,46 +113,31 @@ export default function NewsletterForm() {
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={preferences.newsArticles}
+              checked={preferences.golfTips}
               onChange={(e) =>
                 setPreferences((prev) => ({
                   ...prev,
-                  newsArticles: e.target.checked,
+                  golfTips: e.target.checked,
                 }))
               }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
-            <span className="text-gray-700">News Articles</span>
+            <span className="text-gray-700">Golf Tips & Advice</span>
           </label>
 
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={preferences.tips}
+              checked={preferences.weeklyDigest}
               onChange={(e) =>
                 setPreferences((prev) => ({
                   ...prev,
-                  tips: e.target.checked,
+                  weeklyDigest: e.target.checked,
                 }))
               }
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
-            <span className="text-gray-700">Walking Golfer Tips</span>
-          </label>
-
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={preferences.offers}
-              onChange={(e) =>
-                setPreferences((prev) => ({
-                  ...prev,
-                  offers: e.target.checked,
-                }))
-              }
-              className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <span className="text-gray-700">Partner Offers</span>
+            <span className="text-gray-700">Weekly Digest</span>
           </label>
         </div>
       </div>

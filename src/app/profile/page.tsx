@@ -139,7 +139,10 @@ function ProfilePageContent() {
       }
 
     } catch (error) {
-      console.error('Error loading user data or course details:', error)
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error loading user data or course details:', error)
+      }
       toast.error("Failed to load your profile data. Please refresh the page.");
     } finally {
       setLoadingData(false)
@@ -169,7 +172,10 @@ function ProfilePageContent() {
       toast.success("Signed out successfully.")
       router.push('/')
     } catch (error) {
-      console.error('Error signing out:', error)
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error signing out:', error)
+      }
       toast.error("Failed to sign out.");
     }
   }
@@ -194,7 +200,10 @@ function ProfilePageContent() {
       setEditingPersonal(false);
       toast.success("Personal information updated successfully!");
     } catch (error) {
-      console.error("Error saving personal info:", error);
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error saving personal info:", error);
+      }
       toast.error("Failed to update personal information.");
     } finally {
       setIsSaving(false);
@@ -226,7 +235,10 @@ function ProfilePageContent() {
       setEditingGolf(false);
       toast.success("Golf preferences updated successfully!");
     } catch (error) {
-      console.error("Error saving golf preferences:", error);
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error saving golf preferences:", error);
+      }
       toast.error("Failed to update golf preferences.");
     } finally {
       setIsSaving(false);
@@ -248,7 +260,10 @@ function ProfilePageContent() {
       setEditingLocation(false);
       toast.success("Location preferences updated successfully!");
     } catch (error) {
-      console.error("Error saving location:", error);
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error saving location:", error);
+      }
       toast.error("Failed to update location.");
     } finally {
       setIsSaving(false);
@@ -274,7 +289,10 @@ function ProfilePageContent() {
       setEditingCommunications(false);
       toast.success("Communication preferences updated successfully!");
     } catch (error) {
-      console.error("Error saving communications:", error);
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error saving communications:", error);
+      }
       toast.error("Failed to update communication preferences.");
     } finally {
       setIsSaving(false);
@@ -303,7 +321,10 @@ function ProfilePageContent() {
       toast.success("Profile photo updated successfully!");
       setShowPhotoUpload(false);
     } catch (error) {
-      console.error('Error uploading photo:', error);
+      // Log error for debugging but don't expose details in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error uploading photo:', error);
+      }
       const errorMessage = error instanceof Error ? error.message : "Failed to upload photo";
       toast.error(errorMessage);
     } finally {
@@ -623,7 +644,10 @@ function ProfilePageContent() {
                       {reviews.map((review) => {
                         const course = coursesDetails[review.courseId];
                         if (!course) {
-                          console.warn(`Course data for review ${review.id} (courseId: ${review.courseId}) not found.`);
+                          // Log warning for debugging but don't expose details in production
+                          if (process.env.NODE_ENV !== 'production') {
+                            console.warn(`Course data for review ${review.id} (courseId: ${review.courseId}) not found.`);
+                          }
                           return null;
                         }
                         return <ProfileReviewCard key={review.id} review={review} course={course} />;

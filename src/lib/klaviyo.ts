@@ -260,7 +260,8 @@ class KlaviyoClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Klaviyo-API-Key ${this.apiKey}`
+        'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
+        'revision': '2024-07-15'
       },
       body: JSON.stringify(payload)
     });

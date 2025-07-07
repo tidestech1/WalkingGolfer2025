@@ -372,7 +372,7 @@ export async function updateUserProfile(userId: string, data: UserProfileUpdate)
     await updateDoc(userRef, updateData);
     console.log('Successfully updated user profile for:', userId);
     
-    // Sync to Klaviyo for marketing purposes (non-blocking)
+    // Sync to Klaviyo for marketing purposes (non-blocking, server-side only)
     try {
       console.log('Syncing profile update to Klaviyo...');
       await syncUserProfileToKlaviyo(userId, updateData);
@@ -449,7 +449,7 @@ export async function completeUserProfile(userId: string, profileData: ProfileCo
   await updateUserProfile(userId, updateData);
   console.log('updateUserProfile completed successfully');
   
-  // Sync to Klaviyo for marketing purposes
+  // Sync to Klaviyo for marketing purposes (only on server-side)
   try {
     console.log('Syncing to Klaviyo...');
     await syncUserProfileToKlaviyo(userId, updateData);
@@ -465,6 +465,18 @@ export async function completeUserProfile(userId: string, profileData: ProfileCo
  */
 export async function syncUserProfileToKlaviyo(userId: string, profileData?: UserProfileUpdate): Promise<void> {
   try {
+    // Skip Klaviyo sync on client-side (environment variable not available)
+    if (typeof window !== 'undefined') {
+      console.log('Skipping Klaviyo sync on client-side');
+      return;
+    }
+
+    // Check if Klaviyo API key is available
+    if (!process.env['KLAVIYO_PRIVATE_KEY']) {
+      console.log('Klaviyo API key not available - skipping sync');
+      return;
+    }
+
     // Dynamic import to avoid circular dependencies
     const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents, createKlaviyoEvent } = await import('@/lib/klaviyo');
     

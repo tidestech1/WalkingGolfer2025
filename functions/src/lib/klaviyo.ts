@@ -18,12 +18,13 @@ interface KlaviyoEvent {
     name: string;
   };
   properties?: Record<string, unknown> | undefined;
+  time?: string; // ISO 8601 timestamp
 }
 
 // Klaviyo API client class
 class KlaviyoClient {
   private readonly apiKey: string;
-  private readonly baseUrl = "https://a.klaviyo.com/api/v2";
+  private readonly baseUrl = "https://a.klaviyo.com/api";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -32,20 +33,36 @@ class KlaviyoClient {
   // Create or update a profile
   async createProfile(profile: KlaviyoProfile): Promise<void> {
     try {
+      const payload = {
+        data: {
+          type: 'profile',
+          attributes: {
+            email: profile.email,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            phone_number: profile.phone_number,
+            ...profile.properties
+          }
+        }
+      };
+
       const response = await fetch(
-        `${this.baseUrl}/profiles`,
+        `${this.baseUrl}/profiles/`,
         {
           method: "POST",
           headers: {
             "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
             "Content-Type": "application/json",
-            "revision": "2023-12-15",
+            "Accept": "application/json",
+            "revision": "2024-07-15",
           },
-          body: JSON.stringify(profile),
+          body: JSON.stringify(payload),
         }
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Klaviyo API error:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
@@ -57,20 +74,35 @@ class KlaviyoClient {
   // Track an event
   async trackEvent(event: KlaviyoEvent): Promise<void> {
     try {
+      // Ensure the event has a timestamp
+      if (!event.time) {
+        event.time = new Date().toISOString();
+      }
+
+      const payload = {
+        data: {
+          type: 'event',
+          attributes: event
+        }
+      };
+
       const response = await fetch(
-        `${this.baseUrl}/track`,
+        `${this.baseUrl}/events`,
         {
           method: "POST",
           headers: {
             "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
             "Content-Type": "application/json",
-            "revision": "2023-12-15",
+            "Accept": "application/json",
+            "revision": "2024-07-15",
           },
-          body: JSON.stringify(event),
+          body: JSON.stringify(payload),
         }
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Klaviyo API error:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
@@ -85,6 +117,7 @@ class KlaviyoClient {
       profile: {email},
       metric: {name: metricName},
       properties: properties || undefined,
+      time: new Date().toISOString()
     };
     await this.trackEvent(event);
   }
@@ -106,6 +139,9 @@ export const KlaviyoEvents = {
   REVIEW_SUBMITTED: "Review Submitted",
   REVIEW_VERIFIED: "Review Verified",
   REVIEW_PUBLISHED: "Review Published",
+  USER_REGISTERED: "User Registered",
+  PROFILE_COMPLETED: "Profile Completed",
+  PROFILE_UPDATED: "Profile Updated",
 } as const;
 
 // Helper function to create a profile from user data
@@ -117,6 +153,7 @@ export function createKlaviyoProfile(email: string, displayName?: string): Klavi
     last_name: lastName || undefined,
     properties: {
       source: "walkinggolfer.com",
+      walking_golfer_member: true,
     },
   };
 }

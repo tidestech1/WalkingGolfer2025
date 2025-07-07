@@ -3,6 +3,7 @@
 import {
   getKlaviyoClient,
   KlaviyoEvents,
+  createKlaviyoEvent,
 } from '@/lib/klaviyo'
 
 interface ContactSubmissionData {
@@ -27,7 +28,7 @@ export async function trackContactSubmissionEvent(
 
   try {
     const klaviyoClient = getKlaviyoClient();
-    await klaviyoClient.trackEvent(
+    const contactEvent = createKlaviyoEvent(
       KlaviyoEvents.CONTACT_FORM_SUBMITTED,
       data.email,
       {
@@ -37,6 +38,7 @@ export async function trackContactSubmissionEvent(
         submittedAt: data.submittedAt,
       }
     );
+    await klaviyoClient.trackEvent(contactEvent);
     console.log(`Klaviyo event ${KlaviyoEvents.CONTACT_FORM_SUBMITTED} tracked successfully for ${data.email}`);
     return { success: true, message: 'Klaviyo event tracked.' };
   } catch (error) {

@@ -9,7 +9,7 @@ import { z } from 'zod'; // Assuming Zod is installed
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase/firebaseAdmin'; 
 import { CourseReview, ReviewStatus, DisplayNameType } from '@/types/review'; // Removed CreateReviewInput as we use Zod type now
 import crypto from 'crypto';
-import { getKlaviyoClient, KlaviyoEvents } from '@/lib/klaviyo';
+import { getKlaviyoClient, KlaviyoEvents, createKlaviyoEvent } from '@/lib/klaviyo';
 import { rateLimit, getRateLimitHeaders } from '@/lib/utils/rateLimiter';
 import { shouldBypassRateLimit } from '@/lib/utils/adminWhitelist';
 import { logger, ErrorSeverity } from '@/lib/utils/errorLogger';
@@ -152,12 +152,17 @@ export async function POST(request: NextRequest) {
     // --- Send Klaviyo event for verification email ---
     try {
       const klaviyo = getKlaviyoClient();
-      await klaviyo.trackEvent(KlaviyoEvents.REVIEW_SUBMITTED, data.submittedEmail, {
-        name: data.submittedName || '',
-        reviewId: pendingReviewId,
-        courseId,
-        verificationUrl,
-      });
+      const reviewEvent = createKlaviyoEvent(
+        KlaviyoEvents.REVIEW_SUBMITTED,
+        data.submittedEmail,
+        {
+          name: data.submittedName || '',
+          reviewId: pendingReviewId,
+          courseId,
+          verificationUrl,
+        }
+      );
+      await klaviyo.trackEvent(reviewEvent);
     } catch (err) {
       console.error('Error sending Klaviyo event:', err);
       // Optionally: delete the review or mark as error

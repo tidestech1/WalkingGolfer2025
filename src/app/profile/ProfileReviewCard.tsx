@@ -63,7 +63,7 @@ const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({ review, course })
           <p className="text-xs text-gray-500">{course.location_city}, {course.location_state}</p>
         </div>
         <div className="mt-2 sm:mt-0">
-          <Link href={`/courses/${course.id}`} passHref legacyBehavior>
+          <Link href={`/courses/${course.id}`}>
             <Button variant="link" className="text-sm text-green-600 hover:text-green-700 p-0 h-auto">
               View Course
               <ArrowRight className="ml-1 w-4 h-4" />
