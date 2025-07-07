@@ -15,7 +15,7 @@ import { getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
 import { Timestamp as ClientTimestamp } from 'firebase/firestore';
 
 // Imports for Admin Firestore operations
-import { Timestamp as AdminTimestamp, FieldValue as AdminFieldValue, getFirestore as getAdminFirestoreInternal, DocumentData } from 'firebase-admin/firestore';
+import { Timestamp as AdminTimestamp, FieldValue as AdminFieldValue, getFirestore as getAdminFirestoreInternal, DocumentData, Firestore as AdminFirestore } from 'firebase-admin/firestore';
 // We need to be careful not to cause a circular dependency if firebaseAdmin also imports from userUtils indirectly.
 // Assuming getAdminFirestore from firebaseAdmin.ts is the primary way to get admin db.
 
@@ -388,6 +388,49 @@ export async function updateUserProfile(userId: string, data: UserProfileUpdate)
 }
 
 /**
+ * Updates user profile data in Firestore using Admin SDK (server-side)
+ */
+export async function updateUserProfileAdmin(userId: string, data: UserProfileUpdate): Promise<void> {
+  if (!userId) {
+    throw new Error('User ID is required to update profile.');
+  }
+  if (!data || Object.keys(data).length === 0) {
+    console.warn('Update user profile called with no data.');
+    return;
+  }
+  
+  try {
+    const adminDb = getAdminFirestore();
+    const userRef = adminDb.collection('users').doc(userId);
+    
+    // If zipcode is being updated, automatically derive homeState
+    const updateData: any = { ...data };
+    if (data.zipcode && isValidZipcode(data.zipcode)) {
+      updateData.homeState = deriveStateFromZipcode(data.zipcode);
+    }
+    
+    // Add timestamp using Admin SDK
+    updateData.updatedAt = AdminTimestamp.now();
+    
+    await userRef.update(updateData);
+    console.log('Successfully updated user profile for (admin):', userId);
+    
+    // Sync to Klaviyo for marketing purposes (non-blocking)
+    try {
+      console.log('Syncing profile update to Klaviyo...');
+      await syncUserProfileToKlaviyo(userId, updateData);
+      console.log('Klaviyo sync completed for profile update');
+    } catch (klaviyoError) {
+      console.warn('Failed to sync profile update to Klaviyo:', klaviyoError);
+      // Don't fail the profile update for Klaviyo sync issues
+    }
+  } catch (error) {
+    console.error('Error updating user profile (admin):', error);
+    throw new Error('Failed to update user profile.');
+  }
+}
+
+/**
  * Completes a user profile with enhanced data from the profile completion form
  */
 export async function completeUserProfile(userId: string, profileData: ProfileCompletionData): Promise<void> {
@@ -478,10 +521,10 @@ export async function syncUserProfileToKlaviyo(userId: string, profileData?: Use
     }
 
     // Dynamic import to avoid circular dependencies
-    const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents, createKlaviyoEvent } = await import('@/lib/klaviyo');
+    const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents } = await import('@/lib/klaviyo');
     
-    // Get the full user profile
-    const userProfile = await getUserProfile(userId);
+    // Get the full user profile (use Admin SDK on server-side)
+    const userProfile = await getUserProfileAdmin(userId);
     if (!userProfile || !userProfile.email) {
       console.warn('Cannot sync to Klaviyo: user profile not found or missing email');
       return;
@@ -504,7 +547,9 @@ export async function syncUserProfileToKlaviyo(userId: string, profileData?: Use
       
       // Track profile completion event if this was a completion
       if (profileData?.profileCompleted) {
-        const completionEvent = createKlaviyoEvent(
+
+        
+        await klaviyoClient.trackEvent(
           KlaviyoEvents.PROFILE_COMPLETED,
           userProfile.email,
           {
@@ -517,12 +562,11 @@ export async function syncUserProfileToKlaviyo(userId: string, profileData?: Use
             completion_date: new Date().toISOString()
           }
         );
-        
-        await klaviyoClient.trackEvent(completionEvent);
       } else if (profileData && Object.keys(profileData).length > 1) { // More than just updatedAt
         // Track profile update event for regular updates
         const updatedFields = Object.keys(profileData).filter(key => key !== 'updatedAt');
-        const updateEvent = createKlaviyoEvent(
+        
+        await klaviyoClient.trackEvent(
           KlaviyoEvents.PROFILE_UPDATED,
           userProfile.email,
           {
@@ -536,8 +580,6 @@ export async function syncUserProfileToKlaviyo(userId: string, profileData?: Use
             update_date: new Date().toISOString()
           }
         );
-        
-        await klaviyoClient.trackEvent(updateEvent);
         console.log(`Tracked profile update event for fields: ${updatedFields.join(', ')}`);
       }
       

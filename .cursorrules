@@ -38,5 +38,11 @@
 - Deployment is through Replit (do not use `.env` files)
 - Cursor connects via SSH to Replit
 
+## klaviyo_integration
+- For ALL Klaviyo integration work, you MUST first read and follow the guide at `docs/klaviyo-integration-guide.md`
+- Use API version `2023-12-15` and the implementation in `src/lib/klaviyo.ts`
+- Never use the old server-side functions implementation
+- Test against newsletter signup as working baseline before making changes
+
 ## agent_guidelines
 - Before performing significant file modifications or implementing new features, you MUST read and understand the project overview located at `docs/ARCHITECTURE.md`.

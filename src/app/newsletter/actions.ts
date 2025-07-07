@@ -4,7 +4,6 @@ import {
   getKlaviyoClient,
   createKlaviyoProfile,
   KlaviyoEvents,
-  createKlaviyoEvent,
 } from '@/lib/klaviyo' // Assuming klaviyo.ts is in src/lib
 import type { KlaviyoProfile } from '@/lib/klaviyo' // We might need to export this from klaviyo.ts
 import { getUserProfile } from '@/lib/firebase/userUtils'
@@ -87,7 +86,7 @@ export async function subscribeToKlaviyo(
     }
 
     // Track the newsletter signup event
-    const signupEvent = createKlaviyoEvent(
+    await klaviyoClient.trackEvent(
       KlaviyoEvents.NEWSLETTER_SIGNUP,
       email,
       {
@@ -99,8 +98,6 @@ export async function subscribeToKlaviyo(
         profile_completed: userProfile?.profileCompleted || false
       }
     );
-
-    await klaviyoClient.trackEvent(signupEvent);
 
     // Store newsletter subscription in Firestore for our records
     try {

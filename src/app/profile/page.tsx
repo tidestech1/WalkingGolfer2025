@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { getUserReviews, getUserProfile, updateUserProfile, getProfileCompletionPercentage } from '@/lib/firebase/userUtils'
+import { getUserReviews, getUserProfile, getProfileCompletionPercentage } from '@/lib/firebase/userUtils'
+import { updateProfileViaAPI } from '@/lib/api/profileApi'
 import { useAuth } from '@/lib/hooks/useAuth'
 import type { CourseReview, DisplayNameType } from '@/types/review'
 import type { UserProfile, UserProfileUpdate } from '@/types/user'
@@ -195,7 +196,7 @@ function ProfilePageContent() {
         updateData.dateOfBirth = dateOfBirth;
       }
       
-      await updateUserProfile(user.uid, updateData);
+      await updateProfileViaAPI(updateData);
       await loadUserData(); // Reload profile data
       setEditingPersonal(false);
       toast.success("Personal information updated successfully!");
@@ -230,7 +231,7 @@ function ProfilePageContent() {
         updateData.golfHandicap = Number(golfHandicap);
       }
       
-      await updateUserProfile(user.uid, updateData);
+      await updateProfileViaAPI(updateData);
       await loadUserData();
       setEditingGolf(false);
       toast.success("Golf preferences updated successfully!");
@@ -255,7 +256,7 @@ function ProfilePageContent() {
         favoriteStates,
       };
       
-      await updateUserProfile(user.uid, updateData);
+      await updateProfileViaAPI(updateData);
       await loadUserData();
       setEditingLocation(false);
       toast.success("Location preferences updated successfully!");
@@ -284,7 +285,7 @@ function ProfilePageContent() {
         marketingConsent,
       };
       
-      await updateUserProfile(user.uid, updateData);
+      await updateProfileViaAPI(updateData);
       await loadUserData();
       setEditingCommunications(false);
       toast.success("Communication preferences updated successfully!");

@@ -1,23 +1,10 @@
 // Types for Klaviyo API
 export interface KlaviyoProfile {
   email: string;
-  properties?: {
-    first_name?: string;
-    last_name?: string;
-    zip?: string;
-    state?: string;
-    date_of_birth?: string;
-    golf_experience?: string;
-    preferred_carry_method?: string;
-    golf_handicap?: number;
-    favorite_states?: string[];
-    profile_completed?: boolean;
-    review_count?: number;
-    walking_golfer_member?: boolean;
-    signup_date?: string;
-    marketing_consent?: boolean;
-    [key: string]: any;
-  };
+  first_name?: string | undefined;
+  last_name?: string | undefined;
+  phone_number?: string | undefined;
+  properties?: Record<string, any> | undefined;
 }
 
 interface KlaviyoSubscriptionInfo {
@@ -70,7 +57,10 @@ class KlaviyoClient {
           type: 'profile',
           attributes: {
             email: profile.email,
-            ...profile.properties
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            phone_number: profile.phone_number,
+            properties: profile.properties || {}
           }
         }
       };
@@ -83,7 +73,7 @@ class KlaviyoClient {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-          'revision': '2024-07-15'
+          'revision': '2023-12-15'
         },
         body: JSON.stringify(createPayload)
       });
@@ -108,7 +98,12 @@ class KlaviyoClient {
             data: {
               type: 'profile',
               id: duplicateProfileId,
-              attributes: profile.properties || {}
+              attributes: {
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                phone_number: profile.phone_number,
+                properties: profile.properties || {}
+              }
             }
           };
 
@@ -118,7 +113,7 @@ class KlaviyoClient {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
               'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-              'revision': '2024-07-15'
+              'revision': '2023-12-15'
             },
             body: JSON.stringify(updatePayload)
           });
@@ -167,7 +162,7 @@ class KlaviyoClient {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-          'revision': '2024-07-15'
+          'revision': '2023-12-15'
         },
         body: JSON.stringify(payload)
       });
@@ -216,7 +211,7 @@ class KlaviyoClient {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-          'revision': '2024-07-15'
+          'revision': '2023-12-15'
         },
         body: JSON.stringify(payload)
       });
@@ -236,22 +231,35 @@ class KlaviyoClient {
   }
 
   // Track events (like course reviews, profile completions, etc.)
-  async trackEvent(event: KlaviyoEvent): Promise<void> {
+  async trackEvent(eventName: string, email: string, properties?: Record<string, any>): Promise<void> {
     if (!this.apiKey) {
       throw new Error('Klaviyo API key not found in Replit Secrets');
     }
 
-    console.log('Tracking Klaviyo event:', event.metric.name);
-
-    // Ensure the event has a timestamp
-    if (!event.time) {
-      event.time = new Date().toISOString();
-    }
+    console.log('Tracking Klaviyo event:', eventName);
 
     const payload = {
       data: {
         type: 'event',
-        attributes: event
+        attributes: {
+          profile: {
+            data: {
+              type: 'profile',
+              attributes: {
+                email: email
+              }
+            }
+          },
+          metric: {
+            data: {
+              type: 'metric',
+              attributes: {
+                name: eventName
+              }
+            }
+          },
+          properties: properties || {}
+        }
       }
     };
 
@@ -261,7 +269,7 @@ class KlaviyoClient {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-        'revision': '2024-07-15'
+        'revision': '2023-12-15'
       },
       body: JSON.stringify(payload)
     });
@@ -274,20 +282,7 @@ class KlaviyoClient {
   }
 }
 
-// Create a Klaviyo event object
-export function createKlaviyoEvent(eventName: string, email: string, properties: Record<string, any> = {}): KlaviyoEvent {
-  const event: KlaviyoEvent = {
-    metric: {
-      name: eventName
-    },
-    profile: {
-      email: email
-    },
-    properties: properties,
-    time: new Date().toISOString()
-  };
-  return event;
-}
+
 
 // Helper function to get Klaviyo client instance
 export function getKlaviyoClient(): KlaviyoClient {
@@ -313,23 +308,48 @@ export const KlaviyoEvents = {
 export function createKlaviyoProfile(email: string, displayName?: string, userProfile?: any): KlaviyoProfile {
   const [firstName, lastName] = displayName ? displayName.split(' ') : ['', ''];
   
+  // Only include custom properties that have values to avoid Klaviyo validation issues
+  const customProperties: Record<string, any> = {};
+  
+  // Add custom properties only if they have values
+  if (userProfile?.golfingExperience) {
+    customProperties['Golf Experience'] = userProfile.golfingExperience;
+  }
+  
+  if (userProfile?.golfHandicap !== undefined && userProfile?.golfHandicap !== null) {
+    customProperties['Golf Handicap'] = userProfile.golfHandicap;
+  }
+  
+  if (userProfile?.homeState) {
+    customProperties['Home State'] = userProfile.homeState;
+  }
+  
+  if (userProfile?.favoriteStates && userProfile.favoriteStates.length > 0) {
+    customProperties['Favorite States'] = userProfile.favoriteStates;
+  }
+  
+  if (userProfile?.reviewCount !== undefined && userProfile?.reviewCount !== null) {
+    customProperties['Review Count'] = userProfile.reviewCount;
+  }
+  
+  if (userProfile?.zipcode) {
+    customProperties['Zip Code'] = userProfile.zipcode;
+  }
+  
+  // Always include these core properties
+  customProperties['Walking Golfer Member'] = true;
+  customProperties['Member Since'] = userProfile?.createdAt || new Date().toISOString();
+  customProperties['signup_source'] = 'walkinggolfer.com';
+  
+  if (userProfile?.marketingConsent !== undefined) {
+    customProperties['Marketing Consent'] = userProfile.marketingConsent;
+  }
+  
   return {
     email: email,
-    properties: {
-      first_name: userProfile?.firstName || firstName || undefined,
-      last_name: userProfile?.lastName || lastName || undefined,
-      zip: userProfile?.zipcode || undefined,
-      state: userProfile?.homeState || undefined,
-      date_of_birth: userProfile?.dateOfBirth || undefined,
-      golf_experience: userProfile?.golfingExperience || undefined,
-      preferred_carry_method: userProfile?.preferredCarryMethod || undefined,
-      golf_handicap: userProfile?.golfHandicap || undefined,
-      favorite_states: userProfile?.favoriteStates || undefined,
-      profile_completed: userProfile?.profileCompleted || false,
-      review_count: userProfile?.reviewCount || 0,
-      walking_golfer_member: true,
-      signup_date: userProfile?.createdAt || new Date().toISOString(),
-      marketing_consent: userProfile?.marketingConsent || false,
-    }
+    first_name: userProfile?.firstName || firstName || undefined,
+    last_name: userProfile?.lastName || lastName || undefined,
+    phone_number: userProfile?.phoneNumber || undefined,
+    properties: customProperties
   };
 } 

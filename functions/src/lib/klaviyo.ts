@@ -38,10 +38,12 @@ class KlaviyoClient {
           type: 'profile',
           attributes: {
             email: profile.email,
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            phone_number: profile.phone_number,
-            ...profile.properties
+            properties: {
+              first_name: profile.first_name,
+              last_name: profile.last_name,
+              phone_number: profile.phone_number,
+              ...profile.properties
+            }
           }
         }
       };
@@ -54,7 +56,7 @@ class KlaviyoClient {
             "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "revision": "2024-07-15",
+            "revision": "2023-12-15",
           },
           body: JSON.stringify(payload),
         }
@@ -94,7 +96,7 @@ class KlaviyoClient {
             "Authorization": `Klaviyo-API-Key ${this.apiKey}`,
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "revision": "2024-07-15",
+            "revision": "2023-12-15",
           },
           body: JSON.stringify(payload),
         }

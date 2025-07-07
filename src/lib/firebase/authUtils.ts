@@ -59,7 +59,7 @@ export async function signUpWithEmail(
 
       // Track user registration in Klaviyo (non-blocking)
       try {
-        const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents, createKlaviyoEvent } = await import('@/lib/klaviyo');
+        const { getKlaviyoClient, createKlaviyoProfile, KlaviyoEvents } = await import('@/lib/klaviyo');
         const klaviyoClient = getKlaviyoClient();
         
         // Create basic Klaviyo profile
@@ -67,7 +67,7 @@ export async function signUpWithEmail(
         await klaviyoClient.createOrUpdateProfileAttributes(klaviyoProfile);
         
         // Track registration event
-        const registrationEvent = createKlaviyoEvent(
+        await klaviyoClient.trackEvent(
           KlaviyoEvents.USER_REGISTERED,
           email,
           {
@@ -77,8 +77,6 @@ export async function signUpWithEmail(
             email_verification_sent: true
           }
         );
-        
-        await klaviyoClient.trackEvent(registrationEvent);
         console.log('Successfully tracked user registration in Klaviyo');
       } catch (klaviyoError) {
         console.warn('Failed to track user registration in Klaviyo:', klaviyoError);
