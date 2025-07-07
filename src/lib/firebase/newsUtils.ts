@@ -1,6 +1,7 @@
 import type { NewsArticle, CreateNewsArticle } from '@/types/news';
 
 import { getDocuments, addDocument, updateDocument, deleteDocument } from './firebaseUtils';
+import { getAdminFirestore } from './firebaseAdmin';
 
 // Fallback news data for when Firebase is unavailable
 export const FALLBACK_NEWS: NewsArticle[] = [
@@ -22,6 +23,7 @@ export const FALLBACK_NEWS: NewsArticle[] = [
 
 /**
  * Get news articles with optional filtering
+ * Works on both server and client
  */
 export async function getNewsArticles(options: {
   tag?: string
@@ -30,7 +32,23 @@ export async function getNewsArticles(options: {
   limit?: number
 } = {}): Promise<NewsArticle[]> {
   try {
-    const articles = await getDocuments('news');
+    let articles: NewsArticle[] = [];
+    
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      console.log("Using Admin Firestore SDK (server-side) for getNewsArticles");
+      const adminDb = getAdminFirestore();
+      const snapshot = await adminDb.collection('news').get();
+      
+      articles = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as NewsArticle[];
+    } else {
+      // Client-side: Use existing client SDK function
+      console.log("Using Client Firestore SDK (client-side) for getNewsArticles");
+      articles = await getDocuments('news');
+    }
     
     // Filter articles based on options
     let filteredArticles = articles;
@@ -74,20 +92,42 @@ export async function getNewsArticles(options: {
 
 /**
  * Get a single news article by slug
+ * Works on both server and client
  */
 export async function getNewsArticleBySlug(slug: string): Promise<NewsArticle | null> {
   try {
-    const articles = await getDocuments('news');
+    let articles: NewsArticle[] = [];
     
-    const article = articles.find(a => a.slug === slug);
-    
-    if (article) {
-      // Only increment view count if article exists
-      await incrementViewCount(article.id);
-      return article;
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      console.log("Using Admin Firestore SDK (server-side) for getNewsArticleBySlug");
+      const adminDb = getAdminFirestore();
+      const snapshot = await adminDb.collection('news').where('slug', '==', slug).limit(1).get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const doc = snapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data()
+      } as NewsArticle;
+    } else {
+      // Client-side: Use existing client SDK function
+      console.log("Using Client Firestore SDK (client-side) for getNewsArticleBySlug");
+      articles = await getDocuments('news');
+      
+      const article = articles.find(a => a.slug === slug);
+      
+      if (article) {
+        // Only increment view count on client-side viewing
+        await incrementViewCount(article.id);
+        return article;
+      }
+      
+      return null;
     }
-    
-    return null;
   } catch (error) {
     console.error('Error fetching news article:', error);
     return null;
@@ -96,18 +136,37 @@ export async function getNewsArticleBySlug(slug: string): Promise<NewsArticle | 
 
 /**
  * Get a single news article by ID
+ * Works on both server and client
  */
 export async function getNewsArticleById(id: string): Promise<NewsArticle | null> {
   try {
-    const articles = await getDocuments('news');
-    
-    const article = articles.find(a => a.id === id);
-    
-    if (article) {
-      return article;
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      console.log("Using Admin Firestore SDK (server-side) for getNewsArticleById");
+      const adminDb = getAdminFirestore();
+      const doc = await adminDb.collection('news').doc(id).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      return {
+        id: doc.id,
+        ...doc.data()
+      } as NewsArticle;
+    } else {
+      // Client-side: Use existing client SDK function
+      console.log("Using Client Firestore SDK (client-side) for getNewsArticleById");
+      const articles = await getDocuments('news');
+      
+      const article = articles.find(a => a.id === id);
+      
+      if (article) {
+        return article;
+      }
+      
+      return null;
     }
-    
-    return null;
   } catch (error) {
     console.error('Error fetching news article by ID:', error);
     return null;

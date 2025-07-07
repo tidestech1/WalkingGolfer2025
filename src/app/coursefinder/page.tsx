@@ -1,10 +1,41 @@
-'use client'; // Assuming client components for potential future interactive elements or hooks
-
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { MapPin, Search } from 'lucide-react';
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+  description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search to discover your next walkable golf experience.',
+  keywords: ['golf course finder', 'walkable golf courses', 'golf course search', 'golf course map', 'find golf courses'],
+  openGraph: {
+    title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+    description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search to discover your next walkable golf experience.',
+    url: '/coursefinder',
+    siteName: 'Walking Golfer',
+    images: [
+      {
+        url: '/images/og-coursefinder.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Walking Golfer Course Finder',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Course Finder - Find Walkable Golf Courses | Walking Golfer',
+    description: 'Find walking-friendly golf courses across the USA. Choose between interactive map search or text-based search.',
+    images: ['/images/og-coursefinder.jpg'],
+  },
+  alternates: {
+    canonical: '/coursefinder',
+  },
+}
 
 export default function CourseFinderPage() {
   return (
@@ -14,13 +45,21 @@ export default function CourseFinderPage() {
           Find a Walking-Friendly Golf Course
         </h1>
         <p className="text-gray-600 md:text-lg">
-          Choose how you'd like to discover great walking golf experiences across the USA.
+          Choose how you'd like to discover great walking-friendly golf experiences across the USA.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         {/* Card 1: Find Courses on Map */}
-        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-300 rounded-lg flex flex-col">
+        <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+          <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+            <Image
+              src="/course-finder/map-search-1.png"
+              alt="Interactive map interface showing golf course locations"
+              fill
+              className="object-cover object-top transition-transform duration-300 hover:scale-105"
+            />
+          </div>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center text-[#0A3357] text-xl">
               <MapPin className="w-6 h-6 mr-2 flex-shrink-0" />
@@ -40,7 +79,15 @@ export default function CourseFinderPage() {
         </Card>
 
         {/* Card 2: Search by Name/Filters */}
-        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-300 rounded-lg flex flex-col">
+        <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+          <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+            <Image
+              src="/course-finder/text-search1.png"
+              alt="Search interface with filters and course listings"
+              fill
+              className="object-cover object-top transition-transform duration-300 hover:scale-105"
+            />
+          </div>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center text-[#0A3357] text-xl">
               <Search className="w-6 h-6 mr-2 flex-shrink-0" />

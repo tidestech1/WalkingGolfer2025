@@ -4,7 +4,7 @@ export default function ShopPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl font-bold text-[#0A3357] mb-6">Shop Coming Soon</h1>
         <p className="text-xl text-[#1A202C] mb-8">
-          We&apos;re working on bringing you high-quality walking golf gear and accessories.
+          We&apos;re working on bringing you high-quality golf gear and accessories.
           Check back soon!
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">

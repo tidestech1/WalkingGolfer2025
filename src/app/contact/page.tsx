@@ -5,7 +5,7 @@ import ContactForm from './ContactForm'
 
 export const metadata: Metadata = {
   title: 'Contact Us | Walking Golfer',
-  description: 'Get in touch with the Walking Golfer team. We&apos;re here to help with any questions about walking golf in the USA.',
+  description: 'Get in touch with the Walking Golfer team. We&apos;re here to help with any questions about getting the most out of the walking game in the USA.',
 }
 
 export default function ContactPage(): JSX.Element {
@@ -17,7 +17,7 @@ export default function ContactPage(): JSX.Element {
             Contact Us
           </h1>
           <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Have questions about walking golf courses, partnerships, or just want to say hello? We&apos;re here to help.
+            Have questions about walkable golf courses, partnerships, or just want to say hello? We&apos;re here to help.
           </p>
         </div>
 
@@ -67,7 +67,7 @@ export default function ContactPage(): JSX.Element {
                     </h3>
                     <p className="text-gray-100 text-sm leading-relaxed">
                       If you represent a golf course or organization interested in
-                      promoting walking golf, please select 'Partnership Opportunity'
+                      promoting walking the course, please select 'Partnership Opportunity'
                       in the form subject. We&apos;d love to connect!
                     </p>
                   </div>

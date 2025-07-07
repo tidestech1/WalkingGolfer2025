@@ -1,9 +1,45 @@
 import { Heart, Leaf, DollarSign, Star, ArrowRight } from 'lucide-react'
+import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { IMAGES } from '@/lib/constants/images'
+
+export const metadata: Metadata = {
+  title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+  description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers, and join our community of walking golfers.',
+  keywords: ['walkable golf courses', 'golf courses USA', 'walkable courses', 'golf course reviews', 'no cart golf', 'walking golfer', 'golf course finder'],
+  openGraph: {
+    title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+    description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers, and join our community of walking golfers.',
+    url: '/',
+    siteName: 'Walking Golfer',
+    images: [
+      {
+        url: '/images/og-home.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Walking Golfer - Find walkable golf courses across the USA',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Walking Golfer - Find Walkable Golf Courses in the USA',
+    description: 'Discover the best walkable golf courses across the United States. Find courses you can walk, read reviews from fellow golfers.',
+    images: ['/images/og-home.jpg'],
+  },
+  alternates: {
+    canonical: '/',
+  },
+  other: {
+    'geo.region': 'US',
+    'geo.placename': 'United States',
+  },
+}
 
 export default function Home() {
   return (
@@ -80,7 +116,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-10 sm:mb-16 text-[#0A3357]">
-            Why walk when you golf?
+            Why walk the course?
           </h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
             <div className="text-center">
@@ -102,9 +138,9 @@ export default function Home() {
                   strokeWidth={1.5}
                 />
               </div>
-              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Walk the Course</h3>
+              <h3 className="text-2xl font-semibold mb-4 text-[#0A3357]">Play the Course</h3>
               <p className="text-gray-600 text-lg">
-              Experience golf the way it was meant to be - one step at a time.
+              Experience golf the authentic way - one step at a time.
               </p>
             </div>
             <div className="text-center">
@@ -127,10 +163,10 @@ export default function Home() {
       <section className="py-16 sm:py-20 md:py-24 px-4 bg-[#0A3357]/5">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-[#0A3357]">
-            Join Our Walking Golfers Community
+            Join the Walking Golfers community
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto">
-            Discover walking-friendly courses, share your insights to help others, and support a growing community of golfers that celebrates walking the game.
+            Discover walking-friendly courses, share insights to help others, and support a growing community of golfers who embrace the game on foot.
           </p>
           <Link 
             href="/signup" 

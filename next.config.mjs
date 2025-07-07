@@ -16,23 +16,46 @@
  * - Any component importing Firebase Admin code uses the 'use server' directive
  */
 const nextConfig = {
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // Use this ONLY if blocked by a suspected Next.js bug like the PageProps issue.
-    ignoreBuildErrors: true,
+  // Note: Removed experimental forceSwcTransforms flag as it was causing PostCSS issues
+  // Note: Removed allowedDevOrigins as it's not a valid Next.js option
+  
+  // Add redirects to ensure all traffic goes to https://www.walkinggolfer.com
+  async redirects() {
+    return [
+      // Redirect non-www to www (HTTP and HTTPS)
+      {
+        source: '/(.*)',
+        has: [
+          {
+            type: 'host',
+            value: 'walkinggolfer.com',
+          },
+        ],
+        destination: 'https://www.walkinggolfer.com/:path*',
+        permanent: true,
+      },
+      // Redirect HTTP www to HTTPS www
+      {
+        source: '/(.*)',
+        has: [
+          {
+            type: 'header',
+            key: 'x-forwarded-proto',
+            value: 'http',
+          },
+          {
+            type: 'host',
+            value: 'www.walkinggolfer.com',
+          },
+        ],
+        destination: 'https://www.walkinggolfer.com/:path*',
+        permanent: true,
+      },
+    ]
   },
-  eslint: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
-  // Allow Replit's development environment
-  allowedDevOrigins: [
-    'a33281ec-5c44-4565-8d75-65e2cd2cc533-00-10fziv3cz1fuc.worf.replit.dev'
-  ],
+
+
+  
   images: {
     remotePatterns: [
       {
@@ -47,14 +70,6 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "www.presidio.gov",
-      },
-      {
-        protocol: "https",
-        hostname: "www.pebblebeach.com",
-      },
-      {
-        protocol: "https",
         hostname: "maps.googleapis.com",
       },
       {
@@ -65,14 +80,7 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "https://api.openai.com/:path*",
-      },
-    ];
-  },
+  
   webpack: (config, { isServer }) => {
     // Client-side specific configurations
     if (!isServer) {
@@ -86,9 +94,9 @@ const nextConfig = {
       };
     }
     
-    // Add the transpilePackages option to handle node: imports in dependencies
     return config;
   },
+  
   // This option tells Next.js to properly transpile these packages
   transpilePackages: ['firebase-admin', 'google-auth-library', 'gcp-metadata', 'google-logging-utils']
 };

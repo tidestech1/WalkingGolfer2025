@@ -1,6 +1,8 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { rateLimit, getRateLimitHeaders } from '@/lib/utils/rateLimiter';
+import { shouldBypassRateLimit } from '@/lib/utils/adminWhitelist';
 
 import { updateCourseRatingsFromReview } from '@/lib/firebase/courseUtils';
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/firebaseAdmin';
@@ -84,6 +86,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
     }
     const userId = decodedToken.uid;
+    const userEmail = decodedToken.email;
+
+    // Check if user should bypass rate limiting (admin users during soft-launch)
+    if (!shouldBypassRateLimit(userEmail, userId)) {
+      // Rate limiting: 5 authenticated reviews per user per day (or more during soft-launch)
+      const limit = process.env.SOFT_LAUNCH_MODE === 'true' ? 100 : 5;
+      const rateLimitResult = rateLimit(`auth_review_${userId}`, limit, 24 * 60 * 60 * 1000);
+      
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          { error: 'Too many reviews submitted today. Please try again tomorrow.' }, 
+          { 
+            status: 429,
+            headers: getRateLimitHeaders(rateLimitResult)
+          }
+        );
+      }
+    }
 
     // 2. Input Validation
     const rawData = await request.json();

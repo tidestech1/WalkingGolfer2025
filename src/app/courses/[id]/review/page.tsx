@@ -103,7 +103,7 @@ export default function ReviewCoursePage() {
           </h1>
            {/* Add Club Name (if exists) */}
            {course.club_name && (
-             <p className="text-md text-gray-500 mt-1">Part of {course.club_name}</p>
+             <p className="text-md text-gray-500 mt-1">{course.club_name}</p>
            )}
            {/* Location */}
           <p className="text-gray-600 mt-1">

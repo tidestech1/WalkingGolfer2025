@@ -4,7 +4,7 @@ import NewsletterForm from './NewsletterForm'
 
 export const metadata: Metadata = {
   title: 'Newsletter | The Walking Golfer',
-  description: 'Subscribe to our newsletter for the latest updates about walking golf courses, tips, and community news.',
+  description: 'Subscribe to our newsletter for the latest updates about courses, tips, and Walking Golfer community news.',
 }
 
 export default function NewsletterPage() {
@@ -12,7 +12,7 @@ export default function NewsletterPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-3xl mx-auto text-center">
         <h1 className="text-4xl font-bold text-[#0A3357] mb-4">
-          Stay Connected with The Walking Golfer
+          Stay Connected with the Walking Golfer
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           Get the latest updates about walking-friendly courses, news articles,
@@ -39,7 +39,8 @@ export default function NewsletterPage() {
               News Articles
             </h3>
             <p className="text-gray-600">
-              Read the latest news articles and insights about the world of walking golf.
+              Read the latest news articles and insights about the world of 
+              golf and playing the game on foot.
             </p>
           </div>
 
@@ -48,8 +49,8 @@ export default function NewsletterPage() {
               Exclusive Content
             </h3>
             <p className="text-gray-600">
-              Get access to walking golf tips, course reviews, and special
-              offers from our partners.
+              Get access to golf tips, course reviews, and special offers 
+              from our partners focused on golfers who prefer to walk.
             </p>
           </div>
         </div>

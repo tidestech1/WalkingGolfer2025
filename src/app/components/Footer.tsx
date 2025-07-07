@@ -110,7 +110,7 @@ export default function Footer(): JSX.Element {
               Stay Updated
             </h4>
             <p className="text-gray-300 mb-4 text-sm sm:text-base">
-              Get the latest walking golf news and course updates delivered to your inbox.
+              Get the latest news and course updates for golfers who walk the course.
             </p>
             
             {/* Elegant newsletter button */}

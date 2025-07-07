@@ -153,7 +153,7 @@ export default function CourseSearch({ onSelect, selectedCourse }: CourseSearchP
                         </div>
                         {course.club_name && (
                            <span className={`block truncate text-sm text-left ${active ? 'text-blue-700' : 'text-gray-500'}`}>
-                                Part of {course.club_name}
+                                {course.club_name}
                            </span>
                         )}
                         <span className={`block truncate text-xs text-left ${active ? 'text-blue-600' : 'text-gray-400'}${course.club_name ? ' mt-0.5' : ' mt-1'}`}>

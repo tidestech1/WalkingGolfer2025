@@ -311,7 +311,7 @@ export default function TermsPage() {
             business insights. This may include sharing aggregated, anonymized
             data with third parties for industry research and business
             development purposes, including with our sponsors and business
-            partners to help advance the golf industry and walking golf initiatives.
+            partners to help advance the golf industry and the Walking Golfer community.
           </p>
         </section>
 
