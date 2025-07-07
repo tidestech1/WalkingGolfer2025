@@ -726,6 +726,8 @@ function ProfilePageContent() {
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
                             placeholder="First name"
+                            autoComplete="off"
+                            data-1p-ignore
                           />
                         </div>
                         <div>
@@ -735,6 +737,8 @@ function ProfilePageContent() {
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
                             placeholder="Last name"
+                            autoComplete="off"
+                            data-1p-ignore
                           />
                         </div>
                       </div>
@@ -746,6 +750,8 @@ function ProfilePageContent() {
                           type="date"
                           value={dateOfBirth}
                           onChange={(e) => setDateOfBirth(e.target.value)}
+                          autoComplete="off"
+                          data-1p-ignore
                         />
                       </div>
                       
@@ -804,7 +810,7 @@ function ProfilePageContent() {
                         <div>
                           <Label>Golf Experience Level</Label>
                           <Select value={golfingExperience} onValueChange={(value) => setGolfingExperience(value as any)}>
-                            <SelectTrigger>
+                            <SelectTrigger data-1p-ignore>
                               <SelectValue placeholder="Select experience level" />
                             </SelectTrigger>
                             <SelectContent>
@@ -819,7 +825,7 @@ function ProfilePageContent() {
                         <div>
                           <Label>Preferred Walking Method</Label>
                           <Select value={preferredCarryMethod} onValueChange={(value) => setPreferredCarryMethod(value as any)}>
-                            <SelectTrigger>
+                            <SelectTrigger data-1p-ignore>
                               <SelectValue placeholder="Select walking method" />
                             </SelectTrigger>
                             <SelectContent>
@@ -843,6 +849,8 @@ function ProfilePageContent() {
                           onChange={(e) => setGolfHandicap(e.target.value)}
                           placeholder="e.g. 12.5"
                           className="max-w-xs"
+                          autoComplete="off"
+                          data-1p-ignore
                         />
                       </div>
                       
@@ -901,6 +909,8 @@ function ProfilePageContent() {
                           placeholder="12345"
                           maxLength={5}
                           className="max-w-xs"
+                          autoComplete="off"
+                          data-1p-ignore
                         />
                       </div>
                       
@@ -984,7 +994,7 @@ function ProfilePageContent() {
                       <div>
                         <Label>Review Display Name</Label>
                         <Select value={displayNameType} onValueChange={(value) => setDisplayNameType(value as DisplayNameType)}>
-                          <SelectTrigger>
+                          <SelectTrigger data-1p-ignore>
                             <SelectValue placeholder="Select display preference" />
                           </SelectTrigger>
                           <SelectContent>
