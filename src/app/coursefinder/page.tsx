@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { MapPin, Search } from 'lucide-react';
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -50,7 +51,15 @@ export default function CourseFinderPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         {/* Card 1: Find Courses on Map */}
-        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-300 rounded-lg flex flex-col">
+        <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+          <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+            <Image
+              src="/course-finder/map-search-1.png"
+              alt="Interactive map interface showing golf course locations"
+              fill
+              className="object-cover object-top transition-transform duration-300 hover:scale-105"
+            />
+          </div>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center text-[#0A3357] text-xl">
               <MapPin className="w-6 h-6 mr-2 flex-shrink-0" />
@@ -70,7 +79,15 @@ export default function CourseFinderPage() {
         </Card>
 
         {/* Card 2: Search by Name/Filters */}
-        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-300 rounded-lg flex flex-col">
+        <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+          <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+            <Image
+              src="/course-finder/text-search1.png"
+              alt="Search interface with filters and course listings"
+              fill
+              className="object-cover object-top transition-transform duration-300 hover:scale-105"
+            />
+          </div>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center text-[#0A3357] text-xl">
               <Search className="w-6 h-6 mr-2 flex-shrink-0" />
