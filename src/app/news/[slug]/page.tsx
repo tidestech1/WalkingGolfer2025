@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 import BackToNewsButton from '@/app/components/BackToNewsButton'
+import BreadcrumbSchema from '@/app/components/BreadcrumbSchema'
 import SchemaMarkup from '@/app/components/SchemaMarkup'
 import { getNewsArticleBySlug } from '@/lib/firebase/newsUtils'
 import type { NewsArticle } from '@/types/news'
@@ -92,8 +93,16 @@ export default async function ArticlePage({ params }: Props) {
       notFound()
     }
 
+    // Create breadcrumb items for this article
+    const breadcrumbItems = [
+      { name: 'Home', url: '/' },
+      { name: 'News', url: '/news' },
+      { name: article.title, url: `/news/${slug}` }
+    ]
+
     return (
       <>
+        <BreadcrumbSchema items={breadcrumbItems} />
         <SchemaMarkup 
           type="article"
           title={article.title}
