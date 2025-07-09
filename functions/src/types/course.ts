@@ -147,15 +147,4 @@ export interface MapBounds {
   west: number;
 }
 
-/**
- * Represents a cluster of golf courses on the map
- * Used for grouping nearby courses when zoomed out
- */
-export interface CourseCluster {
-  location_coordinates: {
-    location_coordinates_latitude: number; // Latitude of the cluster center
-    location_coordinates_longitude: number; // Longitude of the cluster center
-  };
-  courses: GolfCourse[]; // Array of courses in this cluster
-  count: number; // Total number of courses in the cluster
-}
+

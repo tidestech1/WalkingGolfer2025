@@ -124,9 +124,6 @@ export default function Navbar(): JSX.Element {
             <Link href="/about" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
               About Us
             </Link>
-            <Link href="/faq" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
-              FAQ
-            </Link>
             <div className="relative group">
               <Link href="/coursefinder" className="text-white hover:text-[#00FFFF] font-medium inline-flex items-center transition-colors">
                 Course Finder
@@ -135,6 +132,9 @@ export default function Navbar(): JSX.Element {
             </div>
             <Link href="/news" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
               News & Articles
+            </Link>
+            <Link href="/faq" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
+              FAQ
             </Link>
             {/* Temporarily hidden for launch - uncomment when shop is ready */}
             {/* <Link href="/shop" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
@@ -218,13 +218,6 @@ export default function Navbar(): JSX.Element {
               About Us
             </Link>
             <Link
-              href="/faq"
-              className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
-              onClick={() => toggleMenu()}
-            >
-              FAQ
-            </Link>
-            <Link
               href="/coursefinder"
               className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
               onClick={() => toggleMenu()}
@@ -237,6 +230,13 @@ export default function Navbar(): JSX.Element {
               onClick={() => toggleMenu()}
             >
               News & Articles
+            </Link>
+            <Link
+              href="/faq"
+              className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
+              onClick={() => toggleMenu()}
+            >
+              FAQ
             </Link>
             {/* Temporarily hidden for launch - uncomment when shop is ready */}
             {/* <Link
