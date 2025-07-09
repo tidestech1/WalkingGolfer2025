@@ -124,6 +124,9 @@ export default function Navbar(): JSX.Element {
             <Link href="/about" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
               About Us
             </Link>
+            <Link href="/faq" className="text-white hover:text-[#00FFFF] font-medium transition-colors">
+              FAQ
+            </Link>
             <div className="relative group">
               <Link href="/coursefinder" className="text-white hover:text-[#00FFFF] font-medium inline-flex items-center transition-colors">
                 Course Finder
@@ -213,6 +216,13 @@ export default function Navbar(): JSX.Element {
               onClick={() => toggleMenu()}
             >
               About Us
+            </Link>
+            <Link
+              href="/faq"
+              className="block px-3 py-2 text-white hover:text-[#00FFFF] font-medium transition-colors"
+              onClick={() => toggleMenu()}
+            >
+              FAQ
             </Link>
             <Link
               href="/coursefinder"
