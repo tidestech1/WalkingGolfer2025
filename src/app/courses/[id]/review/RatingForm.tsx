@@ -60,12 +60,34 @@ const ratingFormSchema = z.object({
   overallRating: z.number().min(1, { message: "Overall rating is required." }).max(5),
   hillinessRating: z.number().min(1, { message: "Terrain rating is required." }).max(5),
   distanceRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
-  costRating: z.number().min(1, { message: "Value rating is required." }).max(5),
+  costRating: z.number().optional(), // Make optional to handle private courses
   comment: z.string().optional(), // Made optional
   walkingDate: z.string().optional(), // Made optional
   pros: z.array(z.string()).optional(),
   cons: z.array(z.string()).optional(),
 });
+
+// Helper function to check if a course is private
+const isPrivateCourse = (course: GolfCourse): boolean => {
+  return course.club_type === 'Private' || course.club_type === 'Military';
+};
+
+// Create dynamic schema based on course type
+const createRatingFormSchema = (course: GolfCourse) => {
+  const baseSchema = ratingFormSchema;
+  
+  // If it's a private course, make costRating optional
+  if (isPrivateCourse(course)) {
+    return baseSchema.extend({
+      costRating: z.number().optional(),
+    });
+  }
+  
+  // For public courses, require costRating
+  return baseSchema.extend({
+    costRating: z.number().min(1, { message: "Value rating is required." }).max(5),
+  });
+};
 type RatingFormData = z.infer<typeof ratingFormSchema>;
 
 // Update component signature to use new props
@@ -149,7 +171,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     overallRating: number;
     hillinessRating: number;
     distanceRating: number;
-    costRating: number;
+    costRating?: number; // Make optional for private courses
     comment?: string | undefined; // Key optional, value can be string or undefined
     walkingDate?: string | undefined; // Key optional, value can be string or undefined (ISO string)
     pros: string[]; // Assuming pros/cons are always at least empty arrays from Zod
@@ -377,7 +399,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
       photoPreviews.forEach(url => URL.revokeObjectURL(url));
   };
 
-  // Update handleSubmit with Zod validation
+  // Update handleSubmit with dynamic Zod validation
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormErrors({}); // Clear previous errors
@@ -395,22 +417,23 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         walkabilityRating: calculateWeightedWalkabilityRating({
             terrain: terrainRating > 0 ? 6 - terrainRating : 0, // Invert terrain for calculation if rated
             distance: distanceRating > 0 ? 6 - distanceRating : 0, // Invert distance for calculation if rated
-            cost: costRating
+            cost: isPrivateClub ? 0 : costRating // Use 0 for private courses, actual rating for public
         }) ?? 0,
         isWalkable: isWalkable,
         courseConditionRating: courseConditionRating,
         overallRating: overallRating,
         hillinessRating: terrainRating > 0 ? 6 - terrainRating : 0, // Invert for submission if rated, else 0
         distanceRating: distanceRating > 0 ? 6 - distanceRating : 0, // Invert for submission if rated, else 0
-        costRating: costRating,
+        costRating: isPrivateClub ? undefined : costRating, // Don't include for private courses
         comment: commentElement?.value || undefined, // Use undefined for optional empty string
         walkingDate: walkingDateElement?.value || undefined, // Use undefined for optional empty string
         pros: pros.filter(pro => pro.trim()),
         cons: cons.filter(con => con.trim()),
     };
 
-    // Validate the raw data
-    const validationResult = ratingFormSchema.safeParse(rawFormData);
+    // Use dynamic validation schema
+    const validationSchema = createRatingFormSchema(course);
+    const validationResult = validationSchema.safeParse(rawFormData);
 
     if (!validationResult.success) {
         const formattedErrors: Record<string, string | undefined> = {};
@@ -626,6 +649,9 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     setHelpDismissed(true);
   };
 
+  // Check if this is a private course
+  const isPrivateClub = isPrivateCourse(course);
+
   return (
     <>
       {/* Help Modal and Trigger */}
@@ -651,7 +677,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                   <ul className="list-disc pl-5">
                     <li><b>Terrain & Hilliness:</b> How flat or hilly is the course?</li>
                     <li><b>Distance Between Holes:</b> Are the holes close together or far apart?</li>
-                    <li><b>Course Value:</b> Was the course a good value for the price?</li>
+                    <li><b>Course Value:</b> Was the course a good value for the price? (Not applicable for private courses)</li>
                     <li><b>Course Quality:</b> How well maintained was the course?</li>
                   </ul>
                 </li>
@@ -857,36 +883,40 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 {formErrors['distanceRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['distanceRating']}</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Value *
-                </label>
-                <CostRating
-                  rating={costRating}
-                  hovered={hoveredCostRating}
-                  setRating={setCostRating}
-                  setHovered={setHoveredCostRating}
-                  size="lg"
-                  descriptions={{
-                    1: "Poor Value",
-                    2: "Below Average Value",
-                    3: "Average Value",
-                    4: "Good Value",
-                    5: "Excellent Value"
-                  }}
-                />
-                <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
-                  {(hoveredCostRating || costRating) > 0
-                    ? (
-                        {1: "Poor Value", 2: "Below Average Value", 3: "Average Value", 4: "Good Value", 5: "Excellent Value"}
-                        [hoveredCostRating || costRating] || ''
-                      )
-                    : 'Larger $ icons mean greater value'
-                  }
-                </p>
-                {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
-              </div>
+              {/* Course Value - Only show for non-private courses */}
+              {!isPrivateClub && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Course Value *
+                  </label>
+                  <CostRating
+                    rating={costRating}
+                    hovered={hoveredCostRating}
+                    setRating={setCostRating}
+                    setHovered={setHoveredCostRating}
+                    size="lg"
+                    descriptions={{
+                      1: "Poor Value",
+                      2: "Below Average Value",
+                      3: "Average Value",
+                      4: "Good Value",
+                      5: "Excellent Value"
+                    }}
+                  />
+                  <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
+                    {(hoveredCostRating || costRating) > 0
+                      ? (
+                          {1: "Poor Value", 2: "Below Average Value", 3: "Average Value", 4: "Good Value", 5: "Excellent Value"}
+                          [hoveredCostRating || costRating] || ''
+                        )
+                      : 'Larger $ icons mean greater value'
+                    }
+                  </p>
+                  {formErrors['costRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['costRating']}</p>}
+                </div>
+              )}
 
+              {/* Course Quality - Always show */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Course Quality *
@@ -916,6 +946,15 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 </p>
                 {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
               </div>
+
+              {/* Private Course Notice */}
+              {isPrivateClub && (
+                <div className="col-span-full mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <strong>Note:</strong> Since this is a private course, we don't collect value ratings as they're typically based on membership fees rather than per-round pricing.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

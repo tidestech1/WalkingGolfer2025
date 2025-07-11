@@ -275,8 +275,8 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                 <CardTitle className="text-xl font-semibold text-gray-800">Reviews ({reviews.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Pass serialized reviews to the client component */}
-                <ReviewsDisplay reviews={reviews} />
+                {/* Pass serialized reviews and course data to the client component */}
+                <ReviewsDisplay reviews={reviews} course={course} />
               </CardContent>
             </Card>
           </div>

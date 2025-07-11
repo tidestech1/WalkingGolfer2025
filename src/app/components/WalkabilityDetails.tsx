@@ -19,16 +19,24 @@ interface WalkabilityDetailsProps {
   compact?: boolean
 }
 
+// Helper function to check if a course is private
+const isPrivateCourse = (course: GolfCourse): boolean => {
+  return course.club_type === 'Private' || course.club_type === 'Military';
+};
+
 export default function WalkabilityDetails({
   course,
   className = '',
   compact = false
 }: WalkabilityDetailsProps): JSX.Element | null {
+  // Check if this is a private course
+  const isPrivateClub = isPrivateCourse(course);
+  
   // Determine which ratings to show based on available data (null checks)
   const showOverall = course.walkabilityRating_overall !== null && typeof course.walkabilityRating_overall === 'number'
   const showHilliness = course.walkabilityRating_hilliness !== null && typeof course.walkabilityRating_hilliness === 'number'
   const showDistance = course.walkabilityRating_holeDistance !== null && typeof course.walkabilityRating_holeDistance === 'number'
-  const showCost = course.walkabilityRating_cost !== null && typeof course.walkabilityRating_cost === 'number'
+  const showCost = !isPrivateClub && course.walkabilityRating_cost !== null && typeof course.walkabilityRating_cost === 'number'
 
   // Early return if no ratings are available to display
   if (!showOverall && !showHilliness && !showDistance && !showCost) {
@@ -99,7 +107,7 @@ export default function WalkabilityDetails({
           </div>
         )}
         
-        {/* Cost Rating */}
+        {/* Cost Rating - Only show for non-private courses */}
         {showCost && (
           <div className="flex items-start gap-2">
             <div>
@@ -114,6 +122,18 @@ export default function WalkabilityDetails({
                 />
                 {!compact && <span className="text-sm text-gray-600">({costDescription})</span>}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Private Course Notice */}
+        {isPrivateClub && (
+          <div className="flex items-start gap-2">
+            <div>
+              <h4 className={`font-medium text-gray-700 ${compact ? 'text-sm' : ''}`}>Cost Impact</h4>
+              <p className="text-sm text-gray-500 mt-1">
+                {compact ? 'Private course' : 'Not applicable for private courses'}
+              </p>
             </div>
           </div>
         )}

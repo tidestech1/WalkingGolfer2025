@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils'; // Import the utility
 import { CourseReview } from '@/types/review';
+import { GolfCourse } from '@/types/course';
 
 interface ReviewItemProps {
   review: CourseReview;
+  course?: GolfCourse; // Optional course data for private course check
 }
 
 // Helper to format date
@@ -39,13 +41,22 @@ const renderStars = (rating: number | null, maxStars = 5) => {
   ));
 };
 
-const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
+// Helper function to check if a course is private
+const isPrivateCourse = (course?: GolfCourse): boolean => {
+  if (!course) return false;
+  return course.club_type === 'Private' || course.club_type === 'Military';
+};
+
+const ReviewItem: React.FC<ReviewItemProps> = ({ review, course }) => {
   // Use the utility function to get the display name
   // We pass null for profile as we only have review data here
   // The verify step should have populated review.userDisplayName correctly based on preference
   const displayName = review.userDisplayName || deriveReviewerDisplayName(null, review); 
   const walkingDate = formatDate(review.walkingDate);
   const reviewDate = formatDate(review.createdAt);
+  
+  // Check if this is a private course
+  const isPrivateClub = isPrivateCourse(course);
 
   return (
     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
@@ -121,7 +132,8 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
           </>
         )}
 
-        {review.costRating !== undefined && (
+        {/* Only show cost rating for non-private courses */}
+        {!isPrivateClub && review.costRating !== undefined && (
           <>
             <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
             <span>Value: <Badge variant="secondary">{review.costRating?.toFixed(1) ?? 'N/A'}/5</Badge></span>

@@ -11,9 +11,17 @@ interface CourseRatingsProps {
   className?: string
 }
 
+// Helper function to check if a course is private
+const isPrivateCourse = (course: GolfCourse): boolean => {
+  return course.club_type === 'Private' || course.club_type === 'Military';
+};
+
 export default function CourseRatings({ course, className = '' }: CourseRatingsProps): JSX.Element {
   // Overall walkability rating (1-5 scale, higher is better)
   const walkabilityRating = course.walkabilityRating_overall || 0
+  
+  // Check if this is a private course
+  const isPrivateClub = isPrivateCourse(course);
   
   // Format fractional ratings
   const formatRating = (rating: number | null | undefined): string => {
@@ -146,23 +154,32 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
         </div>
         
         {/* Cost */}
-        <div>
+        <div className={isPrivateClub ? 'opacity-50' : ''}>
           <div className="flex items-center justify-between text-sm mb-1">
             <span className="text-gray-700 flex items-center">
               <CircleDollarSign className="w-4 h-4 mr-2 text-emerald-600" />
               Course Value
+              {isPrivateClub && (
+                <span className="ml-2 text-xs text-gray-500 italic">(Private Course)</span>
+              )}
             </span>
-            <span className="font-medium">{formatRating(cost)}/5</span>
+            <span className="font-medium">
+              {isPrivateClub ? 'N/A' : formatRating(cost)}
+              {!isPrivateClub && '/5'}
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div 
               className="bg-blue-600 h-1.5 rounded-full" 
               // Logic for value: higher rating = better value, so bar width increases with rating
-              style={{ width: `${(cost / 5) * 100}%` }}
+              style={{ width: isPrivateClub ? '0%' : `${(cost / 5) * 100}%` }}
             ></div>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {getValueDescription(cost)}
+            {isPrivateClub 
+              ? 'Private courses are typically membership-based' 
+              : getValueDescription(cost)
+            }
           </p>
         </div>
         

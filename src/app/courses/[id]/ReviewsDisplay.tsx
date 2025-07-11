@@ -8,10 +8,12 @@ import { Star, PenTool, TrendingUp, MapPin, DollarSign, Mountain } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CourseReview } from '@/types/review';
+import { GolfCourse } from '@/types/course';
 import ReviewItem from './ReviewItem';
 
 interface ReviewsDisplayProps {
   reviews: CourseReview[];
+  course?: GolfCourse; // Add course data to pass to ReviewItem
 }
 
 const INITIAL_REVIEWS_COUNT = 3; // Number of reviews to show initially
@@ -25,7 +27,7 @@ const RATING_CATEGORIES = [
   { icon: TrendingUp, label: 'Course Conditions', description: 'Overall maintenance and course quality' },
 ];
 
-export default function ReviewsDisplay({ reviews }: ReviewsDisplayProps): JSX.Element {
+export default function ReviewsDisplay({ reviews, course }: ReviewsDisplayProps): JSX.Element {
   const [visibleCount, setVisibleCount] = useState(INITIAL_REVIEWS_COUNT);
   const params = useParams();
   const courseId = params?.['id'] as string;
@@ -42,7 +44,7 @@ export default function ReviewsDisplay({ reviews }: ReviewsDisplayProps): JSX.El
       {reviews.length > 0 ? (
         <div className="space-y-6">
           {visibleReviews.map((review) => (
-            <ReviewItem key={review.id} review={review} />
+            <ReviewItem key={review.id} review={review} course={course} />
           ))}
         </div>
       ) : (
