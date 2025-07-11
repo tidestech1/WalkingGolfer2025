@@ -451,9 +451,9 @@ export default function RatingForm({ course, user }: RatingFormProps) {
     setIsSubmitting(true); 
     const validatedData = validationResult.data; // Use validated data
 
-    // Explicitly handle date conversion to satisfy TypeScript
+    // Explicitly handle date conversion for month/year format
     const walkingDateISO = validatedData.walkingDate 
-        ? new Date(validatedData.walkingDate).toISOString() 
+        ? new Date(validatedData.walkingDate + '-01').toISOString() // Add day as 01 for month/year format
         : undefined;
 
     const coreReviewData = {
@@ -684,7 +684,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
                 <li><b>Pros & Cons:</b> (Optional) List what you liked and any challenges you faced while walking the course.</li>
                 <li><b>Additional Comments:</b> (Optional) Share any extra details about your experience that might help other golfers.</li>
-                <li><b>Date Played:</b> (Optional) Let us know when you played for context.</li>
+                <li><b>Month/Year Played:</b> (Optional) Let us know when you played for context - we only need the month and year.</li>
               </ul>
               <p><b>Tips:</b></p>
               <ul className="list-disc pl-5 space-y-1">
@@ -1118,13 +1118,13 @@ export default function RatingForm({ course, user }: RatingFormProps) {
           {/* Date Played Input */}
           <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
              <label htmlFor="date-played" className="block text-sm font-medium text-gray-700 mb-1">
-                Date Played
+                Month/Year Played
              </label>
              <input
-                type="date"
+                type="month"
                 id="date-played"
                 name="date-played"
-                max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                max={new Date().toISOString().slice(0, 7)} // Prevent future months (YYYY-MM format)
                 className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formErrors['walkingDate'] ? 'border-red-500' : ''}`}
              />
              {formErrors['walkingDate'] && <p className="text-xs text-red-500 mt-1">{formErrors['walkingDate']}</p>}

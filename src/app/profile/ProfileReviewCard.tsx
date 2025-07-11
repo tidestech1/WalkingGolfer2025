@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { formatDate, formatFullDate } from '@/lib/utils/date';
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils';
 import type { CourseReview } from '@/types/review';
 import type { GolfCourse } from '@/types/course'; // Import GolfCourse type
@@ -15,20 +16,6 @@ interface ProfileReviewCardProps {
   review: CourseReview;
   course: GolfCourse; // Add course prop
 }
-
-// Helper to format date (can be moved to a common utils file if not already)
-const formatDate = (date: Date | string | null): string => {
-  if (!date) {
-    return 'N/A';
-  }
-  try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
-  } catch (e) {
-    return 'Invalid Date';
-  }
-};
 
 // Helper to render stars (can be moved to a common utils file if not already)
 const renderStars = (rating: number | null, maxStars = 5) => {
@@ -43,8 +30,8 @@ const renderStars = (rating: number | null, maxStars = 5) => {
 
 const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({ review, course }) => {
   const displayName = review.userDisplayName || deriveReviewerDisplayName(null, review);
-  const walkingDate = formatDate(review.walkingDate);
-  const reviewDate = formatDate(review.createdAt);
+  const walkingDate = formatDate(review.walkingDate); // Month/year format
+  const reviewDate = formatFullDate(review.createdAt); // Full date format
 
   return (
     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">

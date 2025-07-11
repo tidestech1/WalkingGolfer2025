@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { formatDate, formatFullDate } from '@/lib/utils/date';
 import { deriveReviewerDisplayName } from '@/lib/utils/reviewUtils'; // Import the utility
 import { CourseReview } from '@/types/review';
 import { GolfCourse } from '@/types/course';
@@ -15,20 +16,6 @@ interface ReviewItemProps {
   review: CourseReview;
   course?: GolfCourse; // Optional course data for private course check
 }
-
-// Helper to format date
-const formatDate = (date: Date | string | null): string => {
-  if (!date) {
-return 'N/A';
-}
-  try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
-  } catch (e) {
-    return 'Invalid Date';
-  }
-};
 
 // Helper to render stars
 const renderStars = (rating: number | null, maxStars = 5) => {
@@ -52,8 +39,8 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review, course }) => {
   // We pass null for profile as we only have review data here
   // The verify step should have populated review.userDisplayName correctly based on preference
   const displayName = review.userDisplayName || deriveReviewerDisplayName(null, review); 
-  const walkingDate = formatDate(review.walkingDate);
-  const reviewDate = formatDate(review.createdAt);
+  const walkingDate = formatDate(review.walkingDate); // Month/year format
+  const reviewDate = formatFullDate(review.createdAt); // Full date format
   
   // Check if this is a private course
   const isPrivateClub = isPrivateCourse(course);
