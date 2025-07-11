@@ -80,12 +80,12 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
   // Helper function to get condition description (rating 1=poor, 5=excellent)
   const getConditionDescription = (rating: number): string => {
     if (rating === 0) return "Not yet rated";
-    if (rating <= 1) return "Poor course quality"
-    if (rating <= 2) return "Below average course quality"
-    if (rating <= 3) return "Average course quality"
-    if (rating <= 4) return "Good course quality"
-    if (rating > 4) return "Excellent course quality" // Covers 5 and above
-    return "Condition not rated" // Fallback
+    if (rating <= 1) return "Poor course conditions"
+    if (rating <= 2) return "Below average course conditions"
+    if (rating <= 3) return "Average course conditions"
+    if (rating <= 4) return "Good course conditions"
+    if (rating > 4) return "Excellent course conditions" // Covers 5 and above
+    return "Conditions not rated" // Fallback
   }
 
   return (
@@ -188,7 +188,7 @@ export default function CourseRatings({ course, className = '' }: CourseRatingsP
           <div className="flex items-center justify-between text-sm mb-1">
             <span className="text-gray-700 flex items-center">
               <Goal className="w-4 h-4 mr-2 text-teal-600" />
-              Course Quality
+              Course Conditions
             </span>
             <span className="font-medium">{formatRating(condition)}/5</span>
           </div>

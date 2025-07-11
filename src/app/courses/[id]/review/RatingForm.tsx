@@ -678,7 +678,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                     <li><b>Terrain & Hilliness:</b> How flat or hilly is the course?</li>
                     <li><b>Distance Between Holes:</b> Are the holes close together or far apart?</li>
                     <li><b>Course Value:</b> Was the course a good value for the price? (Not applicable for private courses)</li>
-                    <li><b>Course Quality:</b> How well maintained was the course?</li>
+                    <li><b>Course Conditions:</b> How well maintained was the course?</li>
                   </ul>
                 </li>
                 <li><b>Add Photos:</b> (Optional) Share photos of the course, paths, or views to help others see what to expect.</li>
@@ -916,10 +916,10 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                 </div>
               )}
 
-              {/* Course Quality - Always show */}
+              {/* Course Conditions - Always show */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Quality *
+                  Course Conditions *
                 </label>
                 <ConditionsRating
                   rating={courseConditionRating}
@@ -928,17 +928,17 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                   setHovered={setHoveredConditionRating}
                   size="lg"
                   descriptions={{
-                    1: "Poor course quality",
-                    2: "Below average course quality",
-                    3: "Average course quality",
-                    4: "Good course quality",
-                    5: "Excellent course quality"
+                    1: "Poor course conditions",
+                    2: "Below average course conditions",
+                    3: "Average course conditions",
+                    4: "Good course conditions",
+                    5: "Excellent course conditions"
                   }}
                 />
                 <p className="mt-2 text-sm text-gray-600 min-h-[1.25rem]">
                   {(hoveredConditionRating || courseConditionRating) > 0
                     ? (
-                        {1: "Poor course quality", 2: "Below average course quality", 3: "Average course quality", 4: "Good course quality", 5: "Excellent course quality"}
+                        {1: "Poor course conditions", 2: "Below average course conditions", 3: "Average course conditions", 4: "Good course conditions", 5: "Excellent course conditions"}
                         [hoveredConditionRating || courseConditionRating] || ''
                       )
                     : 'Larger icons mean better maintained'
