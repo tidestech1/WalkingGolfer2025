@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, ExternalLink, CheckCircle, XCircle, AlertCircle, Upload, Save } from 'lucide-react'
 import { GolfCourse } from '@/types/course'
 import { useAuth } from '@/lib/hooks/useAuth'
+import Link from 'next/link'
 
 // User whitelist for course matching tool
 const AUTHORIZED_USERS = [
@@ -312,11 +313,35 @@ export default function CourseMatchingPage(): JSX.Element {
 
   // Update matching status in Firebase
   const updateMatchingStatus = useCallback(async (status: 'matched' | 'closed' | 'needs_review', matchedCourseId?: string, notes?: string) => {
-    if (!sessionInfo) return
+    if (!sessionInfo) {
+      console.error('No session info available')
+      alert('Session information not available. Please refresh the page.')
+      return
+    }
+
+    // Prevent multiple simultaneous updates
+    if (isUpdating) {
+      console.log('Update already in progress, skipping')
+      return
+    }
 
     try {
+      setIsUpdating(true)
+      console.log('Updating status:', { status, sessionId: sessionInfo.id, courseIndex: currentIndex })
+      
       const idToken = await getIdToken()
       if (!idToken) throw new Error('No auth token')
+
+      const requestBody = {
+        sessionId: sessionInfo.id,
+        courseIndex: currentIndex,
+        status,
+        matchedCourseId,
+        notes,
+        processedByEmail: user?.email || 'unknown'
+      }
+
+      console.log('Request body:', requestBody)
 
       const response = await fetch('/api/admin/course-matching/progress', {
         method: 'POST',
@@ -324,17 +349,15 @@ export default function CourseMatchingPage(): JSX.Element {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify({
-          sessionId: sessionInfo.id,
-          courseIndex: currentIndex,
-          status,
-          matchedCourseId,
-          notes,
-          processedByEmail: user?.email || 'unknown'
-        })
+        body: JSON.stringify(requestBody)
       })
 
+      console.log('Response status:', response.status)
+
       if (response.ok) {
+        const responseData = await response.json()
+        console.log('Success response:', responseData)
+        
         const newStatus: MatchingStatus = {
           id: `${sessionInfo.id}-${currentIndex}`,
           sessionId: sessionInfo.id,
@@ -348,12 +371,19 @@ export default function CourseMatchingPage(): JSX.Element {
         }
         
         setMatchingStatuses(prev => new Map(prev.set(currentIndex, newStatus)))
+        console.log('Status updated successfully')
+      } else {
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
+        throw new Error(`API Error: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Error updating status. Please try again.')
+      alert(`Error updating status: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`)
+    } finally {
+      setIsUpdating(false)
     }
-  }, [sessionInfo, currentIndex, getIdToken, user])
+  }, [sessionInfo, currentIndex, getIdToken, user, isUpdating])
 
   // Handle course selection for matching
   const handleCourseSelect = useCallback((course: GolfCourse) => {
@@ -497,7 +527,7 @@ export default function CourseMatchingPage(): JSX.Element {
           <h1 className="text-3xl font-bold">Course Matching Tool</h1>
           {sessionInfo && (
             <p className="text-sm text-gray-600 mt-1">
-              Session: {sessionInfo.sessionName} • Uploaded by: {sessionInfo.uploadedBy} • {sessionInfo.totalCourses} courses
+              Session: {sessionInfo.sessionName} • {sessionInfo.totalCourses} courses total
             </p>
           )}
         </div>
@@ -763,17 +793,44 @@ export default function CourseMatchingPage(): JSX.Element {
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="bg-blue-50 p-4 rounded-md mb-4">
+            <h3 className="font-medium text-blue-900 mb-2">Action Guide:</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>Mark as Closed:</strong> Course is permanently closed/demolished</li>
+              <li>• <strong>Needs Review:</strong> Course exists but not in our database yet</li>
+              <li>• <strong>Match Course:</strong> Search found existing course - select it above</li>
+            </ul>
+          </div>
+          
+                      <div className="bg-amber-50 p-4 rounded-md mb-4">
+            <h3 className="font-medium text-amber-900 mb-2">After "Needs Review":</h3>
+            <ol className="text-sm text-amber-800 space-y-1">
+              <li>1. Course will be flagged for manual addition to database</li>
+              <li>2. Admin will add the course using course management tools</li>
+              <li>3. Return to this tool to match with the newly added course</li>
+            </ol>
+            <div className="mt-3">
+              <Link href="/admin/course-matching/review">
+                <Button variant="outline" size="sm">
+                  View All Courses Needing Review
+                </Button>
+              </Link>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <Button 
               variant="destructive"
-              onClick={() => updateMatchingStatus('closed')}
+              onClick={() => void updateMatchingStatus('closed')}
+              disabled={isUpdating}
             >
               <XCircle className="mr-2 h-4 w-4" />
               Mark as Closed
             </Button>
             <Button 
               variant="outline"
-              onClick={() => updateMatchingStatus('needs_review')}
+              onClick={() => void updateMatchingStatus('needs_review')}
+              disabled={isUpdating}
             >
               <AlertCircle className="mr-2 h-4 w-4" />
               Needs Review

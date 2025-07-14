@@ -114,6 +114,18 @@ export default function AdminPage(): JSX.Element {
                   Open Course Matching Tool
                 </Link>
               </div>
+              <div className="bg-white p-4 rounded-md border border-gray-100 shadow-sm">
+                <h3 className="text-lg font-medium mb-2">Review Courses</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  View courses that need to be added to the database before matching.
+                </p>
+                <Link 
+                  href="/admin/course-matching/review"
+                  className="inline-block bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700 transition-colors"
+                >
+                  View Courses Needing Review
+                </Link>
+              </div>
             </div>
           </div>
           

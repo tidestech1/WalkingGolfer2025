@@ -83,16 +83,23 @@ export async function POST(request: NextRequest) {
       .where('courseIndex', '==', courseIndex)
       .get();
 
-    const progressData: Omit<MatchingProgress, 'id'> = {
+    // Create progress data object, filtering out undefined values
+    const progressData: any = {
       sessionId,
       courseIndex,
       status,
-      matchedCourseId,
-      notes,
       processedAt: Timestamp.now(),
       processedBy: authResult.userId || 'unknown',
       processedByEmail: processedByEmail || 'unknown'
     };
+
+    // Only add optional fields if they have values
+    if (matchedCourseId !== undefined) {
+      progressData.matchedCourseId = matchedCourseId;
+    }
+    if (notes !== undefined) {
+      progressData.notes = notes;
+    }
 
     if (!existingSnapshot.empty) {
       // Update existing record
