@@ -87,6 +87,9 @@ export interface GolfCourse {
   createdAt: Date;
   updatedAt: Date;
 
+  // Data source tracking
+  dataSource?: string; // e.g., "TWG-human-matched-2024-01-15"
+
   // Array of lowercase searchable terms
   searchableTerms: string[];
 

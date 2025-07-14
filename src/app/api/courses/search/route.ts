@@ -128,4 +128,63 @@ export async function GET(request: NextRequest) {
     console.error('Error searching courses:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}
+
+// POST handler for more complex search scenarios (like admin course matching)
+export async function POST(request: NextRequest) {
+  if (!isFirebaseAvailable() || !db) {
+    return NextResponse.json({ error: 'Firebase is not available' }, { status: 503 });
+  }
+
+  try {
+    const body = await request.json();
+    const { searchQuery, limit: requestLimit = MAX_RESULTS, state, city } = body;
+
+    const coursesRef = collection(db, COLLECTION_NAME);
+    const constraints: QueryConstraint[] = [];
+
+    // For course matching, we want to search by location first
+    if (state) {
+      constraints.push(where('location_state', '==', state));
+    }
+    
+    if (city) {
+      constraints.push(where('location_city', '==', city));
+    }
+
+    // If we have a search query, add it to searchable terms
+    if (searchQuery && searchQuery.trim().length >= 2) {
+      const searchTerm = searchQuery.trim().toLowerCase();
+      constraints.push(where('searchableTerms', 'array-contains', searchTerm));
+    }
+
+    // Order by course name for consistent results
+    constraints.push(orderBy('courseName', 'asc'));
+    
+    // Limit results
+    constraints.push(limit(requestLimit));
+
+    console.log("Executing POST search with constraints:", constraints);
+    const q = query(coursesRef, ...constraints);
+    const snapshot = await getDocs(q);
+
+    const courses = snapshot.docs.map(doc => {
+      const data = doc.data() as Omit<GolfCourse, 'id'>;
+      return {
+        id: doc.id,
+        courseName: data.courseName,
+        club_name: data.club_name,
+        location_city: data.location_city,
+        location_state: data.location_state,
+        club_type: data.club_type,
+        course_holes: data.course_holes,
+        walkabilityRating_overall: data.walkabilityRating_overall,
+      };
+    });
+
+    return NextResponse.json({ courses }, { status: 200 });
+  } catch (error) {
+    console.error('Error in POST search:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
