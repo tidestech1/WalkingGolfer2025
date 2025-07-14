@@ -941,7 +941,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
                         {1: "Poor course conditions", 2: "Below average course conditions", 3: "Average course conditions", 4: "Good course conditions", 5: "Excellent course conditions"}
                         [hoveredConditionRating || courseConditionRating] || ''
                       )
-                    : 'Larger icons mean better maintained'
+                    : 'Larger icons mean better conditions'
                   }
                 </p>
                 {formErrors['courseConditionRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseConditionRating']}</p>}
