@@ -101,7 +101,19 @@ export default function AdminPage(): JSX.Element {
             <p className="text-gray-700 mb-4">
               Manage golf course data and content.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-md border border-gray-100 shadow-sm">
+                <h3 className="text-lg font-medium mb-2">Course Database</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  View, edit, and manage all golf courses in the database.
+                </p>
+                <Link 
+                  href="/admin/courses"
+                  className="inline-block bg-[#0A3357] text-white px-4 py-2 rounded-md hover:bg-blue-900 transition-colors"
+                >
+                  Manage Courses
+                </Link>
+              </div>
               <div className="bg-white p-4 rounded-md border border-gray-100 shadow-sm">
                 <h3 className="text-lg font-medium mb-2">Course Matching Tool</h3>
                 <p className="text-sm text-gray-600 mb-3">
