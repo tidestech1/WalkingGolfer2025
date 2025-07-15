@@ -66,6 +66,7 @@ export default function CourseMatchingPage(): JSX.Element {
   const [searchResults, setSearchResults] = useState<GolfCourse[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [searchStrategy, setSearchStrategy] = useState<string>('')
   const [matchingStatuses, setMatchingStatuses] = useState<Map<number, MatchingStatus>>(new Map())
   const [csvText, setCsvText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -83,43 +84,6 @@ export default function CourseMatchingPage(): JSX.Element {
     twgRating: '',
     walkabilityRating_overall: 0
   })
-
-  // Check if user is authorized
-  const isAuthorized = user?.email && AUTHORIZED_USERS.includes(user.email)
-
-  // Show unauthorized message if user is not authorized
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Please sign in to access the course matching tool.</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (!isAuthorized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>You don't have permission to access the course matching tool.</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Signed in as: {user.email}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
 
   // Parse CSV data
   const parseCsvData = useCallback((csvContent: string): LegacyCourse[] => {
@@ -148,128 +112,132 @@ export default function CourseMatchingPage(): JSX.Element {
     return courses
   }, [])
 
-  // Load CSV data and upload to Firebase
-  const handleCsvUpload = useCallback(async () => {
-    if (!csvText.trim()) return
-    
+  // Upload CSV data
+  const uploadCsvData = useCallback(async () => {
+    if (!csvText.trim()) {
+      alert('Please paste CSV data first')
+      return
+    }
+
     setIsUploading(true)
     try {
-      const parsed = parseCsvData(csvText)
-      
-      // Upload to Firebase
+      const parsedCourses = parseCsvData(csvText)
+      if (parsedCourses.length === 0) {
+        alert('No valid courses found in CSV data')
+        return
+      }
+
       const idToken = await getIdToken()
       if (!idToken) throw new Error('No auth token')
 
-      const response = await fetch('/api/admin/course-matching/legacy-courses', {
+      const response = await fetch('/api/admin/course-matching', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          courses: parsed,
-          sessionName: `Course Import ${new Date().toISOString().split('T')[0]}`
+          courses: parsedCourses,
+          uploadedBy: user?.email || 'unknown'
         })
       })
 
       if (response.ok) {
-        const result = await response.json()
-        console.log(`Uploaded ${parsed.length} legacy courses`)
-        
-        // Reload data to get the new session
-        window.location.reload()
+        const data = await response.json()
+        setLegacyCourses(parsedCourses)
+        setSessionInfo(data.session)
+        setCurrentIndex(0)
+        setCsvText('')
+        alert(`Successfully uploaded ${parsedCourses.length} courses`)
       } else {
-        throw new Error('Failed to upload courses')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
       }
     } catch (error) {
-      console.error('Error uploading CSV:', error)
-      alert('Error uploading CSV data. Please try again.')
+      console.error('Upload error:', error)
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsUploading(false)
     }
-  }, [csvText, parseCsvData, getIdToken])
+  }, [csvText, parseCsvData, getIdToken, user])
 
-  // Search existing courses
-  const searchCourses = useCallback(async (query: string, state?: string, city?: string) => {
-    if (!query.trim() && !state && !city) {
-      setSearchResults([])
-      return
-    }
-    
+  // Progressive search with automatic fallback
+  const searchCourses = useCallback(async (query: string, retryWithWords = false) => {
+    if (!query.trim()) return
+
     setIsSearching(true)
+    setSearchStrategy(retryWithWords ? 'Trying individual words...' : 'Searching full query...')
+
     try {
+      const idToken = await getIdToken()
+      if (!idToken) throw new Error('No auth token')
+
       const response = await fetch('/api/courses/search', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          searchQuery: query,
-          state: state,
-          city: city,
-          limit: 20
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          searchQuery: query.trim(),
+          state: legacyCourses[currentIndex]?.state?.toUpperCase(),
+          includeClubName: true,
+          limit: 50
         })
       })
-      
+
       if (response.ok) {
         const data = await response.json()
-        setSearchResults(data.courses || [])
+        return data.courses || []
+      } else {
+        const errorData = await response.json()
+        console.error('Search error:', errorData)
+        throw new Error(errorData.error || 'Search failed')
       }
     } catch (error) {
       console.error('Search error:', error)
-    } finally {
-      setIsSearching(false)
+      return []
     }
-  }, [])
+  }, [getIdToken])
 
-  // Auto-search when legacy course changes
-  const currentLegacyCourse = legacyCourses[currentIndex]
-  
-  // Auto-search for current course
-  const autoSearch = useCallback(() => {
-    if (!currentLegacyCourse) return
-    
-    const searchTerm = currentLegacyCourse.courseName
-    setSearchQuery(searchTerm)
-    searchCourses(searchTerm, currentLegacyCourse.state, currentLegacyCourse.city)
-  }, [currentLegacyCourse, searchCourses])
-
-  // Navigation
-  const goToNext = () => {
-    if (currentIndex < legacyCourses.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-    }
-  }
-
-  const goToPrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-    }
-  }
-
-  const goToNextUnprocessed = () => {
-    for (let i = currentIndex + 1; i < legacyCourses.length; i++) {
-      if (!matchingStatuses.has(i)) {
-        setCurrentIndex(i)
-        return
+    // Auto-search when navigating between courses
+  useEffect(() => {
+    const legacyCourse = legacyCourses[currentIndex]
+    if (legacyCourse?.courseName) {
+      const query = legacyCourse.courseName
+      setSearchQuery(query)
+      
+      // Perform automatic search (full query only, no progressive search)
+      const performAutoSearch = async () => {
+        setIsSearching(true)
+        setSearchStrategy('Searching...')
+        
+        try {
+          const results = await searchCourses(query)
+          setSearchResults(results)
+          setSearchStrategy(results.length > 0 ? 'Search completed' : 'No results found')
+        } catch (error) {
+          console.error('Auto search error:', error)
+          setSearchStrategy('Search failed')
+        } finally {
+          setIsSearching(false)
+        }
       }
+      
+      performAutoSearch()
     }
-    // If no unprocessed after current, start from beginning
-    for (let i = 0; i < currentIndex; i++) {
-      if (!matchingStatuses.has(i)) {
-        setCurrentIndex(i)
-        return
-      }
-    }
-  }
+  }, [currentIndex, legacyCourses, searchCourses])
 
-  // Load data from Firebase on component mount
+  // Load data from existing session
   useEffect(() => {
     const loadData = async () => {
+      if (!user) return
+      
+      setIsLoadingData(true)
       try {
-        setIsLoadingData(true)
         const idToken = await getIdToken()
         if (!idToken) throw new Error('No auth token')
 
-        // Load legacy courses and session info
         const coursesResponse = await fetch('/api/admin/course-matching/legacy-courses', {
           headers: {
             'Authorization': `Bearer ${idToken}`
@@ -309,7 +277,7 @@ export default function CourseMatchingPage(): JSX.Element {
     }
 
     loadData()
-  }, [getIdToken])
+  }, [getIdToken, user])
 
   // Update matching status in Firebase
   const updateMatchingStatus = useCallback(async (status: 'matched' | 'closed' | 'needs_review', matchedCourseId?: string, notes?: string) => {
@@ -387,6 +355,7 @@ export default function CourseMatchingPage(): JSX.Element {
 
   // Handle course selection for matching
   const handleCourseSelect = useCallback((course: GolfCourse) => {
+    const legacyCourse = legacyCourses[currentIndex]
     setSelectedCourse(course)
     setUpdateFields({
       courseName: course.courseName,
@@ -394,15 +363,16 @@ export default function CourseMatchingPage(): JSX.Element {
       location_city: course.location_city,
       location_state: course.location_state,
       club_type: course.club_type,
-      twgReviewerNotes: currentLegacyCourse?.twgReviewerNotes || '',
-      twgRating: currentLegacyCourse?.twgRating || '',
-      walkabilityRating_overall: currentLegacyCourse?.walkabilityRating_overall || 0
+      twgReviewerNotes: legacyCourse?.twgReviewerNotes || '',
+      twgRating: legacyCourse?.twgRating || '',
+      walkabilityRating_overall: legacyCourse?.walkabilityRating_overall || 0
     })
-  }, [currentLegacyCourse])
+  }, [legacyCourses, currentIndex])
 
   // Save course match with legacy data
   const saveCourseMatch = useCallback(async () => {
-    if (!selectedCourse || !currentLegacyCourse) return
+    const legacyCourse = legacyCourses[currentIndex]
+    if (!selectedCourse || !legacyCourse) return
     
     setIsUpdating(true)
     try {
@@ -421,33 +391,123 @@ export default function CourseMatchingPage(): JSX.Element {
         body: JSON.stringify({
           courseId: selectedCourse.id,
           updates: {
-            courseName: updateFields.courseName,
-            club_name: updateFields.club_name,
-            location_city: updateFields.location_city,
-            location_state: updateFields.location_state,
-            club_type: updateFields.club_type,
             twgReviewerNotes: updateFields.twgReviewerNotes,
             twgRating: updateFields.twgRating,
             walkabilityRating_overall: updateFields.walkabilityRating_overall,
-            dataSource: dataSource
+            dataSource
           }
         })
       })
 
       if (response.ok) {
-        await updateMatchingStatus('matched', selectedCourse.id)
+        await updateMatchingStatus('matched', selectedCourse.id, `Matched with ${selectedCourse.courseName}`)
         setSelectedCourse(null)
-        alert('Course updated successfully!')
+        
+        // Move to next course
+        if (currentIndex < legacyCourses.length - 1) {
+          setCurrentIndex(currentIndex + 1)
+        }
       } else {
-        throw new Error('Failed to update course')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save course match')
       }
     } catch (error) {
-      console.error('Error updating course:', error)
-      alert('Error updating course. Please try again.')
+      console.error('Error saving course match:', error)
+      alert(`Error saving course match: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsUpdating(false)
     }
-  }, [selectedCourse, currentLegacyCourse, updateFields, getIdToken, user, updateMatchingStatus])
+  }, [selectedCourse, legacyCourses, currentIndex, updateFields, getIdToken, updateMatchingStatus])
+
+  // Handle manual search
+  const handleManualSearch = useCallback(async () => {
+    if (!searchQuery.trim()) return
+    
+    setIsSearching(true)
+    setSearchStrategy('Searching...')
+    
+    try {
+      const results = await searchCourses(searchQuery)
+      setSearchResults(results)
+      setSearchStrategy(results.length > 0 ? 'Search completed' : 'No results found')
+    } catch (error) {
+      console.error('Manual search error:', error)
+      setSearchStrategy('Search failed')
+    } finally {
+      setIsSearching(false)
+    }
+  }, [searchQuery, searchCourses])
+
+  // Check if user is authorized - moved after all hook calls
+  const isAuthorized = user?.email && AUTHORIZED_USERS.includes(user.email)
+  
+  // Get current legacy course
+  const currentLegacyCourse = legacyCourses[currentIndex]
+
+  // Show unauthorized message if user is not authorized
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle>Authentication Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Please sign in to access the course matching tool.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>You don't have permission to access the course matching tool.</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Signed in as: {user.email}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Navigation
+  const goToNext = () => {
+    if (currentIndex < legacyCourses.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+    }
+  }
+
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
+  }
+
+  const goToNextUnprocessed = () => {
+    for (let i = currentIndex + 1; i < legacyCourses.length; i++) {
+      if (!matchingStatuses.has(i)) {
+        setCurrentIndex(i)
+        return
+      }
+    }
+    // If no unprocessed after current, start from beginning
+    for (let i = 0; i < currentIndex; i++) {
+      if (!matchingStatuses.has(i)) {
+        setCurrentIndex(i)
+        return
+      }
+    }
+  }
+
+     // Auto search handled in the other useEffect above
 
   // Get progress stats
   const getProgress = () => {
@@ -506,7 +566,7 @@ export default function CourseMatchingPage(): JSX.Element {
               />
             </div>
             <Button 
-              onClick={handleCsvUpload}
+              onClick={uploadCsvData}
               disabled={!csvText.trim() || isUploading}
               className="w-full"
             >
@@ -573,54 +633,56 @@ export default function CourseMatchingPage(): JSX.Element {
 
       {/* Current Course */}
       <Card>
-        <CardHeader>
-          <CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
             Legacy Course #{currentIndex + 1} of {legacyCourses.length}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-3">
             <div>
-              <Label className="text-sm font-medium text-gray-500">Course Name</Label>
-              <p className="text-lg font-semibold">{currentLegacyCourse?.courseName}</p>
+              <Label className="text-xs font-medium text-gray-500">Course Name</Label>
+              <p className="text-sm font-semibold">{currentLegacyCourse?.courseName}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">City</Label>
-              <p className="text-lg">{currentLegacyCourse?.city}</p>
+              <Label className="text-xs font-medium text-gray-500">City</Label>
+              <p className="text-sm">{currentLegacyCourse?.city}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">State</Label>
-              <p className="text-lg">{currentLegacyCourse?.state}</p>
+              <Label className="text-xs font-medium text-gray-500">State</Label>
+              <p className="text-sm">{currentLegacyCourse?.state}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">Type</Label>
-              <p className="text-lg">{currentLegacyCourse?.type}</p>
+              <Label className="text-xs font-medium text-gray-500">Type</Label>
+              <p className="text-sm">{currentLegacyCourse?.type}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">TWG Rating</Label>
-              <p className="text-lg">{currentLegacyCourse?.twgRating}</p>
+              <Label className="text-xs font-medium text-gray-500">TWG Rating</Label>
+              <p className="text-sm">{currentLegacyCourse?.twgRating}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-500">Walkability Rating</Label>
-              <p className="text-lg">{currentLegacyCourse?.walkabilityRating_overall}</p>
+              <Label className="text-xs font-medium text-gray-500">Walkability Rating</Label>
+              <p className="text-sm">{currentLegacyCourse?.walkabilityRating_overall}</p>
             </div>
           </div>
           {currentLegacyCourse?.twgReviewerNotes && (
-            <div className="mt-4">
-              <Label className="text-sm font-medium text-gray-500">TWG Reviewer Notes</Label>
-              <p className="text-sm bg-gray-50 p-3 rounded-md">{currentLegacyCourse.twgReviewerNotes}</p>
+            <div className="mb-3">
+              <Label className="text-xs font-medium text-gray-500">TWG Reviewer Notes</Label>
+              <p className="text-xs bg-gray-50 p-2 rounded-md">{currentLegacyCourse.twgReviewerNotes}</p>
             </div>
           )}
-          <div className="mt-4">
-            <Button onClick={autoSearch} className="mr-2">
-              <Search className="mr-2 h-4 w-4" />
+          <div className="flex gap-2">
+            <Button onClick={handleManualSearch} size="sm" className="text-xs">
+              <Search className="mr-1 h-3 w-3" />
               Auto Search
             </Button>
             <Button 
               variant="outline" 
+              size="sm"
+              className="text-xs"
               onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${currentLegacyCourse?.courseName} golf course ${currentLegacyCourse?.city} ${currentLegacyCourse?.state}`)}`, '_blank')}
             >
-              <ExternalLink className="mr-2 h-4 w-4" />
+              <ExternalLink className="mr-1 h-3 w-3" />
               Google Search
             </Button>
           </div>
@@ -641,41 +703,165 @@ export default function CourseMatchingPage(): JSX.Element {
               className="flex-1"
             />
             <Button 
-              onClick={() => searchCourses(searchQuery, currentLegacyCourse?.state, currentLegacyCourse?.city)}
+              onClick={handleManualSearch}
               disabled={isSearching}
             >
-              {isSearching ? 'Searching...' : 'Search'}
+              {isSearching ? 'Smart Searching...' : 'Search'}
             </Button>
           </div>
           
-          {searchResults.length > 0 && (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {searchResults.map((course) => (
-                <div 
-                  key={course.id} 
-                  className={`p-3 border rounded-md hover:bg-gray-50 cursor-pointer ${
-                    selectedCourse?.id === course.id ? 'bg-blue-50 border-blue-300' : ''
-                  }`}
-                  onClick={() => handleCourseSelect(course)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium">{course.courseName}</p>
-                      <p className="text-sm text-gray-500">
-                        {course.club_name} • {course.location_city}, {course.location_state}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {course.club_type} • {course.course_holes} holes
-                      </p>
-                    </div>
-                    {selectedCourse?.id === course.id && (
-                      <Badge variant="secondary">Selected</Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {isSearching && searchStrategy && (
+            <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800">
+                <Search className="inline h-4 w-4 mr-1" />
+                {searchStrategy}
+              </p>
             </div>
           )}
+          
+          <div className="mb-4 p-3 bg-blue-50 rounded-md">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Smart Search Features:</strong>
+            </p>
+            <ul className="text-sm text-blue-800 mt-1 space-y-1">
+              <li>• <strong>Auto-searches</strong> when you navigate to a new course</li>
+              <li>• <strong>Searches both</strong> course names and club names</li>
+              <li>• <strong>Prioritizes</strong> courses in <strong>{currentLegacyCourse?.state?.toUpperCase()}</strong> with green "✓ Target State" badges</li>
+              <li>• <strong>Manual control:</strong> You choose the best search terms for nuanced matching</li>
+              <li>• <strong>No results?</strong> See helpful suggestions below</li>
+            </ul>
+          </div>
+          
+          {searchResults.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-500 mb-2">
+                Filtering for: {currentLegacyCourse?.state?.toUpperCase() || 'Unknown'} state courses first
+              </div>
+              <div className="text-sm font-medium text-gray-700 mb-3">
+                Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} 
+                {searchResults.length > 5 && ' (scroll to see more)'}
+              </div>
+              <div className="max-h-[32rem] overflow-y-auto space-y-2">
+                {(() => {
+                  // Filter and sort results: prioritize matching state
+                  const targetState = currentLegacyCourse?.state?.toUpperCase() || ''
+                  
+                  const matchingState = searchResults.filter(course => 
+                    course.location_state?.toUpperCase() === targetState
+                  )
+                  const otherStates = searchResults.filter(course => 
+                    course.location_state?.toUpperCase() !== targetState
+                  )
+                  
+                  const sortedResults = [...matchingState, ...otherStates]
+                
+                return sortedResults.map((course) => {
+                  const isMatchingState = course.location_state?.toUpperCase() === targetState
+                  
+                  return (
+                    <div 
+                      key={course.id} 
+                      className={`p-2 border rounded-md hover:bg-gray-50 cursor-pointer ${
+                        selectedCourse?.id === course.id ? 'bg-blue-50 border-blue-300' : ''
+                      } ${isMatchingState ? 'border-l-4 border-l-green-500' : ''}`}
+                      onClick={() => handleCourseSelect(course)}
+                    >
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Left Column: Course Info */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm truncate">{course.courseName}</p>
+                            {isMatchingState && (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300 shrink-0">
+                                ✓ Target State
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-gray-600 mb-1">
+                            📍 {course.location_city}, {course.location_state}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {course.club_name} • {course.club_type} • {course.course_holes} holes
+                          </p>
+                        </div>
+
+                        {/* Right Column: Contact Info */}
+                        <div className="min-w-0 text-xs text-gray-500 space-y-1">
+                          {course.location_address1 && (
+                            <p className="truncate">
+                              🏠 {course.location_address1}
+                              {course.location_zip && `, ${course.location_zip}`}
+                            </p>
+                          )}
+                          {course.contact_website && (
+                            <p className="truncate">
+                              🌐 <a href={course.contact_website} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">
+                                {course.contact_website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                              </a>
+                            </p>
+                          )}
+                          <div className="flex justify-between items-center">
+                            {course.contact_phone && (
+                              <span className="truncate">📞 {course.contact_phone}</span>
+                            )}
+                            <a 
+                              href={`/courses/${course.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline shrink-0 ml-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              🔗 View →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {selectedCourse?.id === course.id && (
+                        <div className="mt-2 flex justify-center">
+                          <Badge variant="secondary" className="text-xs">Selected</Badge>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              })()}
+              </div>
+            </div>
+          ) : searchQuery.trim() && !isSearching ? (
+            <div className="space-y-4 p-6 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <Search className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Results Found</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  No courses found for "{searchQuery}"
+                </p>
+              </div>
+              
+              <div className="bg-white p-4 rounded-md border">
+                <h4 className="font-medium text-gray-900 mb-2">💡 Try These Search Strategies:</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• <strong>Use fewer words:</strong> Try just "Aurora" instead of "Aurora Golf & Country Club"</li>
+                  <li>• <strong>Try different keywords:</strong> Search for key parts like "Country Club"</li>
+                  <li>• <strong>Check for renamed courses:</strong> Course might have a different name now</li>
+                  <li>• <strong>Search club name:</strong> Try the facility name instead of course name</li>
+                </ul>
+              </div>
+              
+
+              
+              <div className="text-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${searchQuery} golf course ${currentLegacyCourse?.city} ${currentLegacyCourse?.state}`)}`, '_blank')}
+                  className="text-sm"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Search Google for "{searchQuery}"
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

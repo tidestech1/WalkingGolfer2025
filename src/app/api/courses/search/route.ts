@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     console.error('Error searching courses:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+} 
 
 // POST handler for more complex search scenarios (like admin course matching)
 export async function POST(request: NextRequest) {
@@ -176,8 +176,13 @@ export async function POST(request: NextRequest) {
         club_name: data.club_name,
         location_city: data.location_city,
         location_state: data.location_state,
+        location_address1: data.location_address1,
+        location_address2: data.location_address2,
+        location_zip: data.location_zip,
         club_type: data.club_type,
         course_holes: data.course_holes,
+        contact_website: data.contact_website,
+        contact_phone: data.contact_phone,
         walkabilityRating_overall: data.walkabilityRating_overall,
       };
     });

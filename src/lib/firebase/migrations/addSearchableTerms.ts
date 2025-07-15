@@ -61,6 +61,11 @@ function generateSearchableTerms(course: Omit<GolfCourse, 'searchableTerms' | 'i
   terms.add(course.location_city.toLowerCase())
   terms.add(course.location_state.toLowerCase())
   
+  // Add club name if it exists and is different from course name
+  if (course.club_name && course.club_name.toLowerCase() !== course.courseName.toLowerCase()) {
+    terms.add(course.club_name.toLowerCase())
+  }
+  
   // Add individual words from course name
   course.courseName.toLowerCase().split(/\s+/).forEach(word => {
     if (word.length > 2) { // Only add words longer than 2 characters
@@ -74,6 +79,15 @@ function generateSearchableTerms(course: Omit<GolfCourse, 'searchableTerms' | 'i
       terms.add(word)
     }
   })
+  
+  // Add club name words if it exists
+  if (course.club_name) {
+    course.club_name.toLowerCase().split(/\s+/).forEach(word => {
+      if (word.length > 2) {
+        terms.add(word)
+      }
+    })
+  }
   
   return Array.from(terms)
 }
