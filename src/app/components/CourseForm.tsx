@@ -417,7 +417,7 @@ export default function CourseForm({ course, isEdit = false, onSave, onCancel }:
                   Is Walkable?
                 </label>
                 <select
-                  value={formData.course_isWalkable === null ? '' : formData.course_isWalkable.toString()}
+                  value={formData.course_isWalkable === null || formData.course_isWalkable === undefined ? '' : formData.course_isWalkable.toString()}
                   onChange={(e) => handleInputChange('course_isWalkable', e.target.value === '' ? null : e.target.value === 'true')}
                   className="w-full h-9 px-3 py-1 border border-input rounded-md text-sm"
                 >
@@ -782,46 +782,113 @@ export default function CourseForm({ course, isEdit = false, onSave, onCancel }:
           </CardContent>
         </Card>
 
-        {/* TWG Specific */}
+        {/* TWG Specific - Reference Information (Read-Only) */}
         <Card>
           <CardHeader>
-            <CardTitle>Walking Golfer Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Walking Golfer Information
+            </CardTitle>
+            <p className="text-sm text-gray-500 mt-2">
+              Reference data from original course import/matching. Not editable.
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                TWG Rating
-              </label>
-              <Input
-                value={formData.twgRating}
-                onChange={(e) => handleInputChange('twgRating', e.target.value)}
-                placeholder="Enter TWG rating"
-              />
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500">TWG Rating</label>
+                <p className="text-sm font-medium">{formData.twgRating || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Overall Walkability</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_overall?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Course Condition</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_courseCondition?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Cost Rating</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_cost?.toFixed(1) || 'N/A'}</p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reviewer Notes
-              </label>
-              <Textarea
-                value={formData.reviewerNotes}
-                onChange={(e) => handleInputChange('reviewerNotes', e.target.value)}
-                placeholder="Enter reviewer notes"
-                rows={3}
-              />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500">Hilliness</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_hilliness?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Hole Distance</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_holeDistance?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Weighted Rating</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_weightedRating?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Reviews</label>
+                <p className="text-sm font-medium">{formData.reviewCount || 0}</p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                TWG Reviewer Notes
-              </label>
-              <Textarea
-                value={formData.twgReviewerNotes}
-                onChange={(e) => handleInputChange('twgReviewerNotes', e.target.value)}
-                placeholder="Enter TWG reviewer notes"
-                rows={3}
-              />
-            </div>
+            {(formData.twgReviewerNotes || formData.reviewerNotes) && (
+              <div className="border-t pt-4">
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+                    View TWG Reviewer Notes
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    {formData.twgReviewerNotes && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">TWG Reviewer Notes</label>
+                        <p className="text-sm bg-gray-50 p-2 rounded-md">{formData.twgReviewerNotes}</p>
+                      </div>
+                    )}
+                    {formData.reviewerNotes && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">General Reviewer Notes</label>
+                        <p className="text-sm bg-gray-50 p-2 rounded-md">{formData.reviewerNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Update History - Only show for existing courses */}
+        {isEdit && course && (
+          <Card>
+            <CardContent className="pt-6">
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Update History
+                </summary>
+                <div className="mt-4 space-y-3">
+                  {course.updateHistory && course.updateHistory.length > 0 ? (
+                    <div className="space-y-2">
+                      {course.updateHistory.map((entry, index) => (
+                        <div key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                          <div className="font-medium">{entry.updatedBy}</div>
+                          <div>{new Date(entry.updatedAt).toLocaleString()}</div>
+                          {entry.changes && <div className="text-gray-500">{entry.changes}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No update history available</div>
+                  )}
+                  <div className="text-xs text-gray-400 border-t pt-2">
+                    <div>Created: {new Date(course.createdAt).toLocaleString()}</div>
+                    <div>Last updated: {new Date(course.updatedAt).toLocaleString()}</div>
+                    {course.lastUpdatedBy && <div>Last updated by: {course.lastUpdatedBy}</div>}
+                  </div>
+                </div>
+              </details>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Form Actions */}
         <Card>

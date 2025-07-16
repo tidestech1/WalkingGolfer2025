@@ -4,7 +4,10 @@ import { authenticateAdminRequest } from '@/lib/auth/adminAuth';
 import { GolfCourse } from '@/types/course';
 import { generateSearchableTerms } from '@/lib/firebase/courseUtils';
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -15,25 +18,21 @@ export async function GET(request: NextRequest, context: { params: { id: string 
       );
     }
 
-    const { params } = context;
+    const { id } = await params;
     const db = getAdminFirestore();
-    const courseRef = db.collection('courses').doc(params.id);
-    const courseSnap = await courseRef.get();
+    const courseRef = db.collection('courses').doc(id);
+    const courseDoc = await courseRef.get();
 
-    if (!courseSnap.exists) {
+    if (!courseDoc.exists) {
       return NextResponse.json(
         { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    const course = {
-      id: courseSnap.id,
-      ...courseSnap.data()
-    } as GolfCourse;
-
+    const course = { id: courseDoc.id, ...courseDoc.data() } as GolfCourse;
+    
     return NextResponse.json({ course });
-
   } catch (error) {
     console.error('Error fetching course:', error);
     return NextResponse.json(
@@ -43,7 +42,10 @@ export async function GET(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       );
     }
 
-    const { params } = context;
+    const { id } = await params;
     const body = await request.json();
     const updates = body.updates;
 
@@ -66,25 +68,33 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
     }
 
     const db = getAdminFirestore();
-    const courseRef = db.collection('courses').doc(params.id);
-    
-    // Check if course exists
-    const courseSnap = await courseRef.get();
-    if (!courseSnap.exists) {
+    const courseRef = db.collection('courses').doc(id);
+    const courseDoc = await courseRef.get();
+
+    if (!courseDoc.exists) {
       return NextResponse.json(
         { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    // Get current course data
-    const currentCourse = courseSnap.data() as GolfCourse;
+    const currentCourse = courseDoc.data() as GolfCourse;
 
-    // Merge updates with current data for searchable terms generation
-    const updatedCourse = { ...currentCourse, ...updates };
+    // Generate searchable terms
+    const searchableTerms = generateSearchableTerms(updates);
 
-    // Generate new searchable terms if relevant fields changed
-    const searchableTerms = generateSearchableTerms(updatedCourse);
+    // Prepare update history entry
+    const updateHistoryEntry = {
+      updatedBy: authResult.userId || 'Unknown',
+      updatedAt: new Date(),
+      changes: 'Course details updated'
+    };
+
+    // Get current update history or initialize empty array
+    const currentUpdateHistory = currentCourse.updateHistory || [];
+    
+    // Add new entry and keep only last 10 entries
+    const newUpdateHistory = [updateHistoryEntry, ...currentUpdateHistory].slice(0, 10);
 
     // Prepare update data
     const updateData = {
@@ -92,15 +102,16 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       searchableTerms,
       updatedAt: new Date(),
       lastUpdatedBy: authResult.userId,
+      updateHistory: newUpdateHistory,
     };
 
     await courseRef.update(updateData);
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Course updated successfully' 
-    });
+    // Get updated course
+    const updatedCourseDoc = await courseRef.get();
+    const updatedCourse = { id: updatedCourseDoc.id, ...updatedCourseDoc.data() } as GolfCourse;
 
+    return NextResponse.json({ course: updatedCourse });
   } catch (error) {
     console.error('Error updating course:', error);
     return NextResponse.json(
@@ -110,7 +121,10 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -121,40 +135,32 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
       );
     }
 
-    const { params } = context;
+    const { id } = await params;
     const db = getAdminFirestore();
-    const courseRef = db.collection('courses').doc(params.id);
-    
-    // Check if course exists
-    const courseSnap = await courseRef.get();
-    if (!courseSnap.exists) {
+    const courseRef = db.collection('courses').doc(id);
+    const courseDoc = await courseRef.get();
+
+    if (!courseDoc.exists) {
       return NextResponse.json(
         { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    // Check if there are any reviews for this course
-    const reviewsSnapshot = await db.collection('reviews')
-      .where('courseId', '==', params.id)
-      .limit(1)
-      .get();
-
+    // Check if course has reviews - if so, don't allow deletion
+    const reviewsQuery = db.collection('reviews').where('courseId', '==', id);
+    const reviewsSnapshot = await reviewsQuery.get();
+    
     if (!reviewsSnapshot.empty) {
       return NextResponse.json(
-        { error: 'Cannot delete course with existing reviews. Please delete reviews first.' },
+        { error: 'Cannot delete course with existing reviews' },
         { status: 400 }
       );
     }
 
-    // Delete the course
     await courseRef.delete();
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Course deleted successfully' 
-    });
-
+    return NextResponse.json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Error deleting course:', error);
     return NextResponse.json(

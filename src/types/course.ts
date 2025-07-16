@@ -90,6 +90,14 @@ export interface GolfCourse {
   // Data source tracking
   dataSource?: string; // e.g., "TWG-human-matched-2024-01-15"
   
+  // Update history tracking
+  lastUpdatedBy?: string; // Admin user email/ID who made the last update
+  updateHistory?: Array<{
+    updatedBy: string;
+    updatedAt: Date;
+    changes?: string; // Brief description of what was changed
+  }>;
+  
   // Array of lowercase searchable terms
   searchableTerms: string[];
   
