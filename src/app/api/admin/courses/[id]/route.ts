@@ -4,7 +4,7 @@ import { authenticateAdminRequest } from '@/lib/auth/adminAuth';
 import { GolfCourse } from '@/types/course';
 import { generateSearchableTerms } from '@/lib/firebase/courseUtils';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -15,6 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
+    const { params } = context;
     const db = getAdminFirestore();
     const courseRef = db.collection('courses').doc(params.id);
     const courseSnap = await courseRef.get();
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -53,6 +54,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
+    const { params } = context;
     const body = await request.json();
     const updates = body.updates;
 
@@ -108,7 +110,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
   try {
     // Authenticate admin request
     const authResult = await authenticateAdminRequest(request);
@@ -119,6 +121,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
+    const { params } = context;
     const db = getAdminFirestore();
     const courseRef = db.collection('courses').doc(params.id);
     
