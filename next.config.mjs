@@ -22,6 +22,7 @@ const nextConfig = {
   // Add redirects to ensure all traffic goes to https://www.walkinggolfer.com
   async redirects() {
     return [
+      // Domain canonicalization redirects
       // Redirect non-www to www (HTTP and HTTPS)
       {
         source: '/(.*)',
@@ -49,6 +50,80 @@ const nextConfig = {
           },
         ],
         destination: 'https://www.walkinggolfer.com/:path*',
+        permanent: true,
+      },
+
+      // ========================================
+      // Legacy thewalkinggolfer.com -> walkinggolfer.com redirects
+      // Preserves SEO value from high-traffic pages on the old domain
+      // ========================================
+
+      // Main walkability ratings page
+      {
+        source: '/golf-course-walkability-ratings.html',
+        destination: '/walkability-ratings',
+        permanent: true,
+      },
+
+      // State-specific walkability ratings pages
+      {
+        source: '/walkability_ratings_ca.html',
+        destination: '/courses/california',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_fl.html', 
+        destination: '/courses/florida',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_tx.html',
+        destination: '/courses/texas',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_az.html',
+        destination: '/courses/arizona',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_nc.html',
+        destination: '/courses/north-carolina',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_sc.html',
+        destination: '/courses/south-carolina',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_ny.html',
+        destination: '/courses/new-york',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_il.html',
+        destination: '/courses/illinois',
+        permanent: true,
+      },
+      {
+        source: '/walkability_ratings_ma.html',
+        destination: '/courses/massachusetts',
+        permanent: true,
+      },
+
+      // Benefits of walking article
+      {
+        source: '/benefits_of_walking/physical.html',
+        destination: '/news/benefits-of-walking-the-golf-course',
+        permanent: true,
+      },
+
+      // Fallback pattern for any other state walkability pages  
+      // Redirects to USA courses overview for states not yet implemented
+      {
+        source: '/walkability_ratings_:state.html',
+        destination: '/courses/usa',
         permanent: true,
       },
     ]
