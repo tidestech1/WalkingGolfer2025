@@ -399,7 +399,7 @@ export default function CompleteProfileManualPage() {
                   />
                   <div>
                     <Label htmlFor="marketingConsent" className="text-sm font-medium text-gray-700 cursor-pointer">
-                      I agree to receive email updates about new courses, walking golf tips, and special offers
+                      I agree to receive email updates about new courses, golf tips, and special offers
                     </Label>
                     <p className="text-xs text-gray-500 mt-1">You can unsubscribe at any time</p>
                   </div>

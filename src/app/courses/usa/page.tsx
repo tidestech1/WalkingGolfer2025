@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, Star, Search, Flag } from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Walkable Golf Courses Across the USA | Walking Golfer',
@@ -68,7 +69,7 @@ export default function USACoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#0A3357] to-[#0A3357]/80 text-white py-16">
+      <div className="bg-[#0A3357] text-white py-16 border-t-4 border-[#91FF87]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <Flag className="w-24 h-24 mx-auto mb-6" />
@@ -90,11 +91,11 @@ export default function USACoursesPage() {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="bg-white rounded-lg shadow-sm p-8">
             <h2 className="text-3xl font-bold text-[#0A3357] mb-6">
-              Discover Walking Golf Across America
+              Discover Walking the Course Across America
             </h2>
             <div className="prose prose-lg max-w-none text-gray-700">
               <p className="text-lg leading-relaxed mb-4">
-                The United States offers walking golfers an incredible diversity of experiences. From the 
+                The United States offers golfers who walk an incredible diversity of experiences. From the 
                 rugged coastal links of the Pacific Northwest to the rolling hills of the Southeast, from 
                 desert courses in the Southwest to mountain layouts in Colorado, every region provides 
                 unique walking challenges and rewards.
@@ -110,38 +111,56 @@ export default function USACoursesPage() {
         </div>
 
         {/* Search Tools */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#0A3357] text-white">
-              <CardTitle className="flex items-center">
-                <MapPin className="w-6 h-6 mr-2" />
+        <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+          {/* Card 1: Find Courses on Map */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/map-search-1.png"
+                alt="Interactive map interface showing golf course locations"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <MapPin className="w-6 h-6 mr-2 flex-shrink-0" />
                 Interactive Course Map
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
                 Explore walkable courses nationwide on our interactive map. Zoom into any region, 
                 filter by walkability rating, and discover courses in your area.
               </p>
-              <Button asChild className="w-full bg-[#0A3357] hover:bg-[#0A3357]/90">
+              <Button asChild size="lg" className="w-full bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/map">Explore National Map</Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#91FF87] text-[#0A3357]">
-              <CardTitle className="flex items-center">
-                <Search className="w-6 h-6 mr-2" />
+          {/* Card 2: Search by Name/Filters */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/text-search1.png"
+                alt="Search interface with filters and course listings"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <Search className="w-6 h-6 mr-2 flex-shrink-0" />
                 Course Search
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
                 Search for courses by name, location, or specific criteria. Filter by state, 
                 walkability rating, and course type to find your ideal match.
               </p>
-              <Button asChild className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#91FF87]/90">
+              <Button asChild size="lg" className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#7fe673] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/search">Search All Courses</Link>
               </Button>
             </CardContent>
@@ -213,17 +232,17 @@ export default function USACoursesPage() {
           </div>
         </div>
 
-        {/* Walking Golf Benefits */}
+        {/* Walking Benefits */}
         <Card className="bg-[#0A3357] text-white mb-12">
           <CardContent className="py-8">
             <div className="max-w-3xl mx-auto text-center">
               <h3 className="text-2xl font-bold mb-4">
-                Why Walk Golf Courses?
+                Why Walk the Course?
               </h3>
               <p className="text-lg mb-6">
-                Walking golf courses offers numerous benefits: better exercise, enhanced course appreciation, 
+                Walking the course offers numerous benefits: better exercise, enhanced course appreciation, 
                 cost savings, and the traditional golf experience as it was meant to be played. Discover 
-                why more golfers are choosing to walk the course.
+                why more golfers are choosing to walk.
               </p>
               <Button asChild variant="secondary" className="bg-white text-[#0A3357] hover:bg-gray-100">
                 <Link href="/news/benefits-of-walking-the-golf-course">
@@ -238,7 +257,7 @@ export default function USACoursesPage() {
         <Card className="text-center">
           <CardContent className="py-8">
             <h3 className="text-2xl font-bold text-[#0A3357] mb-4">
-              Start Your Walking Golf Journey
+              Start Your Walking Journey
             </h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
               Join thousands of golfers who have discovered the joy of walking the course. 

@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, Star, Search, Mountain, Sun } from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Walkable Golf Courses in California | Walking Golfer',
@@ -47,7 +48,7 @@ export default function CaliforniaCoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#0A3357] to-[#0A3357]/80 text-white py-16">
+      <div className="bg-[#0A3357] text-white py-16 border-t-4 border-[#91FF87]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -68,17 +69,17 @@ export default function CaliforniaCoursesPage() {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="bg-white rounded-lg shadow-sm p-8">
             <h2 className="text-3xl font-bold text-[#0A3357] mb-6">
-              Walking Golf in the Golden State
+              Walking the Course in the Golden State
             </h2>
             <div className="prose prose-lg max-w-none text-gray-700">
               <p className="text-lg leading-relaxed mb-4">
-                California offers walking golfers an incredible variety of experiences, from the dramatic coastal courses 
+                California offers golfers who walk an incredible variety of experiences, from the dramatic coastal courses 
                 of Pebble Beach and Half Moon Bay to the palm-lined fairways of Palm Springs. The state's Mediterranean 
                 climate makes it ideal for year-round walking, while diverse terrain provides options for every skill level.
               </p>
               <p className="leading-relaxed mb-4">
-                Walking golfers who prefer to walk in California will find courses designed with natural contours that 
-                enhance the walking experience. Many of the state's best courses to walk in California feature shorter 
+                Golfers who prefer to walk in California will find courses designed with natural contours that 
+                enhance the on-foot experience. Many of the state's best courses to walk feature shorter 
                 distances between holes, well-maintained cart paths that double as walking routes, and stunning scenery 
                 that makes every step enjoyable.
               </p>
@@ -92,38 +93,56 @@ export default function CaliforniaCoursesPage() {
         </div>
 
         {/* Quick Links to Find Courses */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#0A3357] text-white">
-              <CardTitle className="flex items-center">
-                <MapPin className="w-6 h-6 mr-2" />
+        <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+          {/* Card 1: Find Courses on Map */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/map-search-1.png"
+                alt="Interactive map interface showing golf course locations"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <MapPin className="w-6 h-6 mr-2 flex-shrink-0" />
                 Interactive Course Map
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
                 Explore California's walkable courses on our interactive map. Filter by walkability rating, 
                 location, and course type to find your perfect walking experience.
               </p>
-              <Button asChild className="w-full bg-[#0A3357] hover:bg-[#0A3357]/90">
+              <Button asChild size="lg" className="w-full bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/map?state=CA">View California on Map</Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#91FF87] text-[#0A3357]">
-              <CardTitle className="flex items-center">
-                <Search className="w-6 h-6 mr-2" />
+          {/* Card 2: Search by Name/Filters */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/text-search1.png"
+                alt="Search interface with filters and course listings"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <Search className="w-6 h-6 mr-2 flex-shrink-0" />
                 Text Course Search
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
                 Search for specific courses by name, city, or region. Filter by walkability ratings 
                 and find detailed information about each course.
               </p>
-              <Button asChild className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#91FF87]/90">
+              <Button asChild size="lg" className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#7fe673] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/search?state=CA">Search California Courses</Link>
               </Button>
             </CardContent>
@@ -151,7 +170,7 @@ export default function CaliforniaCoursesPage() {
               {
                 name: "Half Moon Bay Golf Links",
                 location: "Half Moon Bay",
-                description: "Spectacular clifftop course designed with walking golfers in mind."
+                description: "Spectacular clifftop course designed with golfers who walk in mind."
               }
             ].map((course, index) => (
               <Card key={index} className="h-full">
@@ -220,16 +239,16 @@ export default function CaliforniaCoursesPage() {
             <div className="max-w-3xl mx-auto text-center">
               <Sun className="w-16 h-16 mx-auto mb-6" />
               <h3 className="text-2xl font-bold mb-4">
-                Perfect Weather for Walking Golf
+                Perfect Weather for Walking the Course
               </h3>
               <p className="text-lg mb-6">
-                California's Mediterranean climate and year-round sunshine make it ideal for walking golf courses. 
-                The mild temperatures and low precipitation mean you can enjoy the walking golf experience 
+                California's Mediterranean climate and year-round sunshine make it ideal for walking the course. 
+                The mild temperatures and low precipitation mean you can enjoy the on-foot experience 
                 virtually any day of the year, whether you're playing coastal courses with ocean breezes 
                 or inland courses with warm, dry air.
               </p>
               <p className="text-base italic">
-                "The consistent weather and diverse terrain make California a walking golfer's paradise." 
+                "The consistent weather and diverse terrain make California a golfer's paradise for those who walk." 
                 - Walking Golfer Community
               </p>
             </div>
@@ -244,7 +263,7 @@ export default function CaliforniaCoursesPage() {
             </h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
               Start your search for the perfect walkable golf experience in California. Find courses, read reviews, 
-              and plan your next walking golf adventure in the Golden State.
+              and plan your next walking adventure in the Golden State.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-[#0A3357] hover:bg-[#0A3357]/90">

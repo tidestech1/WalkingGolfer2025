@@ -46,3 +46,4 @@
 
 ## agent_guidelines
 - Before performing significant file modifications or implementing new features, you MUST read and understand the project overview located at `docs/ARCHITECTURE.md`.
+- When creating or editing ANY content (pages, components, metadata, copy), you MUST read and follow the content style guide at `docs/style-guidelines-for-content-text.md` to ensure proper terminology and brand voice consistency.

@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { MapPin, Star, Search, TrendingUp } from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Golf Course Walkability Ratings | Walking Golfer',
@@ -47,7 +48,7 @@ export default function WalkabilityRatingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#0A3357] to-[#0A3357]/80 text-white py-16">
+      <div className="bg-[#0A3357] text-white py-16 border-t-4 border-[#91FF87]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -68,7 +69,7 @@ export default function WalkabilityRatingsPage() {
           <p className="text-lg text-gray-700 leading-relaxed">
             Our walkability ratings help you find golf courses that are perfect for walking. 
             Each course is rated on key factors including terrain difficulty, distance between holes, 
-            course conditions, and overall walking experience based on reviews from fellow walking golfers.
+            course conditions, and overall walking experience based on reviews from fellow golfers who walk.
           </p>
         </div>
 
@@ -82,7 +83,7 @@ export default function WalkabilityRatingsPage() {
             <CardContent>
               <p className="text-gray-600">
                 Courses are rated 1-5 stars based on terrain, hole spacing, conditions, 
-                and cost impact for walking golfers.
+                and cost impact for golfers who walk.
               </p>
             </CardContent>
           </Card>
@@ -115,38 +116,56 @@ export default function WalkabilityRatingsPage() {
         </div>
 
         {/* Call-to-Action Sections */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#0A3357] text-white">
-              <CardTitle className="flex items-center">
-                <Search className="w-6 h-6 mr-2" />
+        <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+          {/* Card 1: Find Courses on Map */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/map-search-1.png"
+                alt="Interactive map interface showing golf course locations"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <Search className="w-6 h-6 mr-2 flex-shrink-0" />
                 Find Courses to Walk
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
                 Use our interactive map to discover highly-rated walkable courses near you. 
                 Filter by walkability rating, course type, and location.
               </p>
-              <Button asChild className="w-full bg-[#0A3357] hover:bg-[#0A3357]/90">
+              <Button asChild size="lg" className="w-full bg-[#0A3357] text-white hover:bg-[#082945] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/map">Explore Course Map</Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-[#91FF87] text-[#0A3357]">
-              <CardTitle className="flex items-center">
-                <Star className="w-6 h-6 mr-2" />
+          {/* Card 2: Search by Name/Filters */}
+          <Card className="shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-300 rounded-lg flex flex-col overflow-hidden">
+            <div className="relative h-48 w-full overflow-hidden border-b border-gray-200">
+              <Image
+                src="/course-finder/text-search1.png"
+                alt="Search interface with filters and course listings"
+                fill
+                className="object-cover object-top transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-[#0A3357] text-xl">
+                <Star className="w-6 h-6 mr-2 flex-shrink-0" />
                 Share Your Experience
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-0 flex-grow flex flex-col justify-end">
               <p className="text-gray-600 mb-6">
-                Help fellow walking golfers by rating courses you've walked. 
+                Help fellow golfers by rating courses you've walked. 
                 Your reviews help build the most comprehensive walkability database.
               </p>
-              <Button asChild className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#91FF87]/90">
+              <Button asChild size="lg" className="w-full bg-[#91FF87] text-[#0A3357] hover:bg-[#7fe673] rounded-lg transition duration-150 ease-in-out py-3">
                 <Link href="/add-review">Rate a Course</Link>
               </Button>
             </CardContent>
@@ -190,7 +209,7 @@ export default function WalkabilityRatingsPage() {
           <CardContent className="py-8">
             <div className="text-center">
               <h3 className="text-2xl font-bold mb-4">
-                New to Walking Golf Courses?
+                New to Walking the Course?
               </h3>
               <p className="text-lg mb-6 max-w-2xl mx-auto">
                 Learn about the benefits of walking the course, tips for getting started, 
@@ -198,7 +217,7 @@ export default function WalkabilityRatingsPage() {
               </p>
               <Button asChild variant="secondary" className="bg-white text-[#0A3357] hover:bg-gray-100">
                 <Link href="/news/benefits-of-walking-the-golf-course">
-                  Benefits of Walking Golf Courses
+                  Benefits of Walking the Course
                 </Link>
               </Button>
             </div>

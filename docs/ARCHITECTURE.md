@@ -37,8 +37,10 @@ The most critical architectural principle is the strict separation of client and
 - **Firebase Utilities (isomorphic):** `src/lib/firebase/`
 - **Cloud Functions Backend Logic:** `functions/src/index.ts`
 - **Project Rules & Guidelines:** `.cursorrules`
+- **Content Style Guidelines:** `docs/style-guidelines-for-content-text.md`
 
 ## 4. Development Workflow
 
 - Always run `npm run validate` to check for linting and type errors before committing.
-- Adhere to the rules specified in `.cursorrules`. 
+- Adhere to the rules specified in `.cursorrules`.
+- When creating or editing any content (pages, components, metadata, copy), follow the content style guidelines in `docs/style-guidelines-for-content-text.md` to maintain proper terminology and brand voice consistency. 
