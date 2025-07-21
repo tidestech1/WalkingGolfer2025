@@ -137,6 +137,7 @@ export async function POST(request: NextRequest) {
             // --- Update Course Ratings --- 
             // Ensure all required rating fields exist on freshReviewData before calling
             if (freshReviewData.overallRating != null && 
+                freshReviewData.courseQualityRating != null &&
                 freshReviewData.costRating != null && 
                 freshReviewData.courseConditionRating != null && 
                 freshReviewData.hillinessRating != null && 
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
                      courseId,
                      {
                          overallRating: freshReviewData.overallRating,
+                         courseQualityRating: freshReviewData.courseQualityRating,
                          costRating: freshReviewData.costRating,
                          courseConditionRating: freshReviewData.courseConditionRating,
                          hillinessRating: freshReviewData.hillinessRating,
