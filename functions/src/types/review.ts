@@ -24,6 +24,7 @@ export interface CourseReview {
   walkabilityRating: number;
   courseConditionRating: number;
   overallRating: number;
+  courseQualityRating: number;
 
   // Detailed walkability ratings
   hillinessRating: number;
@@ -80,6 +81,7 @@ export interface CreateReviewInput {
   walkabilityRating: number;
   courseConditionRating: number;
   overallRating: number;
+  courseQualityRating: number;
   hillinessRating: number;
   distanceRating: number;
   costRating: number;

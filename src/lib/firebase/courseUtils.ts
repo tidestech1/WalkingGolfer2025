@@ -474,7 +474,7 @@ async function updateCourseRatingsFromReview(
     // Include all individual ratings from the review needed for sums
     newReviewData: Pick<
         CourseReview,
-        'overallRating' | 'costRating' | 'courseConditionRating' | 
+        'overallRating' | 'courseQualityRating' | 'costRating' | 'courseConditionRating' | 
         'hillinessRating' | 'distanceRating' | 'walkabilityRating' // This is the weighted rating
     >,
     currentCourseData: GolfCourse // Pass the existing course data
@@ -485,6 +485,7 @@ async function updateCourseRatingsFromReview(
     const increments = {
         reviewCount: FieldValue.increment(1),
         overallRatingSum: FieldValue.increment(newReviewData.overallRating || 0),
+        courseQualityRatingSum: FieldValue.increment(newReviewData.courseQualityRating || 0),
         costRatingSum: FieldValue.increment(newReviewData.costRating || 0),
         conditionRatingSum: FieldValue.increment(newReviewData.courseConditionRating || 0),
         hillinessRatingSum: FieldValue.increment(newReviewData.hillinessRating || 0),
@@ -495,6 +496,7 @@ async function updateCourseRatingsFromReview(
     // Calculate new averages
     const newReviewCount = (currentCourseData.reviewCount || 0) + 1;
     const newOverallSum = (currentCourseData.overallRatingSum || 0) + (newReviewData.overallRating || 0);
+    const newCourseQualitySum = (currentCourseData.courseQualityRatingSum || 0) + (newReviewData.courseQualityRating || 0);
     const newCostSum = (currentCourseData.costRatingSum || 0) + (newReviewData.costRating || 0);
     const newConditionSum = (currentCourseData.conditionRatingSum || 0) + (newReviewData.courseConditionRating || 0);
     const newHillinessSum = (currentCourseData.hillinessRatingSum || 0) + (newReviewData.hillinessRating || 0);
@@ -503,6 +505,7 @@ async function updateCourseRatingsFromReview(
 
     const newAverages = {
         walkabilityRating_overall: calculateAverage(newOverallSum, newReviewCount),
+        walkabilityRating_courseQuality: calculateAverage(newCourseQualitySum, newReviewCount),
         walkabilityRating_cost: calculateAverage(newCostSum, newReviewCount),
         walkabilityRating_courseCondition: calculateAverage(newConditionSum, newReviewCount),
         walkabilityRating_hilliness: calculateAverage(newHillinessSum, newReviewCount),

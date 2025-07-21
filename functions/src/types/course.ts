@@ -64,6 +64,7 @@ export interface GolfCourse {
   // --- NEW FIELDS FOR CALCULATING AVERAGES ---
   reviewCount: number;
   overallRatingSum: number;
+  courseQualityRatingSum: number;
   costRatingSum: number;
   conditionRatingSum: number;
   hillinessRatingSum: number;
@@ -76,6 +77,7 @@ export interface GolfCourse {
   reviewerNotes: string;
   twgReviewerNotes: string;
   walkabilityRating_courseCondition: number | null;
+  walkabilityRating_courseQuality: number | null;
   walkabilityRating_cost: number | null;
   walkabilityRating_hilliness: number | null;
   walkabilityRating_holeDistance: number | null;

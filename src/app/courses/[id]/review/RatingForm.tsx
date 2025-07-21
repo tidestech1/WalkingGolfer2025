@@ -58,6 +58,7 @@ const ratingFormSchema = z.object({
   isWalkable: z.boolean(), // Explicitly track walkability choice
   courseConditionRating: z.number().min(1, { message: "Condition rating is required." }).max(5),
   overallRating: z.number().min(1, { message: "Overall rating is required." }).max(5),
+  courseQualityRating: z.number().min(1, { message: "Course quality rating is required." }).max(5),
   hillinessRating: z.number().min(1, { message: "Terrain rating is required." }).max(5),
   distanceRating: z.number().min(1, { message: "Distance rating is required." }).max(5),
   costRating: z.number().optional(), // Make optional to handle private courses
@@ -112,6 +113,10 @@ export default function RatingForm({ course, user }: RatingFormProps) {
   // Overall rating state - ensure non-null values
   const [overallRating, setOverallRating] = useState<number>(0)
   const [hoveredOverallRating, setHoveredOverallRating] = useState<number>(0)
+  
+  // Course quality rating state - ensure non-null values
+  const [courseQualityRating, setCourseQualityRating] = useState<number>(0)
+  const [hoveredCourseQualityRating, setHoveredCourseQualityRating] = useState<number>(0)
   
   // Component ratings state - ensure non-null values
   const [terrainRating, setTerrainRating] = useState<number>(0)
@@ -422,6 +427,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
         isWalkable: isWalkable,
         courseConditionRating: courseConditionRating,
         overallRating: overallRating,
+        courseQualityRating: courseQualityRating,
         hillinessRating: terrainRating > 0 ? 6 - terrainRating : 0, // Invert for submission if rated, else 0
         distanceRating: distanceRating > 0 ? 6 - distanceRating : 0, // Invert for submission if rated, else 0
         costRating: isPrivateClub ? undefined : costRating, // Don't include for private courses
@@ -754,7 +760,37 @@ export default function RatingForm({ course, user }: RatingFormProps) {
           </div>
           {/* --- End Confirming Course Section --- */}
 
-          {/* Section 2: Overall Walkability Experience */}
+          {/* Section 2: Overall Course Rating */}
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
+            <h2 className="text-xl font-semibold text-[#0A3357]">Overall Course Rating</h2>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                How would you rate the overall quality of golf at this course? *
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Rate the overall golf experience and challenge - consider course design, 
+                layout, and how enjoyable the golf is to play.
+              </p>
+              <StarRating
+                rating={courseQualityRating}
+                hovered={hoveredCourseQualityRating}
+                setRating={setCourseQualityRating}
+                setHovered={setHoveredCourseQualityRating}
+                size="lg"
+                descriptions={{
+                  1: "Poor quality golf - wouldn't recommend",
+                  2: "Below average quality golf",
+                  3: "Average quality golf", 
+                  4: "Good quality golf - would recommend",
+                  5: "Excellent quality golf - highly recommend"
+                }}
+              />
+              {formErrors['courseQualityRating'] && <p className="text-xs text-red-500 mt-1">{formErrors['courseQualityRating']}</p>}
+            </div>
+          </div>
+
+          {/* Section 3: Overall Walkability Experience */}
           <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
             <h2 className="text-xl font-semibold text-[#0A3357]">Overall Walkability</h2>
             
@@ -813,7 +849,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
             </div>
           </div>
 
-          {/* Section 3: Detailed Walkability Metrics */}
+          {/* Section 4: Detailed Walkability Metrics */}
           <div className={`bg-white p-6 rounded-lg shadow-sm space-y-6 ${!isWalkable ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-[#0A3357]">Detailed Walkability Ratings</h2>

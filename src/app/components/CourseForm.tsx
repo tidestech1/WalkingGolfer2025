@@ -123,12 +123,14 @@ export default function CourseForm({ course, isEdit = false, onSave, onCancel }:
         // Ensure required fields have defaults
         reviewCount: course?.reviewCount || 0,
         overallRatingSum: course?.overallRatingSum || 0,
+        courseQualityRatingSum: course?.courseQualityRatingSum || 0,
         costRatingSum: course?.costRatingSum || 0,
         conditionRatingSum: course?.conditionRatingSum || 0,
         hillinessRatingSum: course?.hillinessRatingSum || 0,
         distanceRatingSum: course?.distanceRatingSum || 0,
         calculatedWeightedRatingSum: course?.calculatedWeightedRatingSum || 0,
         walkabilityRating_courseCondition: course?.walkabilityRating_courseCondition || null,
+        walkabilityRating_courseQuality: course?.walkabilityRating_courseQuality || null,
         walkabilityRating_cost: course?.walkabilityRating_cost || null,
         walkabilityRating_hilliness: course?.walkabilityRating_hilliness || null,
         walkabilityRating_holeDistance: course?.walkabilityRating_holeDistance || null,
@@ -802,6 +804,10 @@ export default function CourseForm({ course, isEdit = false, onSave, onCancel }:
               <div>
                 <label className="text-xs font-medium text-gray-500">Overall Walkability</label>
                 <p className="text-sm font-medium">{formData.walkabilityRating_overall?.toFixed(1) || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">Course Quality</label>
+                <p className="text-sm font-medium">{formData.walkabilityRating_courseQuality?.toFixed(1) || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500">Course Condition</label>

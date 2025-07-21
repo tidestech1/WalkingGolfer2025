@@ -105,6 +105,13 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review, course }) => {
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1 sm:gap-y-2 sm:gap-x-2 md:gap-x-3 text-xs text-gray-500 border-t pt-3 mt-3">
         <span>Walked on: {walkingDate}</span>
         
+        {review.courseQualityRating !== undefined && (
+          <>
+            <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
+            <span>Golf Quality: <Badge variant="secondary">{review.courseQualityRating?.toFixed(1)}/5</Badge></span>
+          </>
+        )}
+        
         {review.hillinessRating !== undefined && (
           <>
             <Separator orientation="vertical" className="h-4 self-center hidden sm:inline-block" />
