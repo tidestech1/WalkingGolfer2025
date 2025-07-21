@@ -126,9 +126,16 @@ export const faqData: FAQData = {
         {
           id: 'rating-system',
           question: 'What do the different ratings mean?',
-          answer: 'Our rating system includes: Overall Rating (general experience), Walkability Rating (how suitable for walking), Course Condition (maintenance quality), Hilliness (terrain difficulty), Distance (spacing between holes), and Cost (value for money). Each is rated 1-5 stars.',
+          answer: 'Our rating system includes: Overall Course Rating (golf experience and design quality), Overall Walkability Rating (how suitable for walking), Course Condition (maintenance quality), Hilliness (terrain difficulty), Distance (spacing between holes), and Cost (value for money). Each is rated 1-5 stars.',
           category: 'reviews-ratings',
-          keywords: ['rating system', 'overall', 'walkability', 'condition', 'hilliness', 'distance', 'cost']
+          keywords: ['rating system', 'overall', 'course quality', 'walkability', 'condition', 'hilliness', 'distance', 'cost']
+        },
+        {
+          id: 'course-quality-rating',
+          question: 'What is the Overall Course Rating?',
+          answer: 'The Overall Course Rating evaluates the golf experience and challenge at the course. This rating considers course design, layout, and how enjoyable the golf is to play - separate from course conditions or walkability. It helps golfers understand the quality of golf they can expect.',
+          category: 'reviews-ratings',
+          keywords: ['course quality', 'golf experience', 'course design', 'layout', 'challenge']
         },
         {
           id: 'review-verification',

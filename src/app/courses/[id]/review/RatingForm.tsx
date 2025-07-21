@@ -678,6 +678,7 @@ export default function RatingForm({ course, user }: RatingFormProps) {
             <div className="space-y-4 text-left text-gray-700 flex-1 overflow-y-auto px-4 sm:px-8">
               <p><b>Your feedback helps other golfers! Here's how to fill out the form:</b></p>
               <ul className="list-disc pl-5 space-y-2">
+                <li><b>Overall Course Rating:</b> Rate the golf experience and challenge - consider course design, layout, and how enjoyable the golf is to play.</li>
                 <li><b>Overall Walkability:</b> Is the course walkable? Rate how easy or challenging it is to walk the entire course.</li>
                 <li><b>Detailed Walkability Ratings:</b>
                   <ul className="list-disc pl-5">
