@@ -30,6 +30,7 @@ export async function getNewsArticles(options: {
   source?: string
   category?: string
   limit?: number
+  includeDrafts?: boolean
 } = {}): Promise<NewsArticle[]> {
   try {
     let articles: NewsArticle[] = [];
@@ -52,6 +53,13 @@ export async function getNewsArticles(options: {
     
     // Filter articles based on options
     let filteredArticles = articles;
+    
+    // Filter by status - exclude drafts unless explicitly requested
+    if (!options.includeDrafts) {
+      filteredArticles = filteredArticles.filter(article => 
+        article.status === 'published' || !article.status // Default to published for legacy articles
+      );
+    }
     
     if (options.tag) {
       // Assign to new const to satisfy TS within filter callback
@@ -189,6 +197,7 @@ export async function createNewsArticle(article: CreateNewsArticle): Promise<{ i
       ...article,
       updatedAt: article.updatedAt || article.publishedAt,
       viewCount: 0,
+      status: article.status || 'published', // Default to published
       // lastViewedAt is implicitly undefined
     };
     
@@ -304,6 +313,18 @@ export async function getAllCategories(): Promise<string[]> {
     return Array.from(categorySet).sort();
   } catch (error) {
     console.error('Error getting all categories:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all news articles for admin use (includes drafts)
+ */
+export async function getAllNewsArticlesForAdmin(): Promise<NewsArticle[]> {
+  try {
+    return await getNewsArticles({ includeDrafts: true });
+  } catch (error) {
+    console.error('Error fetching admin news articles:', error);
     return [];
   }
 } 

@@ -6,6 +6,7 @@ import { Metadata } from 'next'
 import { Newspaper } from 'lucide-react'
 
 import NewsCard from '@/app/components/NewsCard'
+import NewsSearch from '@/app/components/NewsSearch'
 import { getNewsArticles } from '@/lib/firebase/newsUtils'
 import type { NewsArticle } from '@/types/news'
 
@@ -13,6 +14,7 @@ import type { NewsArticle } from '@/types/news'
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([])
+  const [filteredArticles, setFilteredArticles] = useState<NewsArticle[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,6 +22,7 @@ export default function NewsPage() {
       try {
         const newsArticles = await getNewsArticles()
         setArticles(newsArticles)
+        setFilteredArticles(newsArticles)
       } catch (error) {
         console.error('Error loading news articles:', error)
       } finally {
@@ -93,11 +96,33 @@ export default function NewsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((article) => (
-            <NewsCard key={article.id} article={article} />
-          ))}
-        </div>
+        <NewsSearch articles={articles} onFilteredArticles={setFilteredArticles} />
+
+        {filteredArticles.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <p className="text-gray-500">
+              {articles.length === 0 ? 'No articles available at the moment.' : 'No articles match your search criteria.'}
+            </p>
+            {articles.length > 0 && (
+              <p className="text-sm text-gray-400 mt-2">Try different search terms or clear your search.</p>
+            )}
+          </div>
+        ) : (
+          <>
+            {filteredArticles.length !== articles.length && (
+              <div className="mb-6">
+                <p className="text-gray-600 text-sm">
+                  Showing {filteredArticles.length} of {articles.length} articles
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredArticles.map((article) => (
+                <NewsCard key={article.id} article={article} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

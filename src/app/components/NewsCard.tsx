@@ -14,33 +14,34 @@ export default function NewsCard({ article }: NewsCardProps): JSX.Element {
   
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col hover:shadow-md transition-shadow duration-200 relative group">
-      <Link href={`/news/${article.slug}`} className="absolute inset-0 z-10" aria-label={article.title}>
-        <span className="sr-only">Read article: {article.title}</span>
+      
+      <Link href={`/news/${article.slug}`} className="block">
+        <div className="relative w-full h-48">
+          <Image 
+            src={article.imageUrl || placeholderImage} 
+            alt={article.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+          {article.category && (
+            <div className="absolute top-4 left-4 z-20">
+              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow">
+                {article.category}
+              </span>
+            </div>
+          )}
+        </div>
       </Link>
       
-      <div className="relative w-full h-48">
-        <Image 
-          src={article.imageUrl || placeholderImage} 
-          alt={article.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
-        {article.category && (
-          <div className="absolute top-4 left-4 z-20">
-            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow">
-              {article.category}
-            </span>
-          </div>
-        )}
-      </div>
-      
       <div className="p-4 sm:p-6 flex-1 flex flex-col">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors relative z-20">
-          <span className="relative z-20">{article.title}</span>
-        </h2>
-        
-        <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{article.excerpt}</p>
+        <Link href={`/news/${article.slug}`} className="block mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {article.title}
+          </h2>
+          
+          <p className="text-sm text-gray-600 line-clamp-3 flex-grow">{article.excerpt}</p>
+        </Link>
         
         <div className="flex flex-wrap items-center gap-y-2 text-xs text-gray-500 mt-auto border-t pt-3">
           <div className="flex items-center mr-4">
@@ -70,8 +71,7 @@ export default function NewsCard({ article }: NewsCardProps): JSX.Element {
                   <Link
                      key={tag}
                      href={`/news/tags/${tag}`}
-                     className="text-blue-600 hover:underline relative z-20"
-                     onClick={(e) => e.stopPropagation()}
+                     className="text-blue-600 hover:underline"
                   >
                     #{tag}
                   </Link>

@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 
 import { createNewsArticle, updateNewsArticle, getAllTags, getAllCategories } from '@/lib/firebase/newsUtils'
 import { uploadImage, deleteImage } from '@/lib/firebase/storageUtils'
-import type { NewsArticle, CreateNewsArticle, NewsSource } from '@/types/news'
+import type { NewsArticle, CreateNewsArticle, NewsSource, NewsStatus } from '@/types/news'
 
 import ImageUpload from './ImageUpload'
 
@@ -40,6 +40,7 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
   const [author, setAuthor] = useState(article?.author || 'The Walking Golfer')
   const [source, setSource] = useState<NewsSource>(article?.source || 'internal')
   const [sourceUrl, setSourceUrl] = useState(article?.sourceUrl || '')
+  const [status, setStatus] = useState<NewsStatus>(article?.status || 'published')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [currentImageUrl, setCurrentImageUrl] = useState(article?.imageUrl || '')
   const [category, setCategory] = useState(article?.category || '')
@@ -153,6 +154,7 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
         metaDescription: metaDescription || '',
         sourceUrl: sourceUrl || '',
         imageUrl: imageUrl || '',
+        status,
         updatedAt: new Date().toISOString()
       }
       
@@ -228,8 +230,8 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
         </p>
       </div>
       
-      {/* Author & Date */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Author, Date & Status */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
             Author <span className="text-red-500">*</span>
@@ -256,6 +258,25 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+        
+        <div>
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            Status <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as NewsStatus)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Draft articles are only visible in admin areas
+          </p>
         </div>
       </div>
       

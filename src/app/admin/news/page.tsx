@@ -6,7 +6,7 @@ import { Plus, Edit, Trash2, Eye, ArrowDown, ArrowUp, Search, Loader2 } from 'lu
 import Link from 'next/link'
 
 // import { useRouter } from 'next/navigation' // Removed unused import
-import { getNewsArticles, deleteNewsArticle } from '@/lib/firebase/newsUtils'
+import { getAllNewsArticlesForAdmin, deleteNewsArticle } from '@/lib/firebase/newsUtils'
 import type { NewsArticle } from '@/types/news'
 
 export default function NewsAdminPage(): JSX.Element {
@@ -28,7 +28,7 @@ export default function NewsAdminPage(): JSX.Element {
       setIsLoading(true)
       setError(null)
       try {
-        const articlesData = await getNewsArticles()
+        const articlesData = await getAllNewsArticlesForAdmin()
         setArticles(articlesData)
         setFilteredArticles(articlesData)
       } catch (err) {
@@ -253,6 +253,16 @@ export default function NewsAdminPage(): JSX.Element {
                   </th>
                   <th 
                     scope="col" 
+                    className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors hidden lg:table-cell"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center">
+                      <span>Status</span>
+                      <SortIcon field="status" />
+                    </div>
+                  </th>
+                  <th 
+                    scope="col" 
                     className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors hidden sm:table-cell"
                     onClick={() => handleSort('viewCount')}
                   >
@@ -290,6 +300,15 @@ export default function NewsAdminPage(): JSX.Element {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden xl:table-cell">
                       {article.updatedAt ? formatDate(article.updatedAt) : '—'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        article.status === 'draft' 
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {article.status === 'draft' ? 'Draft' : 'Published'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                       {article.viewCount || 0}

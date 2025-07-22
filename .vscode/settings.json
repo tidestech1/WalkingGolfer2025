@@ -1,3 +1,7 @@
 {
-  "npm.packageManager": "yarn"
+  "npm.packageManager": "yarn",
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "css.lint.unknownAtRules": "ignore"
 }

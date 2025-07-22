@@ -1,4 +1,5 @@
 export type NewsSource = 'internal' | 'stewart-golf' | 'legacy';
+export type NewsStatus = 'draft' | 'published';
 
 export interface NewsArticle {
   id: string
@@ -13,6 +14,7 @@ export interface NewsArticle {
   tags?: string[]
   source?: NewsSource
   sourceUrl?: string
+  status?: NewsStatus
   // SEO Fields
   metaTitle?: string
   metaDescription?: string
