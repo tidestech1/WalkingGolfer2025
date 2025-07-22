@@ -9,6 +9,7 @@ import BreadcrumbSchema from '@/app/components/BreadcrumbSchema'
 import SchemaMarkup from '@/app/components/SchemaMarkup'
 import { ClientSocialShare, ClientNewsletter } from '@/app/components/ArticleInteractions'
 import { getNewsArticleBySlug } from '@/lib/firebase/newsUtils'
+import { processLinksInHTML } from '@/lib/linkUtils'
 import type { NewsArticle } from '@/types/news'
 
 interface Props {
@@ -167,7 +168,7 @@ export default async function ArticlePage({ params }: Props) {
 
               <div 
                 className="leading-relaxed max-w-none [&_table]:border-collapse [&_table]:my-6 [&_table]:w-full [&_table]:border [&_table]:border-gray-200 [&_td]:border [&_td]:border-gray-200 [&_td]:px-4 [&_td]:py-3 [&_td]:text-left [&_th]:border [&_th]:border-gray-200 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:bg-gray-50 [&_th]:font-semibold [&_tr:nth-child(even)]:bg-gray-50 [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:bg-blue-50 [&_blockquote]:px-6 [&_blockquote]:py-4 [&_blockquote]:my-6 [&_blockquote]:italic [&_blockquote]:text-blue-900 [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:px-6 [&_pre]:py-4 [&_pre]:rounded-lg [&_pre]:my-6 [&_pre]:overflow-x-auto [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:text-gray-800 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-gray-100 [&_pre_code]:text-sm [&_hr]:border-none [&_hr]:border-t-2 [&_hr]:border-gray-200 [&_hr]:my-8 [&_img]:rounded-lg [&_img]:shadow-lg [&_img]:my-6 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-[#0A3357] [&_h1]:mt-8 [&_h1]:mb-4 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#0A3357] [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#0A3357] [&_h3]:mt-5 [&_h3]:mb-2 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-8 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:my-4 [&_li]:mb-1 [&_li]:leading-snug [&_li_p]:mb-0 [&_ul_ul]:list-[circle] [&_ul_ul]:mt-1 [&_ul_ul]:mb-1 [&_ul_ul_ul]:list-[square]"
-                dangerouslySetInnerHTML={{ __html: article.content }}
+                dangerouslySetInnerHTML={{ __html: processLinksInHTML(article.content) }}
               />
 
               {article.tags && article.tags.length > 0 && (
