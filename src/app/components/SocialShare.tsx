@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Share, Facebook, Twitter, Mail, Link as LinkIcon, MessageCircle, Check } from 'lucide-react'
+import { FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope, FaLink, FaCheck, FaShare } from 'react-icons/fa'
+import { FaXTwitter } from 'react-icons/fa6'
 
 interface SocialShareProps {
   url: string
@@ -52,65 +53,138 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
     }
   }
 
-  const handleShare = (platform: string) => {
-    if (!fullUrl) return // Don't share if URL isn't ready yet
-    window.open(shareLinks[platform as keyof typeof shareLinks], '_blank', 'width=600,height=400')
+  const shareOnFacebook = () => {
+    if (!fullUrl) return
+    
+    // Try Facebook app first, fallback to web
+    const appUrl = `fb://facewebmodal/f?href=${encodedUrl}`
+    const webUrl = shareLinks.facebook
+    
+    // Modern approach: try app link, fallback to web on fail
+    const tryAppThenWeb = () => {
+      // Create a hidden iframe to test if app opens
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = appUrl
+      document.body.appendChild(iframe)
+      
+      // Fallback to web after short delay
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+        window.open(webUrl, '_blank', 'width=600,height=400')
+      }, 500)
+    }
+    
+    tryAppThenWeb()
+  }
+
+  const shareOnTwitter = () => {
+    if (!fullUrl) return
+    
+    // X (formerly Twitter) app deep link
+    const appUrl = `twitter://post?message=${encodedTitle}%20${encodedUrl}`
+    const webUrl = shareLinks.twitter
+    
+    try {
+      // Try app first
+      window.location.href = appUrl
+      // Fallback to web  
+      setTimeout(() => {
+        window.open(webUrl, '_blank', 'width=600,height=400')
+      }, 1000)
+    } catch (e) {
+      window.open(webUrl, '_blank', 'width=600,height=400')
+    }
+  }
+
+  const shareOnLinkedIn = () => {
+    if (!fullUrl) return
+    window.open(shareLinks.linkedin, '_blank', 'width=600,height=400')
+  }
+
+  const shareOnWhatsApp = () => {
+    if (!fullUrl) return
+    
+    // WhatsApp app deep link
+    const appUrl = `whatsapp://send?text=${encodedTitle}%20${encodedUrl}`
+    const webUrl = shareLinks.whatsapp
+    
+    // Detect if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    
+    if (isMobile) {
+      try {
+        window.location.href = appUrl
+        // Fallback to web WhatsApp
+        setTimeout(() => {
+          window.open(webUrl, '_blank')
+        }, 1000)
+      } catch (e) {
+        window.open(webUrl, '_blank')
+      }
+    } else {
+      // Desktop - go straight to WhatsApp Web
+      window.open(webUrl, '_blank', 'width=600,height=400')
+    }
+  }
+
+  const shareViaEmail = () => {
+    if (!fullUrl) return
+    window.location.href = shareLinks.email
   }
 
   return (
     <div className={`${className}`}>
       <div className="flex items-center space-x-3">
         <div className="flex items-center text-gray-600">
-          <Share className="h-4 w-4 mr-2" />
+          <FaShare className="h-4 w-4 mr-2" />
           <span className="text-sm font-medium">Share:</span>
         </div>
         
         <div className="flex items-center space-x-2">
           {/* Facebook */}
           <button
-            onClick={() => handleShare('facebook')}
+            onClick={shareOnFacebook}
             className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             title="Share on Facebook"
           >
-            <Facebook className="h-4 w-4" />
+            <FaFacebook className="h-4 w-4" />
           </button>
           
-          {/* Twitter */}
+          {/* X (Twitter) */}
           <button
-            onClick={() => handleShare('twitter')}
+            onClick={shareOnTwitter}
             className="p-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
-            title="Share on X (Twitter)"
+            title="Share on X"
           >
-            <Twitter className="h-4 w-4" />
+            <FaXTwitter className="h-4 w-4" />
           </button>
           
           {/* LinkedIn */}
           <button
-            onClick={() => handleShare('linkedin')}
+            onClick={shareOnLinkedIn}
             className="p-2 rounded-full bg-blue-700 text-white hover:bg-blue-800 transition-colors"
             title="Share on LinkedIn"
           >
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-            </svg>
+            <FaLinkedin className="h-4 w-4" />
           </button>
           
           {/* WhatsApp */}
           <button
-            onClick={() => handleShare('whatsapp')}
+            onClick={shareOnWhatsApp}
             className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
             title="Share on WhatsApp"
           >
-            <MessageCircle className="h-4 w-4" />
+            <FaWhatsapp className="h-4 w-4" />
           </button>
           
           {/* Email */}
           <button
-            onClick={() => handleShare('email')}
+            onClick={shareViaEmail}
             className="p-2 rounded-full bg-gray-600 text-white hover:bg-gray-700 transition-colors"
             title="Share via Email"
           >
-            <Mail className="h-4 w-4" />
+            <FaEnvelope className="h-4 w-4" />
           </button>
           
           {/* Copy Link */}
@@ -120,7 +194,7 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
               className="p-2 rounded-full bg-gray-500 text-white hover:bg-gray-600 transition-colors"
               title="Copy Link"
             >
-              {copied ? <Check className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
+              {copied ? <FaCheck className="h-4 w-4" /> : <FaLink className="h-4 w-4" />}
             </button>
             {copied && (
               <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
