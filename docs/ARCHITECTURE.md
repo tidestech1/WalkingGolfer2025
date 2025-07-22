@@ -37,6 +37,7 @@ The most critical architectural principle is the strict separation of client and
 - **Firebase Utilities (isomorphic):** `src/lib/firebase/`
 - **Cloud Functions Backend Logic:** `functions/src/index.ts`
 - **Project Rules & Guidelines:** `.cursorrules`
+- **UI/UX Standards:** `docs/ui-standards.md` ⭐
 
 ## 4. Development Workflow
 

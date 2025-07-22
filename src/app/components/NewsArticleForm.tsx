@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 import { createNewsArticle, updateNewsArticle, getAllTags, getAllCategories } from '@/lib/firebase/newsUtils'
 import { uploadImage, deleteImage } from '@/lib/firebase/storageUtils'
@@ -27,8 +28,6 @@ interface NewsArticleFormProps {
 export default function NewsArticleForm({ article, isEdit = false }: NewsArticleFormProps): JSX.Element {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   
@@ -108,8 +107,7 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
-    setError(null)
-    setSuccess(null)
+
     setIsSubmitting(true)
     
     try {
@@ -161,10 +159,10 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
       // Create or update article
       if (isEdit && article) {
         await updateNewsArticle(article.id, articleData)
-        setSuccess('Article updated successfully')
+        toast.success('Article updated successfully')
       } else {
         const { id } = await createNewsArticle(articleData)
-        setSuccess(`Article created successfully (ID: ${id})`)
+        toast.success(`Article created successfully (ID: ${id})`)
         
         // Redirect to the article after a short delay
         setTimeout(() => {
@@ -173,28 +171,18 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
       }
     } catch (err) {
       console.error('Error saving article:', err)
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      toast.error(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
     }
   }
   
   return (
-    <form onSubmit={(e) => {
+    <>
+      <form onSubmit={(e) => {
  void handleSubmit(e); 
 }} className="space-y-6">
-      {/* Status Messages */}
-      {error && (
-        <div className="p-4 rounded-md bg-red-50 text-red-700">
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="p-4 rounded-md bg-green-50 text-green-700">
-          {success}
-        </div>
-      )}
+
       
       {/* Title */}
       <div>
@@ -495,5 +483,6 @@ export default function NewsArticleForm({ article, isEdit = false }: NewsArticle
         }
       </button>
     </form>
+  </>
   )
 } 

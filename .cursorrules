@@ -46,3 +46,4 @@
 
 ## agent_guidelines
 - Before performing significant file modifications or implementing new features, you MUST read and understand the project overview located at `docs/ARCHITECTURE.md`.
+- When implementing UI components, forms, notifications, or user interactions, you MUST follow the standards documented in `docs/ui-standards.md`.

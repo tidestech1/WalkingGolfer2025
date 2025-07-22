@@ -62,6 +62,16 @@ export default function RootLayout({
             <ScrollToTop />
             <FooterWrapper />
             <WelcomeModal />
+            {/* 
+              TOAST SYSTEM STANDARD: Use Sonner across entire app
+              - Import: import { toast } from 'sonner' 
+              - Success: toast.success('message')
+              - Error: toast.error('message') 
+              - Info: toast.info('message')
+              - Loading: toast.loading('message')
+              - Promise: toast.promise(promise, { loading: '...', success: '...', error: '...' })
+              - DO NOT create custom toast components or use other libraries
+            */}
             <Toaster richColors position="top-right" />
           </AuthProvider>
         </MobileMenuProvider>
