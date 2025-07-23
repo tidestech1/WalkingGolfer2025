@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import { FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope, FaLink, FaCheck, FaShare } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 
+/**
+ * Social sharing component with native app deep linking support
+ * 
+ * Uses the Web Share API as the primary method on supported devices (iOS Safari, Android Chrome)
+ * which provides native sharing to all installed apps including Facebook. Individual platform 
+ * buttons are provided as fallback options and for users who prefer specific platforms.
+ * 
+ * Note: Facebook's web share dialog often requires login and may show errors for non-logged-in users.
+ * The Web Share API button (when available) provides a better Facebook sharing experience.
+ */
+
 interface SocialShareProps {
   url: string
   title: string
@@ -15,10 +26,13 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
   const [showTooltip, setShowTooltip] = useState(false)
   const [copied, setCopied] = useState(false)
   const [fullUrl, setFullUrl] = useState('')
+  const [supportsWebShare, setSupportsWebShare] = useState(false)
 
   // Set the full URL after component mounts (client-side only)
   useEffect(() => {
     setFullUrl(`${window.location.origin}${url}`)
+    // Check if Web Share API is supported
+    setSupportsWebShare(!!navigator.share)
   }, [url])
 
   const encodedUrl = encodeURIComponent(fullUrl)
@@ -31,6 +45,34 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
     email: `mailto:?subject=${encodedTitle}&body=${encodedExcerpt}%0A%0ARead more: ${encodedUrl}`
+  }
+
+  // Native Web Share API (works great on mobile)
+  const shareViaWebAPI = async () => {
+    if (!fullUrl || !supportsWebShare) return
+    
+    const shareData = {
+      title,
+      text: excerpt || title,
+      url: fullUrl
+    }
+    
+    try {
+      await navigator.share(shareData)
+    } catch (error) {
+      // User cancelled or error occurred
+      console.log('Share cancelled or failed:', error)
+    }
+  }
+
+  const shareOnFacebook = () => {
+    if (!fullUrl) return
+    
+    const webUrl = shareLinks.facebook
+    
+    // Facebook web share dialog (may require login)
+    // The Web Share API button above is the preferred method for mobile
+    window.open(webUrl, '_blank', 'width=600,height=400')
   }
 
   const copyToClipboard = async () => {
@@ -53,30 +95,7 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
     }
   }
 
-  const shareOnFacebook = () => {
-    if (!fullUrl) return
-    
-    // Try Facebook app first, fallback to web
-    const appUrl = `fb://facewebmodal/f?href=${encodedUrl}`
-    const webUrl = shareLinks.facebook
-    
-    // Modern approach: try app link, fallback to web on fail
-    const tryAppThenWeb = () => {
-      // Create a hidden iframe to test if app opens
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      iframe.src = appUrl
-      document.body.appendChild(iframe)
-      
-      // Fallback to web after short delay
-      setTimeout(() => {
-        document.body.removeChild(iframe)
-        window.open(webUrl, '_blank', 'width=600,height=400')
-      }, 500)
-    }
-    
-    tryAppThenWeb()
-  }
+
 
   const shareOnTwitter = () => {
     if (!fullUrl) return
@@ -85,14 +104,22 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
     const appUrl = `twitter://post?message=${encodedTitle}%20${encodedUrl}`
     const webUrl = shareLinks.twitter
     
-    try {
-      // Try app first
-      window.location.href = appUrl
-      // Fallback to web  
-      setTimeout(() => {
+    // Detect if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    
+    if (isMobile) {
+      try {
+        // Try app first
+        window.location.href = appUrl
+        // Fallback to web after short delay
+        setTimeout(() => {
+          window.open(webUrl, '_blank', 'width=600,height=400')
+        }, 1000)
+      } catch (e) {
         window.open(webUrl, '_blank', 'width=600,height=400')
-      }, 1000)
-    } catch (e) {
+      }
+    } else {
+      // Desktop - go straight to web
       window.open(webUrl, '_blank', 'width=600,height=400')
     }
   }
@@ -142,11 +169,23 @@ export default function SocialShare({ url, title, excerpt = '', className = '' }
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Native Web Share API (Mobile) */}
+          {supportsWebShare && (
+            <button
+              onClick={shareViaWebAPI}
+              className="p-2 rounded-full bg-[#0A3357] text-white hover:bg-blue-800 transition-colors"
+              title="Share via native options"
+            >
+              <FaShare className="h-4 w-4" />
+            </button>
+          )}
+          
+          {/* Individual platform buttons (always available as fallback) */}
           {/* Facebook */}
           <button
             onClick={shareOnFacebook}
             className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            title="Share on Facebook"
+            title="Share on Facebook (may require login)"
           >
             <FaFacebook className="h-4 w-4" />
           </button>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Test - Walking Golfer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        button {
+            background: #0A3357;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background: #0f4a73;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f0f0f0;
+            min-height: 20px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Share Test - Walking Golfer</h1>
+    <p>Test different sharing methods on your iPhone:</p>
+    
+    <button onclick="testWebShare()">📱 Test Web Share API (Native) - RECOMMENDED</button>
+    <button onclick="testFacebookDirect()">📘 Test Facebook Direct (may require login)</button>
+    <button onclick="testCopyToClipboard()">📋 Test Copy to Clipboard</button>
+    
+    <div id="result" class="result">
+        Click a button above to test sharing...
+    </div>
+
+    <script>
+        const result = document.getElementById('result');
+        
+        function updateResult(message, isSuccess = true) {
+            result.textContent = message;
+            result.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+        
+        // Test the Web Share API (should work great on iOS)
+        async function testWebShare() {
+            const shareData = {
+                title: 'Walking Golfer - Test Article',
+                text: 'Check out this amazing golf course article!',
+                url: window.location.href
+            };
+            
+            try {
+                if (navigator.share) {
+                    updateResult('Opening native share sheet...');
+                    await navigator.share(shareData);
+                    updateResult('✅ Web Share API worked! Content shared successfully.');
+                } else {
+                    updateResult('❌ Web Share API not supported in this browser', false);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    updateResult('⚠️ Share cancelled by user');
+                } else {
+                    updateResult(`❌ Share failed: ${error.message}`, false);
+                }
+            }
+        }
+        
+        // Test Facebook direct link
+        function testFacebookDirect() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('Walking Golfer - Test Article');
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${title}`;
+            
+            updateResult('Opening Facebook share page...');
+            window.open(facebookUrl, '_blank', 'width=600,height=400');
+            setTimeout(() => {
+                updateResult('📘 Facebook share page opened. Did it work properly?');
+            }, 1000);
+        }
+        
+        // Test Facebook direct link (the problematic one)
+        function testFacebookDirect() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('Walking Golfer - Test Article');
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${title}`;
+            
+            updateResult('Opening Facebook share page...');
+            window.open(facebookUrl, '_blank', 'width=600,height=400');
+            setTimeout(() => {
+                updateResult('📘 Facebook share opened. Note: May require login and show errors for non-logged-in users.');
+            }, 1000);
+        }
+        
+        // Test clipboard as fallback
+        async function testCopyToClipboard() {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                updateResult('✅ URL copied to clipboard successfully!');
+            } catch (error) {
+                updateResult(`❌ Clipboard failed: ${error.message}`, false);
+            }
+        }
+        
+        // Display browser info
+        document.addEventListener('DOMContentLoaded', () => {
+            const info = `
+                Browser: ${navigator.userAgent}
+                Web Share API: ${navigator.share ? '✅ Supported' : '❌ Not supported'}
+                Clipboard API: ${navigator.clipboard ? '✅ Supported' : '❌ Not supported'}
+            `;
+            console.log(info);
+        });
+    </script>
+</body>
+</html> 
